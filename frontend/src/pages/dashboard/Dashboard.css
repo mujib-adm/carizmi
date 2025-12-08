@@ -1,0 +1,96 @@
+.dashboard {
+  display: flex;
+  min-height: calc(100vh - 120px); /* Adjust for header/footer height */
+  font-family: "Poppins", sans-serif;
+  background-color: #fbfff6;
+}
+
+.sidebar {
+  width: 200px;
+  color: #1a1a1a;
+  flex-shrink: 0;
+  height: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar li {
+  padding: 12px 16px;
+  border-bottom: 1px solid #ddd;
+  transition: background 0.3s ease;
+}
+
+.sidebar li a {
+  color: #1a1a1a;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.sidebar li:hover {
+  background-color: #5C9013;
+}
+
+.content {
+  flex: 1;
+  padding: 2rem;
+  background-color: #fff;
+  max-width: calc(100% - 200px);
+  box-sizing: border-box;
+}
+
+.metrics {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.metric-card {
+  background: #e3f1d1;
+  padding: 1.25rem;
+  border-radius: 12px;
+  flex: 1;
+  min-width: 200px;
+  box-shadow: 0 2px 6px rgba(30, 86, 49, 0.1);
+  border: 1px solid #AEDF88;
+}
+
+.metric-card h3 {
+  margin-bottom: 0.5rem;
+  color: #1E5631;
+  font-size: 1.1rem;
+}
+
+.latest-payments {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+  border: 1px solid #ddd;
+}
+
+.latest-payments th,
+.latest-payments td {
+  border: 1px solid #ccc;
+  padding: 10px;
+  text-align: left;
+}
+
+.latest-payments th {
+  background-color: #1E5631;
+  color: #fff;
+  font-weight: 600;
+}
+
+.latest-payments tr:nth-child(even) {
+  background-color: #f9fff9;
+}
+
+.latest-payments tr:hover {
+  background-color: #e3f1d1;
+}

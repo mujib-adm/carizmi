@@ -1,0 +1,85 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+spring:
+#  main:
+#    banner-mode: off
+#    lazy-initialization: true
+#    web-application-type: servlet
+  datasource:
+    url: ${DB_URL:jdbc:mysql://db:3306/sofumar?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true}
+    username: ${DB_USER:sofumar}
+    password: ${DB_PASS:sofumar_pwd}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+      #none
+    #generate-ddl: false
+    show-sql: false
+    properties:
+      hibernate:
+        default_catalog: sofumar
+        default_schema: sofumar
+#        hbm2ddl:
+#          auto: none
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: false
+    #    locations: classpath:db/migration
+  liquibase:
+    enabled: false
+  redis:
+    host: ${SPRING_REDIS_HOST:redis}
+    port: ${SPRING_REDIS_PORT:6379}
+#  sql:
+#    init:
+#      platform: mysql
+#  data:
+#    jpa:
+#      repositories:
+#        bootstrap-mode: deferred
+
+#jakarta:
+#  persistence:
+#    jdbc:
+#      url: jdbc:mysql://db:3306/sofumar?useSSL=false
+
+jwt:
+  issuer: sofumar.portal
+  secret: ${JWT_SECRET:u8J3s9k7vGZxL1aQ9z3eYkX2q9vJ6tL8c5Q1r8Wz0Yk=}
+  expirationMinutes: 60
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+migration:
+  resources:
+    dir: backend/src/main/resources
+
+#  temporarily logging spring for debugging purposes
+#logging:
+#  level:
+#    liquibase: DEBUG
+#    org.liquibase: DEBUG
+#    org.liquibase.ext.hibernate: DEBUG
+#    root: DEBUG
+#    org.hibernate: DEBUG
+#    org.springframework.data: DEBUG
+#    org.springframework.orm.jpa: DEBUG
+#    org.springframework.transaction: DEBUG
+#    org.springframework: DEBUG
+#    org.springframework.security: DEBUG
+#    org.springframework.web: DEBUG
+#    org.springframework.http.converter.json: DEBUG
+#    com.fasterxml.jackson: DEBUG
+

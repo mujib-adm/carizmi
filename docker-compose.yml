@@ -1,0 +1,67 @@
+services:
+  db:
+    platform: linux/amd64
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: sofumar
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASS}
+      MYSQL_ROOT_PASSWORD: root_pwd
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    #    container_name: sofumar-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  backend:
+    platform: linux/amd64
+    env_file: .env
+    build:
+        context: .
+        dockerfile: backend/Dockerfile
+    environment:
+      DB_URL: ${DB_URL}
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      JWT_SECRET: ${JWT_SECRET}
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      JAVA_TOOL_OPTIONS: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:8787
+    depends_on:
+      redis:
+        condition: service_started
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+      - "8787:8787"
+
+  frontend:
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    depends_on:
+      - backend
+    ports:
+      - "8081:80"
+    environment:
+      - VITE_API_URL=http://localhost:8080
+
+volumes:
+  db_data:
+  redis_data:
