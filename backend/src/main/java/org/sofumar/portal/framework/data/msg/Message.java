@@ -29,12 +29,6 @@ public class Message {
         this.messageText = messageText;
     }
 
-    protected Message(Type type, String messageID, String messageText, HttpStatus httpStatus) {
-        this.type = type;
-        this.messageID = messageID;
-        this.messageText = messageText;
-    }
-
     public Message addMessageArgs(Object... args) {
         Message clone = new Message(this);
         int currentArgsLength = (clone.messageArgs != null) ? clone.messageArgs.length : 0;

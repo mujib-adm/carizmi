@@ -9,8 +9,4 @@ public class ErrorMessage extends Message {
         super(Message.Type.ERROR, messageID, messageText);
     }
 
-    public ErrorMessage(String messageID, String messageText, HttpStatus httpStatus) {
-        super(Message.Type.ERROR, messageID, messageText, httpStatus);
-    }
-
 }

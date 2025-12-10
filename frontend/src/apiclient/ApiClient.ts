@@ -1,5 +1,5 @@
 import axios, { AxiosError, AxiosResponse } from "axios";
-import { setGlobalLoading } from "./LoadingContext";
+import { setGlobalLoading } from "../context/LoadingContext";
 import { GlobalResponse } from "../constants/types";
 
 // const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8080"; // use for real environments

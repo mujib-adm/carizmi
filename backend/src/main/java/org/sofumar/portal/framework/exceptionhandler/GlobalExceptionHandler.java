@@ -1,9 +1,9 @@
-package org.sofumar.portal.framework.dao.sql.exception.handler;
+package org.sofumar.portal.framework.exceptionhandler;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.sofumar.portal.framework.dao.sql.exception.DuplicateRecordException;
-import org.sofumar.portal.framework.dao.sql.exception.ValidationException;
+import org.sofumar.portal.framework.exception.DuplicateRecordException;
+import org.sofumar.portal.framework.exception.ValidationException;
 import org.sofumar.portal.framework.data.msg.Message;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
 import org.sofumar.portal.framework.util.ResponseUtils;

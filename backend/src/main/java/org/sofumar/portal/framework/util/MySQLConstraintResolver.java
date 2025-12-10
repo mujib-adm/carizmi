@@ -15,11 +15,11 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class MySQLConstraintResolverUtils {
+public class MySQLConstraintResolver {
     private final DataSource dataSource;
     private final Map<String, List<String>> constraintMap = new HashMap<>();
 
-    public MySQLConstraintResolverUtils(DataSource dataSource) {
+    public MySQLConstraintResolver(DataSource dataSource) {
         this.dataSource = dataSource;
     }
 
@@ -63,11 +63,10 @@ public class MySQLConstraintResolverUtils {
     /**
      * Resolve the columns involved in a unique constraint.
      *
-     * @param tableName      the table name (from exception message)
      * @param constraintName the constraint name (from exception message)
      * @return list of column names, or ["unknown"] if not found
      */
-    public List<String> resolveFields(String tableName, String constraintName) {
+    public List<String> resolveFields(String constraintName) {
         return constraintMap.getOrDefault(constraintName, List.of("unknown"));
     }
 

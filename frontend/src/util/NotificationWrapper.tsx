@@ -1,32 +1,3 @@
-// import { Modal } from "antd";
-// import { useNavigate } from "react-router-dom";
-
-// export function useNotificationWrapper() {
-//   const navigate = useNavigate();
-
-//   return {
-//     success: (config: { message: string; description?: string }, redirectUrl?: string) => {
-//       Modal.success({
-//         title: config.message,
-//         content: config.description,
-//         onOk: () => {
-//           if (redirectUrl) navigate(redirectUrl);
-//         },
-//       });
-//     },
-//     warning: (config: { message: string; description?: string }, redirectUrl?: string) => {
-//       Modal.warning({
-//         title: config.message,
-//         content: config.description,
-//         onOk: () => {
-//           if (redirectUrl) navigate(redirectUrl);
-//         },
-//       });
-//     },
-//   };
-// }
-
-
 import { Modal } from "antd";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";

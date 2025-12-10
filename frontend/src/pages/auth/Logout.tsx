@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import apiClient from "../../context/ApiClient";
+import apiClient from "../../apiclient/ApiClient";
 import { GlobalResponse } from "../../constants/types";
 
 export default function Logout() {

@@ -38,8 +38,8 @@ export interface FieldMsg {
 export interface NormalizedResponse {
   statusCode?: number;
   statusDesc?: string;
+  globalMessages: string[];              // ["Invalid username or password."]
   fieldMessages: Record<string, string>; // { "email", "Email already exists" }
-  globalMessages: string[];            // ["Invalid username or password."]
 }
 
 // Login response payload

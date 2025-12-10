@@ -3,10 +3,10 @@ package org.sofumar.portal.framework.bl;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 import org.sofumar.portal.framework.constants.GlobalMessageConstants;
-import org.sofumar.portal.framework.dao.sql.exception.DuplicateRecordException;
+import org.sofumar.portal.framework.exception.DuplicateRecordException;
 import org.sofumar.portal.framework.util.ExceptionParserUtils;
 import org.sofumar.portal.framework.util.LabelUtils;
-import org.sofumar.portal.framework.util.MySQLConstraintResolverUtils;
+import org.sofumar.portal.framework.util.MySQLConstraintResolver;
 import org.sofumar.portal.framework.vo.ValueObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
@@ -20,10 +20,8 @@ import java.util.Optional;
 
 public abstract class AbstractBusinessLogic<V extends ValueObject, R extends JpaRepository<V, Integer>> {
 
-    //    @Autowired
-//    private ConstraintRegistry constraintRegistry;
     @Autowired
-    private MySQLConstraintResolverUtils constraintResolver;
+    private MySQLConstraintResolver constraintResolver;
 
     protected abstract R getRepository();
 
@@ -147,8 +145,8 @@ public abstract class AbstractBusinessLogic<V extends ValueObject, R extends Jpa
         }
 
         if (constraintName != null) {
-            // Resolve the fields involved in the constraint violation using ConstraintRegistry
-            List<String> fields = constraintResolver.resolveFields(vo.getTableName(), constraintName);
+            // Resolve the fields involved in the constraint violation
+            List<String> fields = constraintResolver.resolveFields(constraintName);
             // Add field-specific error messages
             for (String field : fields) {
                 vo.addFieldMessage(field, GlobalMessageConstants.ERR_RECORD_ALREADY_EXISTS.addMessageArgs(

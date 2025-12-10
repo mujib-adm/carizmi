@@ -1,4 +1,4 @@
-package org.sofumar.portal.framework.dao.sql.exception;
+package org.sofumar.portal.framework.exception;
 
 import lombok.Getter;
 import org.sofumar.portal.framework.vo.ValueObject;

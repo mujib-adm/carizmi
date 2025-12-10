@@ -1,4 +1,4 @@
-package org.sofumar.portal.framework.dao.sql.exception;
+package org.sofumar.portal.framework.exception;
 
 public class RecordStaleException extends RuntimeException {
     public RecordStaleException(String message) {

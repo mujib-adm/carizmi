@@ -3,74 +3,49 @@ import { useAuth } from "../../context/AuthContext";
 import "../../themes/css/auth-form.css";
 import { useForm } from "react-hook-form";
 
-import apiClient from "../../context/ApiClient";
-import { normalizeAxiosResponse } from "../../context/ErrorUtils";
+import apiClient from "../../apiclient/ApiClient";
 import { GlobalResponse, LoginData, LoginForm } from "../../constants/types";
-import React from "react";
+import { MessageBanner } from "../../component/MessageBanner";
+import { FormField } from "../../component/FormField";
+import { useApiMessages } from "../../hook/ApiResponseHandler";
 
 export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const {
-    register,
-    handleSubmit,
-    setError,
-    formState: { errors },
-  } = useForm<LoginForm>();
-
-  const [globalError, setGlobalError] = React.useState("");
+  const { register, handleSubmit, formState: { errors }, } = useForm<LoginForm>();
+  const { globalMessages, handleResponse, handleError, resetMessages } = useApiMessages<LoginForm>();
 
   const onSubmit = async (formValues: LoginForm) => {
-    setGlobalError("");
-
+    // clear old messages from MessageBanner before starting new call
+    resetMessages();
     try {
       const response = await apiClient.post<GlobalResponse<LoginData>>("/auth/login", formValues);
       const responseBody = response.data;
-      if (responseBody.map?.token && responseBody.map?.role) {
-        login(responseBody.map?.token, responseBody.map?.role);
-        navigate("/");
-      } else {
-        setGlobalError(responseBody.globalMessages?.[0]?.message || "Login failed. Please try again or contact support.");
-      }
-      console.log("token: ", responseBody.map?.token); //TODO: remove in production
-    } catch (error: any) {
-      // AxiosError<GlobalResponse>
-      const backendResponse: GlobalResponse | undefined = error.response?.data;
-      if (backendResponse) {
-        const normalized = normalizeAxiosResponse(backendResponse);
-        // Map fieldMessages → RHF errors
-        Object.entries(normalized.fieldMessages).forEach(([field, message]) => {
-          setError(field as keyof LoginForm, { type: "server", message });
-        });
-        // Global errors → banner
-        if (normalized.globalMessages.length > 0) {
-          setGlobalError(normalized.globalMessages[0]);
-        } else {
-          setGlobalError(error.message || "Login failed. Please try again or contact support.");
-        }
-      }
 
+      if (responseBody?.map?.token && responseBody?.map?.role) {
+        login(responseBody.map.token, responseBody.map.role);
+        navigate("/");
+      } else if (responseBody.globalMessages?.length > 0) {
+        handleResponse(responseBody);
+      } else {
+        console.error("Login response missing a token and/or role");
+      }
+    } catch (error: any) {
+      handleError(error);
     }
   };
 
   return (
     <div className="auth-container">
       <form className="auth-form" onSubmit={handleSubmit(onSubmit)}>
-
         <h2>Login</h2>
-
-        <input className="auth-input" type="text" placeholder="Username" {...register("username", { required: "Username is required" })} />
-        {errors.username && (<p className="auth-error">{errors.username.message}</p>)}
-
-        <input className="auth-input" type="password" placeholder="Password" {...register("password", { required: "Password is required" })} />
-        {errors.password && (<p className="auth-error">{errors.password.message}</p>)}
-
-        {globalError && <p className="auth-error">{globalError}</p>}
+        <FormField type="text" placeholder="Username" registerProps={register("username", { required: "Username is required" })} error={errors.username} />
+        <FormField type="password" placeholder="Password" registerProps={register("password", { required: "Password is required" })} error={errors.password} />
+        {globalMessages && <MessageBanner messages={globalMessages} />}
 
         <button className="global_btn" type="submit"> Login </button>
         <p className="auth-link"> Don't have an account? <a href="/register">Register here</a> </p>
-
       </form>
     </div>
   );

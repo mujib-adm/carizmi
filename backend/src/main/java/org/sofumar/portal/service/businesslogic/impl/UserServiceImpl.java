@@ -67,10 +67,10 @@ public class UserServiceImpl extends AbstractBusinessLogic<UserVO, UserRepositor
         return logger;
     }
 
-    @Override
-    protected void validateInternal(UserVO vo, boolean isUpdate) {
-        validator.validate(vo);
-    }
+//    @Override
+//    protected void validateInternal(UserVO vo, boolean isUpdate) {
+//        validator.validate(vo);
+//    }
 
     @Override
     @Transactional
@@ -78,6 +78,7 @@ public class UserServiceImpl extends AbstractBusinessLogic<UserVO, UserRepositor
         UserVO userVO = transformer.transform(requestDto);
         userVO.setRole(RoleConstants.ROLE_ANONYMOUS);
         userVO.setActive(true);
+        validator.validate(userVO);
         userVO.setPassword(encoder.encode(userVO.getPassword()));
         add(userVO);
         return ResponseUtils.ok(Message.Type.SUCCESS, "Registered. Await role assignment.");

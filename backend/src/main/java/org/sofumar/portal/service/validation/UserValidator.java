@@ -4,7 +4,7 @@ import io.micrometer.common.util.StringUtils;
 import org.sofumar.portal.constants.FieldConstants;
 import org.sofumar.portal.constants.MessagesConstants;
 import org.sofumar.portal.data.vo.UserVO;
-import org.sofumar.portal.framework.dao.sql.exception.ValidationException;
+import org.sofumar.portal.framework.exception.ValidationException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -13,7 +13,7 @@ public class UserValidator {
     private static final String PASSWORD_REGEX = "^(?=.*[a-z])(?=.*[A-Z])(?=.*[\\d\\W]).{12,}$";
     private static final String PASSWORD_REGEX_TEMP = "^(?=.*[a-z])(?=.*[A-Z])(?=.*[\\d\\W]).{5,}$"; // for local testing only
 
-    public void validate(UserVO vo) {
+    public void validate(UserVO vo) throws ValidationException {
         validateUsername(vo);
         validatePassword(vo);
 
