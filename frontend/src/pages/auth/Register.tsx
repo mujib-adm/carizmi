@@ -42,17 +42,23 @@ export default function Register() {
   return (
     <div className="auth-container">
       <form className="auth-form" onSubmit={handleSubmit(onSubmit)}>
-        <h2>Sign Up</h2>
+        <h2 style={{ marginBottom: "30px" }}>Register</h2>
 
-        <FormField type="text" placeholder="First Name" registerProps={register("firstName", { required: "First Name is required" })} error={errors.firstName} />
 
-        <FormField type="text" placeholder="Last Name" registerProps={register("lastName", { required: "Last Name is required" })} error={errors.lastName} />
+        <div className="form_label"><label className="text_uppercase"> First Name <span className="required_filed">*</span> </label></div>
+        <FormField type="text" placeholder="Enter first name..." registerProps={register("firstName", { required: "First Name is required" })} error={errors.firstName} />
 
-        <FormField type="email" placeholder="Email" registerProps={register("email", { required: "Email is required" })} error={errors.email} />
+        <div className="form_label"><label className="text_uppercase"> Last Name <span className="required_filed">*</span> </label></div>
+        <FormField type="text" placeholder="Enter last name..." registerProps={register("lastName", { required: "Last Name is required" })} error={errors.lastName} />
 
-        <FormField type="text" placeholder="Username" registerProps={register("username", { required: "Username is required" })} error={errors.username} />
+        <div className="form_label"><label className="text_uppercase"> Email <span className="required_filed">*</span> </label></div>
+        <FormField type="email" placeholder="Enter email..." registerProps={register("email", { required: "Email is required" })} error={errors.email} />
 
-        <FormField type="password" placeholder="Password" registerProps={register("password", { required: "Password is required" })} error={errors.password} />
+        <div className="form_label"><label className="text_uppercase"> Username <span className="required_filed">*</span> </label></div>
+        <FormField type="text" placeholder="Enter username..." registerProps={register("username", { required: "Username is required" })} error={errors.username} />
+
+        <div className="form_label"><label className="text_uppercase"> Password <span className="required_filed">*</span> </label></div>
+        <FormField type="password" placeholder="Enter password..." registerProps={register("password", { required: "Password is required" })} error={errors.password} />
 
         {globalMessages && <MessageBanner messages={globalMessages} />}
 

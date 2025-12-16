@@ -2,8 +2,14 @@ package org.sofumar.portal.repo;
 
 import org.sofumar.portal.data.vo.MemberVO;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.stereotype.Repository;
 
-public interface MemberRepository extends JpaRepository<MemberVO, Integer> {
+@Repository
+public interface MemberRepository extends JpaRepository<MemberVO, Integer>, JpaSpecificationExecutor<MemberVO> {
+}
+
+//public interface MemberRepository extends JpaRepository<MemberVO, Integer> {
 
 //    Page<Member> findByStatus(String status, Pageable pageable);
 //
@@ -17,4 +23,4 @@ public interface MemberRepository extends JpaRepository<MemberVO, Integer> {
 //    List<Member> findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCaseOrPhoneContaining(
 //            String firstName, String lastName, String phone
 //    );
-}
+//}

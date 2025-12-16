@@ -40,7 +40,7 @@ public class MemberVO extends ValueObject {
     private String lastName;
 
     @NotBlank
-    @Pattern(regexp = "^\\(?\\d{3}\\)?[- ]?\\d{3}[- ]?\\d{4}$")
+    @Pattern(regexp = "^\\(?\\d{3}\\)?[- ]?\\d{3}[- ]?\\d{4}$", message = "Invalid phone number format")
     @Column(name = FieldConstants.PHONE)
     private String phone;
 

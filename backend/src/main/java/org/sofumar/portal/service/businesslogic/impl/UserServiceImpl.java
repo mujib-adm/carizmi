@@ -74,14 +74,14 @@ public class UserServiceImpl extends AbstractBusinessLogic<UserVO, UserRepositor
 
     @Override
     @Transactional
-    public ResponseEntity<GlobalResponse> register(UserRequestDto requestDto) {
+    public ResponseEntity<GlobalResponse<Void>> register(UserRequestDto requestDto) {
         UserVO userVO = transformer.transform(requestDto);
         userVO.setRole(RoleConstants.ROLE_ANONYMOUS);
         userVO.setActive(true);
         validator.validate(userVO);
         userVO.setPassword(encoder.encode(userVO.getPassword()));
         add(userVO);
-        return ResponseUtils.ok(Message.Type.SUCCESS, "Registered. Await role assignment.");
+        return ResponseUtils.ok("Registered. Await role assignment.");
     }
 
     @Override
@@ -92,7 +92,7 @@ public class UserServiceImpl extends AbstractBusinessLogic<UserVO, UserRepositor
         } else if (!userVO.isActive()) {
             return ResponseUtils.withStatus(HttpStatus.UNAUTHORIZED, Message.Type.ERROR, "Your account is inactive. Please contact support for assistance.");
         } else if (RoleConstants.ROLE_ANONYMOUS.equalsIgnoreCase(userVO.getRole())) {
-            return ResponseUtils.ok(Message.Type.SUCCESS, "Welcome! Your account is pending role assignment. Please contact support for assistance.");
+            return ResponseUtils.ok("Welcome! Your account is pending role assignment. Please contact support for assistance.");
         }
 
         String token = Jwts.builder()

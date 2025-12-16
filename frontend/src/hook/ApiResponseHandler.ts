@@ -10,7 +10,7 @@ export function useApiMessages<T extends FieldValues>(setError?: UseFormSetError
    * Handle a successful API response.
    * Extracts globalMessages for display.
    */
-  const handleResponse = (response: GlobalResponse<any>) => {
+  const handleResponse = <R>(response: GlobalResponse<R>) => {
     if (response) {
       setGlobalMessages(
         response.globalMessages?.map((msg) => ({
@@ -33,8 +33,8 @@ export function useApiMessages<T extends FieldValues>(setError?: UseFormSetError
       // Map backend fieldMessages to RHF errors
       if (setError && data.fieldMessages) {
         data.fieldMessages.forEach((fm) => {
-          if (fm.fieldName && fm.message) {
-            setError(fm.fieldName as Path<T>, { type: "server", message: fm.message, });
+          if (fm.field && fm.message) {
+            setError(fm.field as Path<T>, { type: "server", message: fm.message, });
           }
         });
       }

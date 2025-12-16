@@ -4,15 +4,15 @@ import lombok.Getter;
 
 @Getter
 public class FieldMessage {
-    public String fieldName;
+    public String field;
     public Message message;
 
-    public FieldMessage(String fieldName, Message message) {
-        this.fieldName = fieldName;
+    public FieldMessage(String field, Message message) {
+        this.field = field;
         this.message = message;
     }
 
     public String getMessageString() {
-        return this.fieldName + ": " + this.message.getMessageString();
+        return this.field + ": " + this.message.getMessageString();
     }
 }

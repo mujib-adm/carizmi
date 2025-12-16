@@ -12,6 +12,7 @@ import Dashboard from "./dashboard/Dashboard";
 // import NotFound from "./pages/NotFound";
 // import Unauthorized from "./pages/Unauthorized";
 import { useAuth } from "../context/AuthContext";
+import MemberPage from "./member/MemberPage";
 
 export default function Router() {
   const { token, role, isLoading } = useAuth();
@@ -33,6 +34,7 @@ if (isLoading) return <div>Loading...</div>;
       <Route path="/" element={<Dashboard />} />
       <Route path="/register" element={<Register />} />
       <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/members" element={<MemberPage />} />
 
       <Route path="/logout" element={<Logout />} />
     </Routes>

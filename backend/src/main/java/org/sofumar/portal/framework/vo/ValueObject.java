@@ -58,10 +58,10 @@ public abstract class ValueObject {
     private boolean warningExists;
 
     @Transient
-    private LinkedHashSet<Message> global = new LinkedHashSet<>();
+    private LinkedHashSet<Message> globalMsgSet = new LinkedHashSet<>();
 
     @Transient
-    private LinkedHashMap<String, List<FieldMessage>> fieldMsg = new LinkedHashMap<>();
+    private LinkedHashMap<String, List<FieldMessage>> fieldMsgMap = new LinkedHashMap<>();
 
 
     public abstract String getTableName();
@@ -75,15 +75,15 @@ public abstract class ValueObject {
     }
 
     public Set<Message> getGlobalMessages() {
-        return Collections.unmodifiableSet(global);
+        return Collections.unmodifiableSet(globalMsgSet);
     }
 
     public Map<String, List<FieldMessage>> getFieldMessages() {
-        return Collections.unmodifiableMap(fieldMsg);
+        return Collections.unmodifiableMap(fieldMsgMap);
     }
 
     public void addGlobalMessage(Message message) {
-        this.global.add(message);
+        this.globalMsgSet.add(message);
         setErrorWarningFlags(message.getType());
     }
 
@@ -101,11 +101,11 @@ public abstract class ValueObject {
     }
 
     private void setFieldMessages(String field, FieldMessage message) {
-        List<FieldMessage> fieldMsgs = fieldMsg.get(field);
+        List<FieldMessage> fieldMsgs = fieldMsgMap.get(field);
         if (fieldMsgs != null) {
             fieldMsgs.add(message);
         } else {
-            fieldMsg.put(field, List.of(message));
+            fieldMsgMap.put(field, List.of(message));
         }
         setFlags(message);
     }

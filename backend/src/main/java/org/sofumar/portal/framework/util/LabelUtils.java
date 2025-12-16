@@ -8,13 +8,13 @@ public class LabelUtils {
     // Regex to split camelCase boundaries
     private static final Pattern CAMEL_CASE_PATTERN = Pattern.compile("([a-z])([A-Z])");
 
-    public static String toLabel(String fieldName) {
-        if (fieldName == null || fieldName.isBlank()) {
+    public static String toLabel(String field) {
+        if (field == null || field.isBlank()) {
             return "";
         }
 
         // Step 1: Replace underscores with spaces
-        String result = fieldName.replace("_", " ");
+        String result = field.replace("_", " ");
 
         // Step 2: Insert spaces before camelCase boundaries
         Matcher matcher = CAMEL_CASE_PATTERN.matcher(result);

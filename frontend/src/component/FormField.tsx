@@ -27,7 +27,7 @@ export const FormField: React.FC<FormFieldProps> = ({
                     <input
                         type={type}
                         placeholder={placeholder}
-                        className={`auth-input ${error ? "error" : ""}`}
+                        className={`form_field ${error ? "error" : ""}`}
                         {...registerProps}
                         style={{ flex: 1 }}
                     />
@@ -36,14 +36,14 @@ export const FormField: React.FC<FormFieldProps> = ({
                 {as === "textarea" && (
                     <textarea
                         placeholder={placeholder}
-                        className={`auth-input ${error ? "error" : ""}`}
+                        className={`form_field ${error ? "error" : ""}`}
                         {...registerProps}
                     />
                 )}
 
                 {as === "select" && (
                     <select
-                        className={`auth-input ${error ? "error" : ""}`}
+                        className={`form_field ${error ? "error" : ""}`}
                         {...registerProps}
                     >
                         <option value="">Select an option</option>

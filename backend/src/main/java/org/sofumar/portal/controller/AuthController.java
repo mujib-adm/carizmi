@@ -32,7 +32,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<GlobalResponse> register(@RequestBody UserRequestDto requestDto) {
+    public ResponseEntity<GlobalResponse<Void>> register(@RequestBody UserRequestDto requestDto) {
         return userService.register(requestDto);
     }
 
@@ -58,5 +58,3 @@ public class AuthController {
         return ResponseUtils.withMap(Map.of("username", user.getUsername(), "role", user.getAuthorities().toString()));
     }
 }
-
-

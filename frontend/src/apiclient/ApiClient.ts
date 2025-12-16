@@ -5,15 +5,22 @@ import { GlobalResponse } from "../constants/types";
 // const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8080"; // use for real environments
 const API_BASE = (import.meta as any).env?.VITE_API_URL || "http://localhost:8080"; // use for Vite
 
+let authToken: string | null = localStorage.getItem("token"); // initialize from storage
+export const setAuthToken = (token: string | null) => { authToken = token; };
+
 const apiClient = axios.create({
   baseURL: API_BASE,
-  headers: { "Content-Type": "application/json" },
+  headers: { "Content-Type": "application/json", Accept: "application/json", Authorization: authToken ? `Bearer ${authToken}` : "" },
   // timeout: 10000,
 });
 
 // Request interceptor → show loader
 apiClient.interceptors.request.use((config) => {
   setGlobalLoading(true);
+  if (authToken) {
+    // Axios v1+ headers is AxiosHeaders, so use set()
+    config.headers?.set("Authorization", `Bearer ${authToken}`);
+  }
   console.log("Request: ", config.method?.toUpperCase(), config.url); // TODO: remove in production
   return config;
 },

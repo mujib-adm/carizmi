@@ -13,10 +13,12 @@ import org.slf4j.LoggerFactory;
 import org.sofumar.portal.framework.service.TokenBlacklistService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -42,9 +44,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private String secret;
 
     private final TokenBlacklistService blacklistService;
+    private final BearerTokenResolver bearerTokenResolver;
+
     @Autowired
-    public JwtAuthFilter(TokenBlacklistService blacklistService) {
+    public JwtAuthFilter(TokenBlacklistService blacklistService, BearerTokenResolver bearerTokenResolver) {
         this.blacklistService = blacklistService;
+        this.bearerTokenResolver = bearerTokenResolver;
     }
 
     @Override
@@ -59,15 +64,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             return;
         }
 
-        String header = request.getHeader("Authorization");
-        if (header != null && header.startsWith("Bearer ")) {
-            String token = header.substring(7);
+        String token = bearerTokenResolver.resolve(request);
+        if (token != null) {
             try {
                 // Check blacklist BEFORE parsing claims
                 if (blacklistService.isTokenRevoked(token)) {
-//                    throw new JwtException("Token has been revoked.");
-                    sendJsonError(response, "Token has been revoked.");
-                    return;
+                    throw new AuthenticationCredentialsNotFoundException("Token has been revoked.");
                 }
                 Claims claims = Jwts.parserBuilder()
                         .setSigningKey(Keys.hmacShaKeyFor(Base64.getDecoder().decode(secret)))
@@ -83,22 +85,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                         new UsernamePasswordAuthenticationToken(username, null, auths);
                 SecurityContextHolder.getContext().setAuthentication(auth);
             } catch (JwtException e) {
-                logger.debug("Invalid JWT: {}", e.getMessage());
+                logger.debug("Invalid or expired JWT: {}", e.getMessage());
                 SecurityContextHolder.clearContext();
-                // chain.doFilter(request, response); // do not sendError here
-                sendJsonError(response, "Invalid or expired token");
-                return;
+                throw new AuthenticationCredentialsNotFoundException("Invalid or expired token.");
             }
+        } else {
+            throw new AuthenticationCredentialsNotFoundException("Token not found.");
         }
         chain.doFilter(request, response);
-    }
-
-    private void sendJsonError(HttpServletResponse response, String message) throws IOException {
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.setContentType("application/json");
-        response.getWriter().write(
-                String.format("{\"timestamp\":\"%s\",\"status\":%d,\"error\":\"%s\"}",
-                        java.time.Instant.now().toString(), HttpServletResponse.SC_UNAUTHORIZED, message)
-        );
     }
 }

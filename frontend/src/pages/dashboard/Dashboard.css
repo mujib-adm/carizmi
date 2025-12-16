@@ -36,14 +36,6 @@
   background-color: #5C9013;
 }
 
-.content {
-  flex: 1;
-  padding: 2rem;
-  background-color: #fff;
-  max-width: calc(100% - 200px);
-  box-sizing: border-box;
-}
-
 .metrics {
   display: flex;
   gap: 1.5rem;

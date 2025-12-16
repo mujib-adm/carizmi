@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.sofumar.portal.framework.data.msg.Message;
 
 import java.util.List;
 import java.util.Map;
@@ -12,10 +13,41 @@ import java.util.Map;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class GlobalResponse {
+public class GlobalResponse<T> {
     private int statusCode; // HTTP status code
     private String statusDesc;
     private List<GlobalMsg> globalMessages;
     private List<FieldMsg> fieldMessages;
     private Map<String, String> map;
+    private T responseData;
+    private PaginationMeta meta;
+
+    public static <T> GlobalResponse<T> getInstance() {
+        return new GlobalResponse<>();
+    }
+
+    public static <T> GlobalResponse<T> ok(String msg) {
+        GlobalResponse<T> response = new GlobalResponse<>();
+        response.setGlobalMessages(List.of(new GlobalMsg(Message.Type.SUCCESS, msg)));
+        return response;
+    }
+
+    public static <T> GlobalResponse<T> error(String msg) {
+        GlobalResponse<T> response = new GlobalResponse<>();
+        response.setGlobalMessages(List.of(new GlobalMsg(Message.Type.ERROR, msg)));
+        return response;
+    }
+
+    public static <T> GlobalResponse<T> withResponseData(T data) {
+        GlobalResponse<T> response = new GlobalResponse<>();
+        response.setResponseData(data);
+        return response;
+    }
+
+    public static <T> GlobalResponse<T> withResponseDataPageable(T data, PaginationMeta meta) {
+        GlobalResponse<T> response = new GlobalResponse<>();
+        response.setResponseData(data);
+        response.setMeta(meta);
+        return response;
+    }
 }

@@ -12,6 +12,6 @@ import org.sofumar.portal.framework.data.msg.Message;
 @NoArgsConstructor
 public class FieldMsg {
     private Message.Type type;
+    private String field;
     private String message;
-    private String fieldName;
 }

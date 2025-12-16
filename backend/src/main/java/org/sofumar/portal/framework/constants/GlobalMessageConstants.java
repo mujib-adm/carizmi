@@ -2,7 +2,6 @@ package org.sofumar.portal.framework.constants;
 
 import org.sofumar.portal.framework.data.msg.ErrMessage;
 import org.sofumar.portal.framework.data.msg.StsMessage;
-//import org.springframework.http.HttpStatus;
 
 public class GlobalMessageConstants {
 

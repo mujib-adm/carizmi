@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import { setAuthToken } from "../apiclient/ApiClient";
 
 type AuthContextType = {
   token: string | null;
@@ -20,6 +21,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem("token"));
   const [role, setRole] = useState(localStorage.getItem("role") || "User");
+
+  useEffect(() => {
+    setAuthToken(token); // keep ApiClient in sync
+  }, [token]);
 
   const login = (newToken: string, newRole: string) => {
     localStorage.setItem("token", newToken);

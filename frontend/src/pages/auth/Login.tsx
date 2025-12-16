@@ -39,9 +39,14 @@ export default function Login() {
   return (
     <div className="auth-container">
       <form className="auth-form" onSubmit={handleSubmit(onSubmit)}>
-        <h2>Login</h2>
-        <FormField type="text" placeholder="Username" registerProps={register("username", { required: "Username is required" })} error={errors.username} />
-        <FormField type="password" placeholder="Password" registerProps={register("password", { required: "Password is required" })} error={errors.password} />
+        <h2 style={{ marginBottom: "50px" }}>Login</h2>
+
+        <div className="form_label"><label className="text_uppercase"> Username <span className="required_filed">*</span> </label></div>
+        <FormField type="text" placeholder="Enter username..." registerProps={register("username", { required: "Username is required" })} error={errors.username} />
+
+        <div className="form_label"><label className="text_uppercase"> Password <span className="required_filed">*</span> </label></div>
+        <FormField type="password" placeholder="Enter password..." registerProps={register("password", { required: "Password is required" })} error={errors.password} />
+        
         {globalMessages && <MessageBanner messages={globalMessages} />}
 
         <button className="global_btn" type="submit"> Login </button>

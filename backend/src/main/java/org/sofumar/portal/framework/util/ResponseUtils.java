@@ -5,6 +5,7 @@ import org.sofumar.portal.framework.data.msg.Message;
 import org.sofumar.portal.framework.data.response.FieldMsg;
 import org.sofumar.portal.framework.data.response.GlobalMsg;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
+import org.sofumar.portal.framework.data.response.PaginationMeta;
 import org.sofumar.portal.framework.vo.ValueObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,7 +15,7 @@ import java.util.Map;
 
 public class ResponseUtils {
 
-    public static void populateResponseFromVO(GlobalResponse response, ValueObject vo) {
+    public static void populateResponseFromVO(GlobalResponse<Void> response, ValueObject vo) {
         List<GlobalMsg> globalMessages = new java.util.ArrayList<>();
         List<FieldMsg> fieldMessages = new java.util.ArrayList<>();
 
@@ -27,12 +28,12 @@ public class ResponseUtils {
         }
         // Populate field messages
         for (Map.Entry<String, List<FieldMessage>> entry : vo.getFieldMessages().entrySet()) {
-            String fieldName = entry.getKey();
+            String field = entry.getKey();
             for (FieldMessage fieldMsg : entry.getValue()) {
                 fieldMessages.add(new FieldMsg(
                         fieldMsg.getMessage().getType(),
-                        fieldMsg.getMessage().getMessageString(),
-                        fieldName
+                        field,
+                        fieldMsg.getMessage().getMessageString()
                 ));
             }
         }
@@ -40,29 +41,59 @@ public class ResponseUtils {
         response.setFieldMessages(fieldMessages);
     }
 
-    public static ResponseEntity<GlobalResponse> ok(Message.Type type, String msg) {
-        GlobalResponse response = new GlobalResponse();
-        response.setGlobalMessages(List.of(new GlobalMsg(type, msg)));
-        return ResponseEntity.ok().body(response);
+    public static ResponseEntity<GlobalResponse<Void>> ok(String msg) {
+        return ResponseEntity.ok().body(GlobalResponse.ok(msg));
     }
 
-    public static ResponseEntity<GlobalResponse> withStatus(HttpStatus status, GlobalResponse response) {
+    public static ResponseEntity<GlobalResponse<Void>> badRequest(String msg) {
+        return ResponseEntity.badRequest().body(GlobalResponse.error(msg));
+    }
+
+    public static ResponseEntity<GlobalResponse<Void>> notFound(String msg) {
+        return withStatus(HttpStatus.NOT_FOUND, GlobalResponse.error(msg));
+    }
+
+    public static ResponseEntity<GlobalResponse<Void>> unauthorized(String msg) {
+        return withStatus(HttpStatus.UNAUTHORIZED, unauthorizedResp(msg));
+    }
+
+    public static GlobalResponse<Void> unauthorizedResp(String msg) {
+        GlobalResponse<Void> response = GlobalResponse.getInstance();
+        response.setGlobalMessages(List.of(new GlobalMsg(Message.Type.ERROR, "Unauthorized - " + msg)));
+        return response;
+    }
+
+    public static ResponseEntity<GlobalResponse<Void>> withStatus(HttpStatus status, GlobalResponse<Void> response) {
         return ResponseEntity.status(status).body(response);
     }
 
-    public static ResponseEntity<GlobalResponse> withStatus(HttpStatus status, Message.Type type, String msg) {
-        GlobalResponse response = new GlobalResponse();
+    public static ResponseEntity<GlobalResponse<Void>> withStatus(HttpStatus status, Message.Type type, String msg) {
+        GlobalResponse<Void> response = GlobalResponse.getInstance();
         response.setStatusCode(status.value());
         response.setStatusDesc(status.getReasonPhrase());
         response.setGlobalMessages(List.of(new GlobalMsg(type, msg)));
         return ResponseEntity.status(status).body(response);
     }
 
-    public static ResponseEntity<GlobalResponse> withMap(Map<String, String> map) {
-        GlobalResponse response = new GlobalResponse();
+    public static ResponseEntity<GlobalResponse<Void>> withMap(Map<String, String> map) {
+        GlobalResponse<Void> response = GlobalResponse.getInstance();
         response.setStatusCode(HttpStatus.OK.value());
         response.setStatusDesc(HttpStatus.OK.getReasonPhrase());
         response.setMap(map);
         return ResponseEntity.ok(response);
+    }
+
+    public static <T> ResponseEntity<GlobalResponse<T>> okWithData(T data) {
+        GlobalResponse<T> response = GlobalResponse.withResponseData(data);
+        return ResponseEntity.ok(response);
+    }
+
+    public static <T> ResponseEntity<GlobalResponse<T>> okWithDataPageable(T data, PaginationMeta meta) {
+        GlobalResponse<T> response = GlobalResponse.withResponseDataPageable(data, meta);
+        return ResponseEntity.ok(response);
+    }
+
+    public static <T> ResponseEntity<GlobalResponse<T>> badRequestWithData(String msg) {
+        return ResponseEntity.badRequest().body(GlobalResponse.error(msg));
     }
 }

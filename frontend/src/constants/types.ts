@@ -16,12 +16,14 @@ export enum MessageType {
 }
 
 // Generic API response structure
-export interface GlobalResponse<DataMap = Record<string, string>> {
+export interface GlobalResponse<T = any, DataMap = Record<string, string>> {
   statusCode: number;             // e.g. 200, 401, 409
   statusDesc: string;             // e.g. "OK", "Conflict"
   globalMessages: GlobalMsg[];    // list of global messages
   fieldMessages: FieldMsg[];      // list of field-specific messages
   map: DataMap;
+  responseData?: T;             // generic payload
+  meta?: PaginationMeta;        // pagination info
 }
 
 export interface GlobalMsg {
@@ -31,8 +33,15 @@ export interface GlobalMsg {
 
 export interface FieldMsg {
   type: MessageType;
+  field: string;
   message: string;
-  fieldName: string;
+}
+
+export interface PaginationMeta {
+  page: number;
+  pageSize: number;
+  totalRecords: number;
+  totalPages: number;
 }
 
 export interface NormalizedResponse {
@@ -67,3 +76,39 @@ export interface RegisterForm {
   username: string;
   password: string;
 }
+
+// Member types
+export type Member = {
+  memberID: number;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email?: string;
+  status: string;
+  joinDate?: string;
+  address1?: string;
+  address2?: string;
+  city?: string;
+  state: string;
+  zip?: string;
+};
+export type MemberRequestDto = Omit<Member, "memberID"> & { memberID?: number };
+
+export type MemberSearchParams = {
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  status?: string;
+  // email?: string;
+  // city?: string;
+  // state?: string;
+  // zip?: string;
+  // joinDateFrom?: string;
+  // joinDateTo?: string;
+
+  // pagination + sorting
+  page?: number;       // 0-based page index
+  size?: number;       // page size
+  sortField?: string;  // optional sort field
+  sortOrder?: "asc" | "desc"; // optional sort order
+};

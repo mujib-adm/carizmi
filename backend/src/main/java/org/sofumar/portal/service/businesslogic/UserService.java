@@ -7,7 +7,7 @@ import org.sofumar.portal.data.vo.UserVO;
 import org.springframework.http.ResponseEntity;
 
 public interface UserService extends BusinessLogic<UserVO> {
-    ResponseEntity<GlobalResponse> register(UserRequestDto requestDto);
+    ResponseEntity<GlobalResponse<Void>> register(UserRequestDto requestDto);
     ResponseEntity<?> login(String username, String password);
     void logout(String token);
 }

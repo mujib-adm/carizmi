@@ -1,83 +1,83 @@
 package org.sofumar.portal.controller;
 
-import org.sofumar.portal.data.vo.MemberVO;
-import org.sofumar.portal.repo.MemberRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.sofumar.portal.data.dto.MemberDto;
+import org.sofumar.portal.framework.data.response.GlobalResponse;
+import org.sofumar.portal.service.businesslogic.MemberService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
 @RequestMapping("/members")
+@Tag(name = "Members", description = "Member management APIs")
 public class MemberController {
-    private final MemberRepository repo;
 
-    public MemberController(MemberRepository repo) {
-        this.repo = repo;
+    private final MemberService memberService;
+
+    @Autowired
+    public MemberController(MemberService memberService) {
+        this.memberService = memberService;
     }
 
-    @GetMapping
-    public List<MemberVO> getAll() {
-        return repo.findAll();
-    }
-
-    @GetMapping("/{memberID}")
-    public ResponseEntity<MemberVO> getByMemberID(@PathVariable Integer memberID) {
-        return repo.findById(memberID).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
-    }
-
-    @PostMapping
+    @PostMapping("/add")
+    @Operation(summary = "Add a new member")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
-    public MemberVO create(@Validated @RequestBody MemberVO memberVO) {
-        return repo.save(memberVO);
+    public ResponseEntity<GlobalResponse<Void>> addMember(@RequestBody MemberDto requestDto) {
+        return memberService.addMember(requestDto);
     }
 
-    @PutMapping("/{memberID}")
+    @PutMapping("/update")
+    @Operation(summary = "Update an existing member")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
-    public ResponseEntity<MemberVO> update(@PathVariable Integer memberID, @Validated @RequestBody MemberVO updated) {
-        return repo.findById(memberID).map(existing -> {
-            updated.setMemberID(memberID);
-            return ResponseEntity.ok(repo.save(updated));
-        }).orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<GlobalResponse<Void>> updateMember(@RequestBody MemberDto requestDto) {
+        return memberService.updateMember(requestDto);
     }
 
-    @DeleteMapping("/{memberID}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> delete(@PathVariable Integer memberID) {
-        if (!repo.existsById(memberID)) return ResponseEntity.notFound().build();
-        repo.deleteById(memberID);
-        return ResponseEntity.noContent().build();
+    @DeleteMapping("delete/{memberID}")
+    @Operation(summary = "Delete member by ID")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
+    public ResponseEntity<GlobalResponse<Void>> deleteMember(@PathVariable Integer memberID) {
+        return memberService.deleteMember(memberID);
     }
 
-/*
-    @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
-    public Page<Member> list(@RequestParam Optional<String> q, Pageable pageable) {
-        return q.filter(s -> !s.isBlank()).map(s -> repo.search(s, pageable)).orElse(repo.findAll(pageable));
+    @GetMapping("get/{memberID}")
+    @Operation(summary = "Get member by ID")
+    public ResponseEntity<GlobalResponse<MemberDto>> getMember(@PathVariable Integer memberID) {
+        return memberService.getMember(memberID);
     }
 
-    @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
-    public Member create(@Valid @RequestBody Member m, Authentication auth) {
-//        m.setCreateUserID(auth.getName());
-        return repo.save(m);
+    @GetMapping("/search")
+    @Operation(summary = "Search members")
+    public ResponseEntity<GlobalResponse<List<MemberDto>>> searchMembers(
+            @RequestParam(required = false) String firstName,
+            @RequestParam(required = false) String lastName,
+            @RequestParam(required = false) String phone,
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String city,
+            @RequestParam(required = false) String state,
+            @RequestParam(required = false) String zip,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate joinDateFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate joinDateTo,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String sortField,
+            @RequestParam(required = false) String sortOrder) {
+        return memberService.searchMembers(firstName, lastName, phone, email, status, city, state, zip, joinDateFrom, joinDateTo, page, size, sortField, sortOrder);
     }
-
-    @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
-    public Member update(@PathVariable Integer id, @Valid @RequestBody Member m, Authentication auth) {
-        Member existing = repo.findById(id).orElseThrow();
-        BeanUtils.copyProperties(m, existing, "id","createUserID","createDateTime");
-//        existing.setChangeUserID(auth.getName());
-        return repo.save(existing);
-    }
-
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
-    public void delete(@PathVariable Integer id) {
-        repo.deleteById(id);
-    }
-*/
 }

@@ -13,6 +13,10 @@ spring:
     username: ${DB_USER:sofumar}
     password: ${DB_PASS:sofumar_pwd}
     driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:redis}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
   jpa:
     hibernate:
       ddl-auto: update
@@ -35,9 +39,9 @@ spring:
     #    locations: classpath:db/migration
   liquibase:
     enabled: false
-  redis:
-    host: ${SPRING_REDIS_HOST:redis}
-    port: ${SPRING_REDIS_PORT:6379}
+#  redis:
+#    host: ${SPRING_REDIS_HOST:redis}
+#    port: ${SPRING_REDIS_PORT:6379}
 #  sql:
 #    init:
 #      platform: mysql
