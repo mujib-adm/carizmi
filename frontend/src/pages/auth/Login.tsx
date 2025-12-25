@@ -1,12 +1,12 @@
+import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import "../../themes/css/auth-form.css";
-import { useForm } from "react-hook-form";
 
 import apiClient from "../../apiclient/ApiClient";
-import { GlobalResponse, LoginData, LoginForm } from "../../constants/types";
-import { MessageBanner } from "../../component/MessageBanner";
 import { FormField } from "../../component/FormField";
+import { MessageBanner } from "../../component/MessageBanner";
+import { GlobalResponse, LoginData, LoginForm } from "../../constants/types";
 import { useApiMessages } from "../../hook/ApiResponseHandler";
 
 export default function Login() {
@@ -46,7 +46,7 @@ export default function Login() {
 
         <div className="form_label"><label className="text_uppercase"> Password <span className="required_filed">*</span> </label></div>
         <FormField type="password" placeholder="Enter password..." registerProps={register("password", { required: "Password is required" })} error={errors.password} />
-        
+
         {globalMessages && <MessageBanner messages={globalMessages} />}
 
         <button className="global_btn" type="submit"> Login </button>

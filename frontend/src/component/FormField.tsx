@@ -1,7 +1,6 @@
-import React from "react";
-import { FieldError } from "react-hook-form";
-import { Tooltip } from "antd";
 import { ExclamationCircleOutlined } from "@ant-design/icons";
+import { Tooltip } from "antd";
+import { FieldError } from "react-hook-form";
 
 interface FormFieldProps {
     type?: string; // "text", "email", "password" etc.
@@ -12,14 +11,14 @@ interface FormFieldProps {
     options?: { value: string; label: string }[]; // for select dropdowns
 }
 
-export const FormField: React.FC<FormFieldProps> = ({
+export function FormField({
     type = "text",
     placeholder,
     registerProps,
     error,
     as = "input",
     options = [],
-}) => {
+}: FormFieldProps) {
     return (
         <Tooltip title={error?.message} placement="right" open={!!error}>
             <div style={{ position: "relative", marginBottom: "1rem", display: "flex", alignItems: "center" }}>

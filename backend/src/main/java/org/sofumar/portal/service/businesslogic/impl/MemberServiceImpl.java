@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sofumar.portal.constants.FieldConstants;
 import org.sofumar.portal.data.dto.MemberDto;
+import org.sofumar.portal.data.dto.MemberLookupDto;
 import org.sofumar.portal.data.transformer.MemberDtoTransformer;
 import org.sofumar.portal.data.transformer.MemberVOTransformer;
 import org.sofumar.portal.data.vo.MemberVO;
@@ -32,6 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.sofumar.portal.constants.MessagesConstants.RECORD_ADDED;
+import static org.sofumar.portal.constants.MessagesConstants.RECORD_DELETED;
 import static org.sofumar.portal.constants.MessagesConstants.RECORD_UPDATED;
 import static org.sofumar.portal.constants.MessagesConstants.REQUIRED_FIELD;
 
@@ -65,7 +67,6 @@ public class MemberServiceImpl extends AbstractBusinessLogic<MemberVO, MemberRep
     @Override
     @Transactional
     public ResponseEntity<GlobalResponse<Void>> addMember(MemberDto requestDto) {
-        logger.info("Adding new member: {} {}", requestDto.getFirstName(), requestDto.getLastName());
         MemberVO memberVO = voTransformer.transform(requestDto);
         validator.validate(memberVO);
         MemberVO savedMember = add(memberVO);
@@ -76,8 +77,6 @@ public class MemberServiceImpl extends AbstractBusinessLogic<MemberVO, MemberRep
     @Override
     @Transactional
     public ResponseEntity<GlobalResponse<Void>> updateMember(MemberDto requestDto) {
-        logger.info("Updating member with ID: {}", requestDto.getMemberID());
-
         if (requestDto.getMemberID() == null) {
             return ResponseUtils.badRequest(REQUIRED_FIELD.addMessageArgs(LabelUtils.toLabel(FieldConstants.MEMBER_ID)).getMessageString());
         }
@@ -88,15 +87,13 @@ public class MemberServiceImpl extends AbstractBusinessLogic<MemberVO, MemberRep
         MemberVO updatedMember = voTransformer.transformForUpdate(requestDto, existingMember);
         validator.validateForUpdate(updatedMember);
         MemberVO savedMember = update(updatedMember);
-        logger.info("Member updated successfully: {}", savedMember.getMemberID());
+        logger.info("Member updated successfully, memberID: {}", savedMember.getMemberID());
         return ResponseUtils.ok(RECORD_UPDATED.addMessageArgs("Member").getMessageString());
     }
 
     @Override
     @Transactional
     public ResponseEntity<GlobalResponse<Void>> deleteMember(Integer memberID) {
-        logger.info("Deleting member with ID: {}", memberID);
-
         if (memberID == null) {
             return ResponseUtils.badRequest(REQUIRED_FIELD.addMessageArgs(LabelUtils.toLabel(FieldConstants.MEMBER_ID)).getMessageString());
         }
@@ -105,8 +102,8 @@ public class MemberServiceImpl extends AbstractBusinessLogic<MemberVO, MemberRep
                 .orElseThrow(() -> new RecordNotFoundException("Member not found with ID: " + memberID));
 
         delete(existingMember);
-        logger.info("Member deleted successfully: {}", memberID);
-        return ResponseUtils.ok("Member deleted successfully.");
+        logger.info("Member deleted successfully, memberID: {}", memberID);
+        return ResponseUtils.ok(RECORD_DELETED.addMessageArgs("Member").getMessageString());
     }
 
     @Override
@@ -117,15 +114,20 @@ public class MemberServiceImpl extends AbstractBusinessLogic<MemberVO, MemberRep
                 firstName, lastName, status, city, state);
 
         List<Specification<MemberVO>> specList = new ArrayList<>();
-        if (StringUtils.isNotBlank(firstName)) specList.add(MemberSpecifications.hasFirstName(firstName));
-        if (StringUtils.isNotBlank(lastName)) specList.add(MemberSpecifications.hasFirstName(lastName));
-        if (StringUtils.isNotBlank(phone)) specList.add(MemberSpecifications.hasFirstName(phone));
-        if (StringUtils.isNotBlank(email)) specList.add(MemberSpecifications.hasFirstName(email));
-        if (StringUtils.isNotBlank(status)) specList.add(MemberSpecifications.hasFirstName(status));
-        if (StringUtils.isNotBlank(city)) specList.add(MemberSpecifications.hasFirstName(city));
-        if (StringUtils.isNotBlank(state)) specList.add(MemberSpecifications.hasFirstName(state));
-        if (StringUtils.isNotBlank(zip)) specList.add(MemberSpecifications.hasFirstName(zip));
-        if (joinDateFrom != null && joinDateTo != null) specList.add(MemberSpecifications.joinDateBetween(joinDateFrom, joinDateTo));
+        if (StringUtils.isNotBlank(firstName))
+            specList.add(MemberSpecifications.hasFirstName(firstName));
+        if (StringUtils.isNotBlank(lastName))
+            specList.add(MemberSpecifications.hasLastName(lastName));
+        if (StringUtils.isNotBlank(phone))
+            specList.add(MemberSpecifications.hasPhone(phone));
+        if (StringUtils.isNotBlank(email))
+            specList.add(MemberSpecifications.hasEmail(email));
+        if (StringUtils.isNotBlank(status))
+            specList.add(MemberSpecifications.hasState(status));
+
+        if (joinDateFrom != null && joinDateTo != null)
+            specList.add(MemberSpecifications.joinDateBetween(joinDateFrom, joinDateTo));
+
         Specification<MemberVO> spec = Specification.allOf(specList);
 
         Sort sort = Sort.unsorted();
@@ -153,5 +155,23 @@ public class MemberServiceImpl extends AbstractBusinessLogic<MemberVO, MemberRep
                 .orElseThrow(() -> new RecordNotFoundException("Member not found with ID: " + memberID));
 
         return ResponseUtils.okWithData(dtoTransformer.transform(member));
+    }
+
+    @Override
+    public ResponseEntity<GlobalResponse<List<MemberLookupDto>>> lookupMembers(String query) {
+        Specification<MemberVO> spec = MemberSpecifications.lookup(query);
+        PageRequest pageRequest = PageRequest.of(0, 10, Sort.by(FieldConstants.FIRST_NAME, FieldConstants.LAST_NAME));
+        Page<MemberVO> members = memberRepo.findAll(spec, pageRequest);
+
+        List<MemberLookupDto> dtos = members.getContent().stream()
+                .map(m -> MemberLookupDto.builder()
+                        .memberID(m.getMemberID())
+                        .firstName(m.getFirstName())
+                        .lastName(m.getLastName())
+                        .phone(m.getPhone())
+                        .build())
+                .collect(java.util.stream.Collectors.toList());
+
+        return ResponseUtils.okWithData(dtos);
     }
 }

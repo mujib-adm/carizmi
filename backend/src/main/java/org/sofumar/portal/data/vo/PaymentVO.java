@@ -55,8 +55,11 @@ public class PaymentVO extends ValueObject {
     @Column(name = FieldConstants.DATE_RECEIVED, nullable = false)
     private LocalDate dateReceived;
 
-    @Column(name = FieldConstants.PERIOD)
-    private String period; // required for Membership fee
+    @Column(name = FieldConstants.YEAR)
+    private Integer year;
+
+    @Column(name = FieldConstants.QUARTER)
+    private Integer quarter;
 
     @NotBlank
     @Column(name = FieldConstants.METHOD_OF_PAYMENT, nullable = false)

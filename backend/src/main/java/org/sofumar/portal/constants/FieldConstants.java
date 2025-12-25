@@ -33,8 +33,9 @@ public final class FieldConstants {
     public static final String DATE_OF_EXPENSE = "dateOfExpense";
     public static final String FEE_TYPE = "feeType";
     public static final String AMOUNT = "amount";
-    public static final String PERIOD = "period";
     public static final String METHOD_OF_PAYMENT = "methodOfPayment";
+    public static final String YEAR = "year";
+    public static final String QUARTER = "quarter";
     public static final String CATEGORY = "category";
     public static final String DESCRIPTION = "description";
     public static final String SETTING_TYPE = "settingType";

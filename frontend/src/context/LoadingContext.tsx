@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useEffect, useState } from "react";
 import GradientSpinner from "./GradientSpinnerContext";
 
 type LoadingContextType = {
@@ -32,7 +32,7 @@ export const setGlobalLoading = (v: boolean) => {
   }
 };
 
-export const LoadingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export function LoadingProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
 
   // Register the setter once so external code can call setGlobalLoading(...)
@@ -51,13 +51,13 @@ export const LoadingProvider: React.FC<{ children: React.ReactNode }> = ({ child
   );
 };
 
-export const useLoading = () => useContext(LoadingContext);
-
-const LoadingOverlay: React.FC<{ visible: boolean }> = ({ visible }) => (
-  <div className={`overlay ${visible ? "fade-in" : "fade-out"}`}>
-    {visible && <GradientSpinner />}
-  </div>
-);
+function LoadingOverlay({ visible }: { visible: boolean }) {
+  return (
+    <div className={`overlay ${visible ? "fade-in" : "fade-out"}`}>
+      {visible && <GradientSpinner />}
+    </div>
+  );
+}
 
 // CSS styles (inject once)
 const styles = `

@@ -1,8 +1,8 @@
-import React from "react";
-import { FieldError, Controller, Control } from "react-hook-form";
-import { DatePicker, Select, Tooltip } from "antd";
 import { ExclamationCircleOutlined } from "@ant-design/icons";
+import { DatePicker, Select, Tooltip } from "antd";
 import dayjs from "dayjs";
+import React from "react";
+import { Control, Controller, FieldError } from "react-hook-form";
 
 interface FormFieldProps {
   // common
@@ -23,7 +23,7 @@ interface FormFieldProps {
   style?: React.CSSProperties;
 }
 
-export const FormFieldModal: React.FC<FormFieldProps> = ({
+export function ModalField({
   name,
   label,
   placeholder,
@@ -36,7 +36,7 @@ export const FormFieldModal: React.FC<FormFieldProps> = ({
   allowClear = true,
   disabled = false,
   style,
-}) => {
+}: FormFieldProps) {
   const showError = !!error;
   const tooltipTitle = error?.message;
 

@@ -22,18 +22,15 @@ public class OverdueService {
 
     public List<MemberVO> overdueMembers(LocalDate asOfDate) {
         // Determine current quarter and due date
+        int year = asOfDate.getYear();
         int month = asOfDate.getMonthValue();
-        String period = switch ((month - 1) / 3) {
-            case 0 -> "1st quarter";
-            case 1 -> "2nd quarter";
-            case 2 -> "3rd quarter";
-            default -> "4th quarter";
-        };
-        LocalDate dueDate = switch (period) {
-            case "1st quarter" -> LocalDate.of(asOfDate.getYear(), 1, 15);
-            case "2nd quarter" -> LocalDate.of(asOfDate.getYear(), 4, 15);
-            case "3rd quarter" -> LocalDate.of(asOfDate.getYear(), 7, 15);
-            default -> LocalDate.of(asOfDate.getYear(), 10, 15);
+        int quarter = ((month - 1) / 3) + 1;
+
+        LocalDate dueDate = switch (quarter) {
+            case 1 -> LocalDate.of(year, 1, 15);
+            case 2 -> LocalDate.of(year, 4, 15);
+            case 3 -> LocalDate.of(year, 7, 15);
+            default -> LocalDate.of(year, 10, 15);
         };
 
         List<MemberVO> all = members.findAll().stream()
@@ -42,9 +39,9 @@ public class OverdueService {
 
         return all.stream().filter(m -> {
             List<PaymentVO> paymentVOList = payments.findAll(PaymentSpecifications.hasMemberId(m.getMemberID())
-                    .and(PaymentSpecifications.hasPeriod(period))
-                    .and(PaymentSpecifications.hasFeeType("Membership fee"))
-            );
+                    .and(PaymentSpecifications.hasYear(year))
+                    .and(PaymentSpecifications.hasQuarter(quarter))
+                    .and(PaymentSpecifications.hasFeeType("Membership fee")));
             boolean paidOnTime = paymentVOList.stream().anyMatch(p -> !p.getDateReceived().isAfter(dueDate));
             return !paidOnTime && asOfDate.isAfter(dueDate);
         }).toList();

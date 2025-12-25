@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import Login from "./auth/Login";
 import Logout from "./auth/Logout";
 import Register from "./auth/Register";
@@ -13,9 +13,11 @@ import Dashboard from "./dashboard/Dashboard";
 // import Unauthorized from "./pages/Unauthorized";
 import { useAuth } from "../context/AuthContext";
 import MemberPage from "./member/MemberPage";
+import PaymentPage from "./payment/PaymentPage";
+import SystemSettingsPage from "./settings/SystemSettingsPage";
 
 export default function Router() {
-  const { token, role, isLoading } = useAuth();
+  const { token, isLoading } = useAuth();
 
 if (isLoading) return <div>Loading...</div>;
 
@@ -35,8 +37,10 @@ if (isLoading) return <div>Loading...</div>;
       <Route path="/register" element={<Register />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/members" element={<MemberPage />} />
+      <Route path="/payments" element={<PaymentPage />} /> 
+      <Route path="/settings" element={<SystemSettingsPage />} />
 
       <Route path="/logout" element={<Logout />} />
-    </Routes>
+    </Routes >
   );
 }

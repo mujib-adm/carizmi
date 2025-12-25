@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import Sidebar from "../../component/Sidebar";
 import "./Dashboard.css";
 
 type Metrics = {
@@ -20,7 +21,6 @@ type Payment = {
 export default function Dashboard() {
   const [metrics, setMetrics] = useState<Metrics>({ total: 0, active: 0, overdue: 0, disqualified: 0 });
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [role, setRole] = useState(localStorage.getItem("role") || "USER");
 
   useEffect(() => {
     fetch("/api/dashboard/metrics", {
@@ -40,18 +40,7 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard">
-      <nav className="sidebar">
-        <ul>
-          <li><Link to="/dashboard">Dashboard</Link></li>
-          <li><Link to="/members">Members</Link></li>
-          <li><Link to="/payments">Payments</Link></li>
-          <li><Link to="/expenses">Expenses</Link></li>
-          <li><Link to="/reporting">Reporting</Link></li>
-          <li><Link to="/settings">System Settings</Link></li>
-          {role === "ADMIN" && <li><Link to="/users">Users</Link></li>}
-          <li><Link to="/logout">Logout</Link></li>
-        </ul>
-      </nav>
+      <Sidebar />
 
       <main className="content">
         <h1>Dashboard</h1>

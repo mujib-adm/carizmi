@@ -1,7 +1,7 @@
 package org.sofumar.portal.constants;
 
-import org.sofumar.portal.data.message.ErrorMessage;
-import org.sofumar.portal.data.message.StatusMessage;
+import org.sofumar.portal.framework.data.msg.ErrMessage;
+import org.sofumar.portal.framework.data.msg.StsMessage;
 
 public final class MessagesConstants {
 
@@ -10,13 +10,15 @@ public final class MessagesConstants {
     }
 
     // Status Messages
-    public static final StatusMessage RECORD_ADDED = new StatusMessage("STS0001", "{0} added successfully.");
-    public static final StatusMessage RECORD_UPDATED = new StatusMessage("STS0002", "{0} updated successfully.");
+    public static final StsMessage RECORD_ADDED = new StsMessage("STS0001", "{0} added successfully.");
+    public static final StsMessage RECORD_UPDATED = new StsMessage("STS0002", "{0} updated successfully.");
+    public static final StsMessage RECORD_DELETED = new StsMessage("STS0003", "{0} deleted successfully.");
 
     // Error Messages
-    public static final ErrorMessage REQUIRED_FIELD = new ErrorMessage("ERR0001", "{0} is required.");
-    public static final ErrorMessage INVALID_VALUE = new ErrorMessage("ERR0002", "Invalid value.");
-    public static final ErrorMessage INVALID_USERNAME = new ErrorMessage("ERR0003", "Invalid Username. Must start with a letter and be 4 characters long minimum, containing only letters, digits, and underscores.");
-    public static final ErrorMessage INVALID_PASSWORD = new ErrorMessage("ERR0004", "Weak password. Must include lowercase, uppercase, and digit/special character.");
+    public static final ErrMessage REQUIRED_FIELD = new ErrMessage("ERR0001", "{0} is required.");
+    public static final ErrMessage INVALID_VALUE = new ErrMessage("ERR0002", "Invalid value.");
+    public static final ErrMessage INVALID_USERNAME = new ErrMessage("ERR0003", "Invalid Username. Must start with a letter and be 4 characters long minimum, containing only letters, digits, and underscores.");
+    public static final ErrMessage INVALID_PASSWORD = new ErrMessage("ERR0004", "Weak password. Must include lowercase, uppercase, and digit/special character.");
+    public static final ErrMessage ERR_PAYMENT_ALREADY_EXISTS = new ErrMessage("ERR0004", "Payment for {0}-Q{1} already exists.");
 
 }

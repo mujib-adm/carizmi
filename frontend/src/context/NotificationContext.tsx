@@ -3,7 +3,7 @@ import { useNotificationWrapper } from "../util/NotificationWrapper";
 
 const NotificationContext = createContext<any>(null);
 
-export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const notify = useNotificationWrapper();
 
   return (

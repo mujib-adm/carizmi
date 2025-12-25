@@ -1,0 +1,128 @@
+/* 
+   Note: Ant Design Select applies styles to internal .ant-select-selector. 
+   We target the wrapper via the className passed to Select, and also use deep selectors 
+   or global overrides if necessary, but strictly scoped.
+*/
+
+.member-lookup-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.member-lookup-select {
+    width: 100%;
+}
+
+/* persistent prefix icon */
+.member-lookup-prefix-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    color: #8c8c8c;
+    font-size: 16px;
+    pointer-events: none;
+    /* Let clicks pass through to input */
+}
+
+/* Override the selector border and shadow to match the user's robust design intent */
+.member-lookup-select .ant-select-selector {
+    border: 1px solid #ced4da !important;
+    border-radius: 35px !important;
+    box-shadow: 0 5px 5px rgba(182, 182, 182, 0.05) !important;
+    transition: border-color 0.3s, background-color 0.3s !important;
+    padding-left: 30px !important;
+    /* Make room for the prefix icon */
+}
+
+/* Force the search input to have padding left so text doesn't overlap icon */
+/* We MUST set the input background to transparent so it reveals the rounded container's background color */
+.member-lookup-select .ant-select-selection-search-input {
+    padding-left: 10px !important;
+    background-color: transparent !important;
+}
+
+/* Ensure selected item text aligns with placeholder and search input */
+.member-lookup-select .ant-select-selection-item {
+    padding-left: 10px !important;
+}
+
+/* Adjust the placeholder to not duplicate the padding since the container has it, OR adjust it if needed. 
+   Ant selector padding affects the container. The placeholder is absolute. 
+   Usually padding on selector is enough. */
+
+.member-lookup-select:hover .ant-select-selector {
+    border-color: #323232 !important;
+}
+
+.member-lookup-select.ant-select-focused .ant-select-selector {
+    border-color: #323232 !important;
+    box-shadow: 0 0 0 1px rgba(50, 50, 50, 0.2) !important;
+    background-color: #e9ecef !important;
+    /* GREY BACKGROUND FILLING THE CURVES */
+}
+
+/* Robust Error State */
+.member-lookup-select.ant-select-status-error .ant-select-selector {
+    border-color: #ff4d4f !important;
+    background-color: #fff2f0 !important;
+    /* Subtle red bg for extra robustness */
+}
+
+.member-lookup-select.ant-select-status-error.ant-select-focused .ant-select-selector {
+    box-shadow: 0 0 0 1px #ff4d4f !important;
+}
+
+/* Custom Placeholder Styles */
+.member-lookup-placeholder {
+    display: flex;
+    align-items: center;
+    color: #8c8c8c;
+    margin-left: 10px;
+}
+
+.member-lookup-search-icon {
+    margin-right: 8px;
+}
+
+/* Suffix Icon */
+.member-lookup-suffix-icon {
+    font-size: 18px;
+    color: #8c8c8c;
+}
+
+/* Option Render Styles */
+.member-option-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0;
+}
+
+.member-option-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.member-name {
+    font-weight: 600;
+    font-size: 15px;
+    color: #262626;
+    line-height: 1.1;
+}
+
+.member-details {
+    font-size: 12px;
+    color: #8c8c8c;
+    line-height: 1.1;
+}
+
+.member-id-mono {
+    font-family: monospace;
+}
+
+.member-tag {
+    margin: 0 !important;
+}

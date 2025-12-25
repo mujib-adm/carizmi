@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
 import apiClient from "../../apiclient/ApiClient";
 import { GlobalResponse } from "../../constants/types";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Logout() {
   const navigate = useNavigate();
@@ -26,4 +26,5 @@ export default function Logout() {
     doLogout();
   }, [logout, navigate]);
 
+  return <div>Logging out...</div>;
 }

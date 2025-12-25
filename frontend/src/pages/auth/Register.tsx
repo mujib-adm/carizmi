@@ -1,14 +1,14 @@
+import { useForm } from "react-hook-form";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import "../../themes/css/auth-form.css";
-import { useForm } from "react-hook-form";
 
 import apiClient from "../../apiclient/ApiClient";
+import { FormField } from "../../component/FormField";
+import { MessageBanner } from "../../component/MessageBanner";
 import { GlobalResponse, MessageType, RegisterForm } from "../../constants/types";
 import { useNotification } from "../../context/NotificationContext";
-import { FormField } from "../../component/FormField";
 import { useApiMessages } from "../../hook/ApiResponseHandler";
-import { MessageBanner } from "../../component/MessageBanner";
 
 export default function Register() {
   const { token, isLoading } = useAuth();

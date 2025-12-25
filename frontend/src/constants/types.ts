@@ -44,13 +44,6 @@ export interface PaginationMeta {
   totalPages: number;
 }
 
-export interface NormalizedResponse {
-  statusCode?: number;
-  statusDesc?: string;
-  globalMessages: string[];              // ["Invalid username or password."]
-  fieldMessages: Record<string, string>; // { "email", "Email already exists" }
-}
-
 // Login response payload
 export interface LoginData {
   token: string;
@@ -99,16 +92,54 @@ export type MemberSearchParams = {
   lastName?: string;
   phone?: string;
   status?: string;
-  // email?: string;
-  // city?: string;
-  // state?: string;
-  // zip?: string;
-  // joinDateFrom?: string;
-  // joinDateTo?: string;
-
   // pagination + sorting
   page?: number;       // 0-based page index
   size?: number;       // page size
   sortField?: string;  // optional sort field
   sortOrder?: "asc" | "desc"; // optional sort order
+};
+
+export type MemberLookupResponse = {
+  memberID: number;
+  firstName: string;
+  lastName: string;
+  phone: string;
+};
+
+// Payment types
+export type Payment = {
+  paymentID: number;
+  memberID: number;
+  memberFullName: string;
+  feeType: string;
+  amount: number;
+  dateReceived: string;
+  methodOfPayment: string;
+  year?: number;
+  quarter?: number;
+};
+
+export type PaymentRequestDto = Omit<Payment, "paymentID"> & { paymentID?: number };
+
+export type PaymentSearchParams = {
+  memberID?: number;
+  feeType?: string;
+  year?: number;
+  quarter?: number;
+  dateFrom?: string;
+  dateTo?: string;
+  dateRange?: string;
+  // pagination + sorting
+  page?: number;       // 0-based page index
+  size?: number;       // page size
+  sortField?: string;  // optional sort field
+  sortOrder?: "asc" | "desc"; // optional sort order
+};
+
+// System Setting types
+export type SystemSetting = {
+  systemSettingsID: number;
+  settingType: string;
+  settingKey: string;
+  settingValue: string;
 };

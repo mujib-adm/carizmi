@@ -1,16 +1,19 @@
-import { useState } from "react";
 import { AxiosError } from "axios";
+import { useCallback, useState } from "react";
 import { FieldValues, Path, UseFormSetError } from "react-hook-form";
-import { GlobalResponse, GlobalMsg } from "../constants/types";
+import { GlobalMsg, GlobalResponse } from "../constants/types";
 
-export function useApiMessages<T extends FieldValues>(setError?: UseFormSetError<T>) {
+export function useApiMessages<T extends FieldValues>(
+  setError?: UseFormSetError<T>,
+  onFieldError?: (field: string, message: string) => void
+) {
   const [globalMessages, setGlobalMessages] = useState<GlobalMsg[] | null>(null);
 
   /**
    * Handle a successful API response.
    * Extracts globalMessages for display.
    */
-  const handleResponse = <R>(response: GlobalResponse<R>) => {
+  const handleResponse = useCallback(<R>(response: GlobalResponse<R>) => {
     if (response) {
       setGlobalMessages(
         response.globalMessages?.map((msg) => ({
@@ -19,22 +22,27 @@ export function useApiMessages<T extends FieldValues>(setError?: UseFormSetError
         })) ?? null
       );
     }
-  };
+  }, []);
 
   /**
    * Handle an API error response.
    * Maps fieldMessages into react-hook-form errors if setError is provided,
-   * and extracts globalMessages for display.
+   * or calls onFieldError callback if provided.
+   * Also extracts globalMessages for display.
    */
-  const handleError = (error: AxiosError<GlobalResponse<any>>) => {
+  const handleError = useCallback((error: AxiosError<GlobalResponse<any>>) => {
     if (error?.response?.data) {
       const data = error.response.data;
 
-      // Map backend fieldMessages to RHF errors
-      if (setError && data.fieldMessages) {
+      // Map backend fieldMessages to RHF errors or Generic Callback
+      if (data.fieldMessages) {
         data.fieldMessages.forEach((fm) => {
           if (fm.field && fm.message) {
-            setError(fm.field as Path<T>, { type: "server", message: fm.message, });
+            if (setError) {
+              setError(fm.field as Path<T>, { type: "server", message: fm.message });
+            } else if (onFieldError) {
+              onFieldError(fm.field, fm.message);
+            }
           }
         });
       }
@@ -47,10 +55,10 @@ export function useApiMessages<T extends FieldValues>(setError?: UseFormSetError
         })) ?? null
       );
     }
-  };
+  }, [setError, onFieldError]);
 
   /** Reset all messages */
-  const resetMessages = () => setGlobalMessages(null);
+  const resetMessages = useCallback(() => setGlobalMessages(null), []);
 
   return { globalMessages, handleResponse, handleError, resetMessages };
 }

@@ -1,6 +1,6 @@
 import axios, { AxiosError, AxiosResponse } from "axios";
-import { setGlobalLoading } from "../context/LoadingContext";
 import { GlobalResponse } from "../constants/types";
+import { setGlobalLoading } from "../context/LoadingContext";
 
 // const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8080"; // use for real environments
 const API_BASE = (import.meta as any).env?.VITE_API_URL || "http://localhost:8080"; // use for Vite

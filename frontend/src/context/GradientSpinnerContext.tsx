@@ -1,5 +1,3 @@
-import React from "react";
-
 interface GradientSpinnerProps {
     size?: number;        // diameter in px
     strokeWidth?: number; // thickness of the ring
@@ -7,12 +5,12 @@ interface GradientSpinnerProps {
     speed?: number;       // animation duration in seconds
 }
 
-const GradientSpinner: React.FC<GradientSpinnerProps> = ({
+export default function GradientSpinner({
     size = 80,
     strokeWidth = 18,
     colors = ["#FFFFFF", "#AEDF88", "#1E5631"],
     speed = 1.2,
-}) => {
+}: GradientSpinnerProps) {
     const radius = (size - strokeWidth) / 2;
     const circumference = 2 * Math.PI * radius;
 
@@ -50,8 +48,6 @@ const GradientSpinner: React.FC<GradientSpinnerProps> = ({
         </svg>
     );
 };
-
-export default GradientSpinner;
 
 // CSS (global or module)
 const styles = `

@@ -2,6 +2,7 @@ package org.sofumar.portal.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.sofumar.portal.data.dto.MemberLookupDto;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.sofumar.portal.data.dto.MemberDto;
@@ -79,5 +80,12 @@ public class MemberController {
             @RequestParam(required = false) String sortField,
             @RequestParam(required = false) String sortOrder) {
         return memberService.searchMembers(firstName, lastName, phone, email, status, city, state, zip, joinDateFrom, joinDateTo, page, size, sortField, sortOrder);
+    }
+
+    @GetMapping("/lookup")
+    @Operation(summary = "Lookup members by name or ID (fuzzy search)")
+    public ResponseEntity<GlobalResponse<List<MemberLookupDto>>> lookupMembers(
+            @RequestParam String query) {
+        return memberService.lookupMembers(query);
     }
 }
