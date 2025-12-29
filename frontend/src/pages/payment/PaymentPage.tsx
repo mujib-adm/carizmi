@@ -1,16 +1,17 @@
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { Button, Card, DatePicker, Modal, Select, Space, Table, Typography } from 'antd';
 import { ColumnsType } from 'antd/es/table';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { addPayment, deletePayment, updatePayment } from '../../apiclient/paymentApi';
-import { getSettingsByKey } from '../../apiclient/systemSettingsApi';
 import { MessageBanner } from '../../component/MessageBanner';
 import PaymentModal from '../../component/PaymentModal';
 import SearchFilterBar from '../../component/SearchFilterBar.jsx';
 import Sidebar from "../../component/Sidebar";
+import { FEE_TYPE, PAYMENT_METHOD } from "../../constants/referenceConstants";
 import { paymentSearchFiltersConfig } from '../../constants/paymentSearchFiltersConfig.ts';
 import { MessageType, Payment, PaymentSearchParams } from '../../constants/types';
 import { useNotification } from "../../context/NotificationContext";
+import { useReference } from "../../context/ReferenceContext";
 import { useApiMessages } from '../../hook/ApiResponseHandler';
 import { usePaginatedPayments } from '../../hook/PaginatedPayments';
 
@@ -32,25 +33,14 @@ export default function PaymentPage() {
     const [selectedRecord, setSelectedRecord] = useState<any>(null);
 
     // Ref Data
-    const [feeTypes, setFeeTypes] = useState<any[]>([]);
-    const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
+    const { getReference, toDisplay } = useReference();
+    const feeTypes = getReference(FEE_TYPE).map(r => ({ value: r.code, label: r.display }));
+    const paymentMethods = getReference(PAYMENT_METHOD).map(r => ({ value: r.code, label: r.display }));
 
     // Initial load
     useEffect(() => {
-        fetchRefData();
         fetchPayments().catch(handleError);
     }, []);
-
-    const fetchRefData = async () => {
-        try {
-            const feeRes = await getSettingsByKey('feeType');
-            const pmRes = await getSettingsByKey('paymentMethod');
-            setFeeTypes(feeRes.responseData || []);
-            setPaymentMethods(pmRes.responseData || []);
-        } catch (e: any) {
-            handleError(e);
-        }
-    };
 
     const handleSearch = async () => {
         resetMessages();
@@ -99,32 +89,29 @@ export default function PaymentPage() {
     };
 
     const handleSubmit = async (values: any) => {
-        try {
-            const resp = selectedRecord?.paymentID ? await updatePayment(values) : await addPayment(values);
+        const resp = selectedRecord?.paymentID ? await updatePayment(values) : await addPayment(values);
 
-            if (resp.globalMessages?.[0]?.type === MessageType.SUCCESS) {
-                notify.success({ message: "Success", description: resp.globalMessages[0].message });
-            }
-            setModalOpenInd(false);
-            setSelectedRecord(null);
-            resetMessages();
-            fetchPayments(filters);
-        } catch (e: any) {
-            handleError(e);
+        if (resp.globalMessages?.[0]?.type === MessageType.SUCCESS) {
+            notify.success({ message: "Success", description: resp.globalMessages[0].message });
         }
+        setModalOpenInd(false);
+        setSelectedRecord(null);
+        resetMessages();
+        fetchPayments(filters);
     };
 
     const columns: ColumnsType<Payment> = [
         { title: 'Member', dataIndex: 'memberFullName', key: 'memberFullName' },
-        { title: 'Fee Type', dataIndex: 'feeType', key: 'feeType' },
+        {
+            title: 'Fee Type',
+            dataIndex: 'feeType',
+            key: 'feeType',
+            render: (code: string) => toDisplay(FEE_TYPE, code)
+        },
         { title: 'Amount', dataIndex: 'amount', key: 'amount', render: (val: any) => `$${val}` },
         { title: 'Date', dataIndex: 'dateReceived', key: 'dateReceived' },
-        { title: 'Method', dataIndex: 'methodOfPayment', key: 'methodOfPayment' },
-        {
-            title: 'Period',
-            key: 'period',
-            render: (_, record) => record.year && record.quarter ? `${record.year}-Q${record.quarter}` : ''
-        },
+        { title: 'Method', dataIndex: 'methodOfPayment', key: 'methodOfPayment', render: (code: string) => toDisplay(PAYMENT_METHOD, code) },
+        { title: 'Period', key: 'period', render: (_, record) => record.year && record.quarter ? `${record.year}-Q${record.quarter}` : '' },
         {
             title: 'Action',
             key: 'action',
@@ -137,17 +124,27 @@ export default function PaymentPage() {
         },
     ];
 
+    // Dynamic search config for fee types (Reference data)
+    const searchConfig = useMemo(() => {
+        return paymentSearchFiltersConfig.map(filter => {
+            if (filter.name === 'feeType') {
+                return { ...filter, options: feeTypes };
+            }
+            return filter;
+        });
+    }, [feeTypes]);
+
     return (
         <div className="dashboard">
             <Sidebar />
             <main className="content">
                 <div style={{ padding: 24 }}>
-                    <div className="member-header">
+                    <div className="content-title">
                         <Title level={3}>Payments</Title>
                     </div>
 
                     <Card style={{ marginBottom: 16 }}>
-                        <SearchFilterBar config={paymentSearchFiltersConfig as any} filters={filters} onChange={setFilters} onSearch={handleSearch} onAdd={openAdd} />
+                        <SearchFilterBar config={searchConfig as any} filters={filters} onChange={setFilters} onSearch={handleSearch} onAdd={openAdd} />
                     </Card>
 
                     {globalMessages && <MessageBanner messages={globalMessages} />}

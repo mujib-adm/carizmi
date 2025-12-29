@@ -8,8 +8,10 @@ import { MessageBanner } from "../../component/MessageBanner";
 import SearchFilterBar from "../../component/SearchFilterBar";
 import Sidebar from "../../component/Sidebar";
 import { memberSearchFiltersConfig } from "../../constants/memberSearchFiltersConfig";
+import { MEMBER_STATUS } from "../../constants/referenceConstants";
 import { Member, MemberRequestDto, MemberSearchParams, MessageType } from "../../constants/types";
 import { useNotification } from "../../context/NotificationContext";
+import { useReference } from "../../context/ReferenceContext";
 import { useApiMessages } from "../../hook/ApiResponseHandler";
 import { usePaginatedMembers } from "../../hook/PaginatedMembers";
 
@@ -28,13 +30,10 @@ export default function MemberPage() {
     const [modalOpenInd, setModalOpenInd] = useState(false);
     const [selectedRecord, setSelectedRecord] = useState<Member | null>(null);
 
+    const { getReference, toDisplay } = useReference();
     const statusOptions = useMemo(
-        () => [
-            { value: "Active", label: "Active" },
-            { value: "Inactive", label: "Inactive" },
-            { value: "Pending", label: "Pending" },
-        ],
-        []
+        () => getReference(MEMBER_STATUS).map(r => ({ value: r.code, label: r.display })),
+        [getReference]
     );
 
     // Initial load
@@ -89,19 +88,15 @@ export default function MemberPage() {
     };
 
     const handleSubmit = async (values: MemberRequestDto) => {
-        try {
-            const resp = selectedRecord?.memberID ? await updateMember(values) : await addMember(values);
+        const resp = selectedRecord?.memberID ? await updateMember(values) : await addMember(values);
 
-            if (resp.globalMessages?.[0]?.type === MessageType.SUCCESS) {
-                notify.success({ message: "Success", description: resp.globalMessages[0].message });
-            }
-            setModalOpenInd(false);
-            setSelectedRecord(null);
-            resetMessages();
-            fetchMembers(filters);
-        } catch (e: any) {
-            handleError(e);
+        if (resp.globalMessages?.[0]?.type === MessageType.SUCCESS) {
+            notify.success({ message: "Success", description: resp.globalMessages[0].message });
         }
+        setModalOpenInd(false);
+        setSelectedRecord(null);
+        resetMessages();
+        fetchMembers(filters);
     };
 
     const columns: ColumnsType<Member> = [
@@ -110,7 +105,7 @@ export default function MemberPage() {
         { title: "Last Name", dataIndex: "lastName", key: "lastName", sorter: true },
         { title: "Phone", dataIndex: "phone", key: "phone", width: 120 },
         { title: "Email", dataIndex: "email", key: "email", width: 150 },
-        { title: "Status", dataIndex: "status", key: "status", width: 120 },
+        { title: "Status", dataIndex: "status", key: "status", width: 120, render: (code: string) => toDisplay(MEMBER_STATUS, code) },
         {
             title: 'Action',
             key: 'action',
@@ -128,7 +123,7 @@ export default function MemberPage() {
             <Sidebar />
             <main className="content">
                 <div style={{ padding: 24 }}>
-                    <div className="member-header">
+                    <div className="content-title">
                         <Title level={3}>Members</Title>
                     </div>
 
@@ -172,8 +167,8 @@ export default function MemberPage() {
                         initial={selectedRecord}
                         statusOptions={statusOptions}
                     />
-                </div>
-            </main>
-        </div>
+                </div >
+            </main >
+        </div >
     );
 }

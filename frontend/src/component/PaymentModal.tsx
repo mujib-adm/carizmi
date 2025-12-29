@@ -1,19 +1,20 @@
 import { Col, Divider, Form, Modal, Row } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect } from 'react';
-import { Payment, SystemSetting } from '../constants/types';
+import { Payment } from '../constants/types';
 import { useApiMessages } from '../hook/ApiResponseHandler';
 import { AntdFormItem } from './AntdFormItem';
 import MemberLookup from './MemberLookup';
 import { MessageBanner } from './MessageBanner';
+import { ReferenceCodeConstants } from '../constants/ReferenceCodeConstants';
 
 interface PaymentModalProps {
     open: boolean;
     onCancel: () => void;
     onSubmit: (values: any) => Promise<void>;
     initialValues?: Payment | null;
-    feeTypes: SystemSetting[];
-    paymentMethods: SystemSetting[];
+    feeTypes: { value: string; label: string }[];
+    paymentMethods: { value: string; label: string }[];
 }
 
 export default function PaymentModal({ open, onCancel, onSubmit, initialValues, feeTypes, paymentMethods }: PaymentModalProps) {
@@ -89,13 +90,13 @@ export default function PaymentModal({ open, onCancel, onSubmit, initialValues, 
                 <Divider />
 
                 <Row gutter={16}>
-                    <Col span={12}> <AntdFormItem name="feeType" label="Fee Type" type="select" rules={[{ required: true }]} options={feeTypes.map(f => ({ value: f.settingValue, label: f.settingValue }))} /> </Col>
+                    <Col span={12}> <AntdFormItem name="feeType" label="Fee Type" type="select" rules={[{ required: true }]} options={feeTypes} /> </Col>
                     <Col span={12}> <AntdFormItem name="amount" label="Amount" type="number" rules={[{ required: true }]} inputProps={{ prefix: "$" }} /> </Col>
                 </Row>
 
                 <Form.Item noStyle shouldUpdate={(prev, curr) => prev.feeType !== curr.feeType}>
                     {({ getFieldValue }) => {
-                        return getFieldValue('feeType') === 'Membership Fee' ? (
+                        return getFieldValue('feeType') === ReferenceCodeConstants.FEE_TYPE.MEMBERSHIP_FEE ? (
                             <Row gutter={16}>
                                 <Col span={12}> <AntdFormItem name="year" label="Year" type="select" rules={[{ required: true }]} initialValue={dayjs().year()} options={[0, 1, 2].map(i => { const y = dayjs().year() - 1 + i; return { value: y, label: y }; })} /> </Col>
                                 <Col span={12}> <AntdFormItem name="quarter" label="Quarter" type="select" rules={[{ required: true }]} options={[1, 2, 3, 4].map(q => ({ value: q, label: `Q${q}` }))} /> </Col>
@@ -106,7 +107,7 @@ export default function PaymentModal({ open, onCancel, onSubmit, initialValues, 
 
                 <Row gutter={16}>
                     <Col span={12}> <AntdFormItem name="dateReceived" label="Date Received" type="date" rules={[{ required: true }]} /> </Col>
-                    <Col span={12}> <AntdFormItem name="methodOfPayment" label="Payment Method" type="select" rules={[{ required: true }]} options={paymentMethods.map(p => ({ value: p.settingValue, label: p.settingValue }))} /> </Col>
+                    <Col span={12}> <AntdFormItem name="methodOfPayment" label="Payment Method" type="select" rules={[{ required: true }]} options={paymentMethods} /> </Col>
                 </Row>
 
                 {globalMessages && <MessageBanner messages={globalMessages} />}

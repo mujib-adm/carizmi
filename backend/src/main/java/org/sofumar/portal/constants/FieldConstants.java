@@ -11,6 +11,7 @@ public final class FieldConstants {
     public static final String PAYMENT_ID = "paymentID";
     public static final String EXPENSE_ID = "expenseID";
     public static final String SYSTEM_SETTINGS_ID = "systemSettingsID";
+    public static final String REFERENCE_ID = "referenceID";
 
     public static final String USERNAME = "username";
     public static final String PASSWORD = "password";
@@ -41,7 +42,10 @@ public final class FieldConstants {
     public static final String SETTING_TYPE = "settingType";
     public static final String SETTING_KEY = "settingKey";
     public static final String SETTING_VALUE = "settingValue";
-
+    // Reference
+    public static final String REFERENCE_NAME = "referenceName";
+    public static final String REFERENCE_CODE = "referenceCode";
+    public static final String REFERENCE_DISPLAY = "referenceDisplay";
     // Auditing fields
     public static final String CREATED_BY = "createdBy";
     public static final String LAST_MODIFIED_BY = "lastModifiedBy";

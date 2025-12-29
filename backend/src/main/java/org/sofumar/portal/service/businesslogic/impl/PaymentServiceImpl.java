@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sofumar.portal.constants.FieldConstants;
 import org.sofumar.portal.constants.MessagesConstants;
+import org.sofumar.portal.constants.ReferenceCodeConstants;
 import org.sofumar.portal.data.dto.PaymentDto;
 import org.sofumar.portal.data.transformer.PaymentDtoTransformer;
 import org.sofumar.portal.data.transformer.PaymentVOTransformer;
@@ -68,7 +69,7 @@ public class PaymentServiceImpl extends AbstractBusinessLogic<PaymentVO, Payment
     @Transactional
     public ResponseEntity<GlobalResponse<Void>> addPayment(PaymentDto requestDto) {
         // Duplicate Check logic
-        if ("Membership Fee".equalsIgnoreCase(requestDto.getFeeType())) {
+        if (ReferenceCodeConstants.FEE_TYPE.MEMBERSHIP_FEE.equalsIgnoreCase(requestDto.getFeeType())) {
             validateDuplicate(requestDto);
         }
 
@@ -122,7 +123,7 @@ public class PaymentServiceImpl extends AbstractBusinessLogic<PaymentVO, Payment
 
         List<Specification<PaymentVO>> specs = new ArrayList<>();
         if (memberID != null)
-            specs.add(PaymentSpecifications.hasMemberId(memberID));
+            specs.add(PaymentSpecifications.hasMemberID(memberID));
         if (feeType != null)
             specs.add(PaymentSpecifications.hasFeeType(feeType));
         if (year != null)

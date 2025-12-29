@@ -143,3 +143,28 @@ export type SystemSetting = {
   settingKey: string;
   settingValue: string;
 };
+
+// Reference types
+export type Reference = {
+  referenceID: number;
+  referenceName: string;
+  referenceCode: string;
+  referenceDisplay: string;
+  active: boolean;
+};
+
+export type ReferenceRequestDto = Omit<Reference, "referenceID"> & { referenceID?: number };
+
+export type ReferenceSearchParams = {
+  referenceName?: string;
+  // pagination + sorting
+  page?: number;       // 0-based page index
+  size?: number;       // page size
+  sortField?: string;  // optional sort field
+  sortOrder?: "asc" | "desc"; // optional sort order
+};
+
+export interface ReferenceData {
+  code: string;
+  display: string;
+}

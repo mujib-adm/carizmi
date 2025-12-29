@@ -2,6 +2,7 @@ package org.sofumar.portal.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.sofumar.portal.data.dto.PaymentDto;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
 import org.sofumar.portal.service.businesslogic.PaymentService;
@@ -25,14 +26,10 @@ import java.util.List;
 @RestController
 @RequestMapping("/payments")
 @Tag(name = "Payments", description = "Payment management APIs")
+@RequiredArgsConstructor
 public class PaymentController {
 
     private final PaymentService paymentService;
-
-    @Autowired
-    public PaymentController(PaymentService paymentService) {
-        this.paymentService = paymentService;
-    }
 
     @PostMapping("/add")
     @Operation(summary = "Add a new payment")

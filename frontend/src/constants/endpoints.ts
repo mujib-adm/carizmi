@@ -23,4 +23,8 @@ export const ApiEndpoints = {
     GETBYKEY: (key: string) => `/system-settings/by-key/${key}`,
     DELETE: (settingID: number) => `/system-settings/delete/${settingID}`,
   },
+  REFERENCE: {
+    SEARCH: "/reference/search",
+    GET_BY_NAME: (referenceName: string) => `/reference/list/${referenceName}`,
+  },
 };

@@ -1,6 +1,7 @@
 package org.sofumar.portal.service.validation;
 
 import io.micrometer.common.util.StringUtils;
+import lombok.RequiredArgsConstructor;
 import org.sofumar.portal.constants.FieldConstants;
 import org.sofumar.portal.constants.MessagesConstants;
 import org.sofumar.portal.data.vo.MemberVO;
@@ -10,11 +11,16 @@ import org.springframework.stereotype.Service;
 
 import static org.sofumar.portal.constants.MessagesConstants.REQUIRED_FIELD;
 
+import org.sofumar.portal.constants.ReferenceCodeConstants;
+
 @Service
+@RequiredArgsConstructor
 public class MemberValidator {
     private static final String PHONE_REGEX = "^\\(?\\d{3}\\)?[- ]?\\d{3}[- ]?\\d{4}$";
     private static final String EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";
     private static final String ZIP_REGEX = "^\\d{5}(-\\d{4})?$";
+
+    private final ReferenceValidator referenceValidator;
 
     public void validate(MemberVO vo) throws ValidationException {
         validateFirstName(vo);
@@ -69,7 +75,11 @@ public class MemberValidator {
 
     private void validateStatus(MemberVO vo) {
         if (StringUtils.isBlank(vo.getStatus())) {
-            vo.addFieldMessage(FieldConstants.STATUS, REQUIRED_FIELD.addMessageArgs(LabelUtils.toLabel(FieldConstants.STATUS)));
+            vo.addFieldMessage(FieldConstants.STATUS,
+                    REQUIRED_FIELD.addMessageArgs(LabelUtils.toLabel(FieldConstants.STATUS)));
+        } else {
+            referenceValidator.validate(vo, FieldConstants.STATUS, ReferenceCodeConstants.MEMBER_STATUS.NAME,
+                    vo.getStatus());
         }
     }
 

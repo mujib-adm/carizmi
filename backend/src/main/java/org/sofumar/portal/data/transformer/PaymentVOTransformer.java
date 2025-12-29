@@ -3,15 +3,10 @@ package org.sofumar.portal.data.transformer;
 import org.sofumar.portal.data.dto.PaymentDto;
 import org.sofumar.portal.data.vo.MemberVO;
 import org.sofumar.portal.data.vo.PaymentVO;
-import org.sofumar.portal.repo.MemberRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class PaymentVOTransformer implements Transformer<PaymentDto, PaymentVO> {
-
-    @Autowired
-    private MemberRepository memberRepo;
 
     @Override
     public PaymentVO transform(PaymentDto dto) {

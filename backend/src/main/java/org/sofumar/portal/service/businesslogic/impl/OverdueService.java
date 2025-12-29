@@ -1,5 +1,6 @@
 package org.sofumar.portal.service.businesslogic.impl;
 
+import org.sofumar.portal.constants.ReferenceCodeConstants;
 import org.sofumar.portal.data.vo.MemberVO;
 import org.sofumar.portal.data.vo.PaymentVO;
 import org.sofumar.portal.repo.MemberRepository;
@@ -34,14 +35,14 @@ public class OverdueService {
         };
 
         List<MemberVO> all = members.findAll().stream()
-                .filter(m -> "Active".equalsIgnoreCase(m.getStatus()))
+                .filter(m -> ReferenceCodeConstants.MEMBER_STATUS.ACTIVE.equalsIgnoreCase(m.getStatus()))
                 .toList();
 
         return all.stream().filter(m -> {
-            List<PaymentVO> paymentVOList = payments.findAll(PaymentSpecifications.hasMemberId(m.getMemberID())
+            List<PaymentVO> paymentVOList = payments.findAll(PaymentSpecifications.hasMemberID(m.getMemberID())
                     .and(PaymentSpecifications.hasYear(year))
                     .and(PaymentSpecifications.hasQuarter(quarter))
-                    .and(PaymentSpecifications.hasFeeType("Membership fee")));
+                    .and(PaymentSpecifications.hasFeeType(ReferenceCodeConstants.FEE_TYPE.MEMBERSHIP_FEE)));
             boolean paidOnTime = paymentVOList.stream().anyMatch(p -> !p.getDateReceived().isAfter(dueDate));
             return !paidOnTime && asOfDate.isAfter(dueDate);
         }).toList();

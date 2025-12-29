@@ -14,12 +14,13 @@ import Dashboard from "./dashboard/Dashboard";
 import { useAuth } from "../context/AuthContext";
 import MemberPage from "./member/MemberPage";
 import PaymentPage from "./payment/PaymentPage";
+import ReferencePage from "./reference/ReferencePage";
 import SystemSettingsPage from "./settings/SystemSettingsPage";
 
 export default function Router() {
   const { token, isLoading } = useAuth();
 
-if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <div>Loading...</div>;
 
   if (!token) {
     return (
@@ -37,7 +38,8 @@ if (isLoading) return <div>Loading...</div>;
       <Route path="/register" element={<Register />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/members" element={<MemberPage />} />
-      <Route path="/payments" element={<PaymentPage />} /> 
+      <Route path="/payments" element={<PaymentPage />} />
+      <Route path="/references" element={<ReferencePage />} />
       <Route path="/settings" element={<SystemSettingsPage />} />
 
       <Route path="/logout" element={<Logout />} />

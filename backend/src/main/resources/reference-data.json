@@ -1,0 +1,62 @@
+{
+    "memberStatus": [
+        {
+            "code": "01",
+            "display": "Active",
+            "constant": "ACTIVE",
+            "active": true
+        },
+        {
+            "code": "02",
+            "display": "Pending",
+            "constant": "PENDING",
+            "active": true
+        },
+        {
+            "code": "03",
+            "display": "Inactive",
+            "constant": "INACTIVE",
+            "active": true
+        }
+    ],
+    "feeType": [
+        {
+            "code": "01",
+            "display": "Membership Fee",
+            "constant": "MEMBERSHIP_FEE",
+            "active": true
+        },
+        {
+            "code": "02",
+            "display": "Registration Fee",
+            "constant": "REGISTRATION_FEE",
+            "active": true
+        }
+    ],
+    "paymentMethod": [
+        {
+            "code": "01",
+            "display": "Cash",
+            "constant": "CASH",
+            "active": true
+        },
+        {
+            "code": "02",
+            "display": "Zelle",
+            "constant": "ZELLE",
+            "active": true
+        },
+        {
+            "code": "03",
+            "display": "Check",
+            "constant": "CHECK",
+            "active": true
+        },
+        {
+            "code": "04",
+            "display": "Direct Deposit",
+            "constant": "DIRECT_DEPOSIT",
+            "active": true
+        }
+    ]
+}

@@ -22,7 +22,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = TableConstants.SYSTEMSETTINGS_TABLE)
+@Table(name = TableConstants.SYSTEM_SETTINGS_TABLE)
 public class SystemSettingsVO extends ValueObject {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -49,6 +49,6 @@ public class SystemSettingsVO extends ValueObject {
 
     @Override
     public String getTableName() {
-        return TableConstants.SYSTEMSETTINGS_TABLE;
+        return TableConstants.SYSTEM_SETTINGS_TABLE;
     }
 }

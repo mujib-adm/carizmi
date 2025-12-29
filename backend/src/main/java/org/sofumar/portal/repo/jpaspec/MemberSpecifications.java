@@ -2,6 +2,7 @@ package org.sofumar.portal.repo.jpaspec;
 
 import jakarta.persistence.criteria.Predicate;
 import org.sofumar.portal.constants.FieldConstants;
+import org.sofumar.portal.constants.ReferenceCodeConstants;
 import org.sofumar.portal.data.vo.MemberVO;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -69,7 +70,7 @@ public class MemberSpecifications {
 
             String term = query.trim().toLowerCase();
             // 1. Define the Global Filter (Active Only)
-            Predicate isActive = cb.equal(root.get(FieldConstants.STATUS), "Active");
+            Predicate isActive = cb.equal(root.get(FieldConstants.STATUS), ReferenceCodeConstants.MEMBER_STATUS.ACTIVE);
             List<Predicate> searchPredicates = new ArrayList<>();
             // 2. Numeric Optimization: Exact ID match if numeric
             if (term.matches("\\d+")) {

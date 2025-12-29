@@ -1,12 +1,12 @@
 package org.sofumar.portal.controller;
 
+import lombok.RequiredArgsConstructor;
 import org.sofumar.portal.data.dto.request.LoginRequest;
 import org.sofumar.portal.data.dto.request.UserRequestDto;
 import org.sofumar.portal.framework.data.msg.Message;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
 import org.sofumar.portal.framework.util.ResponseUtils;
 import org.sofumar.portal.service.businesslogic.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -22,14 +22,10 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
+@RequiredArgsConstructor
 public class AuthController {
 
     private final UserService userService;
-
-    @Autowired
-    public AuthController(UserService userService) {
-        this.userService = userService;
-    }
 
     @PostMapping("/register")
     public ResponseEntity<GlobalResponse<Void>> register(@RequestBody UserRequestDto requestDto) {

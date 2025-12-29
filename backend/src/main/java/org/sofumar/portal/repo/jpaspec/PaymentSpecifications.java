@@ -9,14 +9,8 @@ import java.time.LocalDate;
 
 public class PaymentSpecifications {
 
-    public static Specification<PaymentVO> hasMemberId(Integer memberID) {
-        return (root, query, cb) -> memberID == null ? null
-                : cb.equal(root.get(TableConstants.MEMBER_TABLE).get(FieldConstants.MEMBER_ID), memberID);
-    }
-
-    // Alias for consistency with new code if needed, or just use hasMemberId
     public static Specification<PaymentVO> hasMemberID(Integer memberID) {
-        return hasMemberId(memberID);
+        return (root, query, cb) -> memberID == null ? null : cb.equal(root.get(TableConstants.MEMBER_TABLE).get(FieldConstants.MEMBER_ID), memberID);
     }
 
     public static Specification<PaymentVO> hasFeeType(String feeType) {

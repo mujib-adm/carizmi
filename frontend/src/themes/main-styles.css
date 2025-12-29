@@ -77,6 +77,13 @@ body {
   box-sizing: border-box;
 }
 
+.content-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
 .modals-container {
   position: fixed;
   top: 0;

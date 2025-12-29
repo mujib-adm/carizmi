@@ -2,10 +2,10 @@ package org.sofumar.portal.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.sofumar.portal.data.dto.SystemSettingsDto;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
 import org.sofumar.portal.service.businesslogic.SystemSettingsService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -15,14 +15,10 @@ import java.util.List;
 @RestController
 @RequestMapping("/system-settings")
 @Tag(name = "System Settings", description = "System Settings APIs")
+@RequiredArgsConstructor
 public class SystemSettingsController {
 
     private final SystemSettingsService settingsService;
-
-    @Autowired
-    public SystemSettingsController(SystemSettingsService settingsService) {
-        this.settingsService = settingsService;
-    }
 
     @PostMapping("/add")
     @Operation(summary = "Add a new system setting")
