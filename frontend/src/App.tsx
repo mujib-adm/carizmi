@@ -2,11 +2,11 @@ import { Image, Layout } from "antd";
 import { BrowserRouter } from "react-router-dom";
 import Router from "./pages/Router";
 import { AuthProvider } from "./context/AuthContext";
-import Logo from "./images/logo.png";
 import { NotificationProvider } from "./context/NotificationContext";
 import { ReferenceProvider } from "./context/ReferenceContext";
+import AppHeader from "./pages/AppHeader";
 
-const { Header, Content, Footer } = Layout;
+const { Content, Footer } = Layout;
 const year = new Date().getFullYear();
 
 export default function App() {
@@ -16,11 +16,7 @@ export default function App() {
         <Layout className="app-wrapper">
           <BrowserRouter>
             <NotificationProvider>
-              <Header className="header">
-                <Image src={Logo} alt="Logo" preview={false} height="68px" width="68px" className="header-logo" />
-                <h2 className="header-title"> Sof'umar Portal </h2>
-              </Header>
-
+              <AppHeader />
               <Layout className="main-layout">
                 <Content className="app-main">
                   <Router />

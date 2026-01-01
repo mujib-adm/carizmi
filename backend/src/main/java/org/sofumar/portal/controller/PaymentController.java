@@ -3,10 +3,10 @@ package org.sofumar.portal.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.sofumar.portal.data.dto.LatestPaymentDto;
 import org.sofumar.portal.data.dto.PaymentDto;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
 import org.sofumar.portal.service.businesslogic.PaymentService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -34,7 +34,7 @@ public class PaymentController {
     @PostMapping("/add")
     @Operation(summary = "Add a new payment")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
-    public ResponseEntity<GlobalResponse<Void>> addPayment(@RequestBody PaymentDto requestDto) {
+    public ResponseEntity<GlobalResponse<Integer>> addPayment(@RequestBody PaymentDto requestDto) {
         return paymentService.addPayment(requestDto);
     }
 
@@ -73,5 +73,11 @@ public class PaymentController {
             @RequestParam(required = false) String sortOrder) {
         return paymentService.searchPayments(memberID, feeType, year, quarter, dateFrom, dateTo, page, size, sortField,
                 sortOrder);
+    }
+
+    @GetMapping("/latest")
+    @Operation(summary = "Get latest payments")
+    public ResponseEntity<GlobalResponse<List<LatestPaymentDto>>> getLatest(@RequestParam(defaultValue = "5") int limit) {
+        return paymentService.getLatestPayments(limit);
     }
 }

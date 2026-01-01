@@ -3,7 +3,7 @@ import { GlobalResponse, Member, MemberLookupResponse, MemberRequestDto, MemberS
 import apiClient from "./ApiClient";
 
 export const addMember = async (data: MemberRequestDto) => {
-  const res = await apiClient.post<GlobalResponse>(ApiEndpoints.MEMBERS.ADD, data);
+  const res = await apiClient.post<GlobalResponse<number>>(ApiEndpoints.MEMBERS.ADD, data);
   return res.data;
 };
 

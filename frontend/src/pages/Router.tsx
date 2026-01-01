@@ -16,6 +16,7 @@ import MemberPage from "./member/MemberPage";
 import PaymentPage from "./payment/PaymentPage";
 import ReferencePage from "./reference/ReferencePage";
 import SystemSettingsPage from "./settings/SystemSettingsPage";
+import MemberDetailsPage from "./member/MemberDetailsPage";
 
 export default function Router() {
   const { token, isLoading } = useAuth();
@@ -38,6 +39,7 @@ export default function Router() {
       <Route path="/register" element={<Register />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/members" element={<MemberPage />} />
+      <Route path="/members/:id" element={<MemberDetailsPage />} />
       <Route path="/payments" element={<PaymentPage />} />
       <Route path="/references" element={<ReferencePage />} />
       <Route path="/settings" element={<SystemSettingsPage />} />

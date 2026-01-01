@@ -1,13 +1,45 @@
-import { Image, Layout } from "antd";
-import "../themes/css/header-footer.css";
+import { UserOutlined } from "@ant-design/icons";
+import { Avatar, Image, Layout, Space } from "antd";
+import Logo from "../images/logo.png";
+import { useAuth } from "../context/AuthContext";
+import "../themes/modern-ui.css";
+
 const { Header } = Layout;
-const Logo = "/themes/images/main-logo.png";
 
 export default function AppHeader() {
+  const { token } = useAuth();
+
   return (
-    <Header className="portal-header">
-      <Image src={Logo} alt="Logo" className="portal-logo" />
-      <h2 className="portal-title"> Sof'umar Portal </h2>
+    <Header className="glass-header">
+      <div className="portal-logo-container">
+        <Image
+          src={Logo}
+          alt="Sof'umar Logo"
+          preview={false}
+          className="portal-logo-modern"
+        />
+        <div className="portal-title-stack">
+          <h2 className="portal-title-main">SOF'UMAR</h2>
+          <span className="portal-title-sub">COMMUNITY OF MINNESOTA</span>
+        </div>
+      </div>
+
+      <div className="header-actions">
+        <Space size={24}>
+          {token && (
+            <Avatar
+              size={44}
+              icon={<UserOutlined />}
+              style={{
+                backgroundColor: '#40916C',
+                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(64, 145, 108, 0.25)',
+                border: '2px solid rgba(255, 255, 255, 0.8)'
+              }}
+            />
+          )}
+        </Space>
+      </div>
     </Header>
   );
 }

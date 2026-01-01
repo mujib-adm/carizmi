@@ -144,6 +144,15 @@ export type SystemSetting = {
   settingValue: string;
 };
 
+export type SystemSettingSearchParams = {
+  settingKey?: string;
+  // pagination + sorting
+  page?: number;       // 0-based page index
+  size?: number;       // page size
+  sortField?: string;  // optional sort field
+  sortOrder?: "asc" | "desc"; // optional sort order
+};
+
 // Reference types
 export type Reference = {
   referenceID: number;
@@ -167,4 +176,23 @@ export type ReferenceSearchParams = {
 export interface ReferenceData {
   code: string;
   display: string;
+}
+
+// Dashboard
+export interface DashboardMetrics
+ {
+  totalMembers: number;
+  totalRevenue: number;
+  duesThisQuarter: number;
+  overdueTotal: number;
+}
+
+export interface RecentTransactions
+ {
+  paymentID: number;
+  memberID?: number;
+  paymentDate: string;
+  memberName: string;
+  feeType: string;
+  amount: number;
 }

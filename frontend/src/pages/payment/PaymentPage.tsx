@@ -1,14 +1,14 @@
-import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
-import { Button, Card, DatePicker, Modal, Select, Space, Table, Typography } from 'antd';
+import { DeleteOutlined, DollarOutlined, EditOutlined } from '@ant-design/icons';
+import { Button, Card, Modal, Space, Table, Typography } from 'antd';
 import { ColumnsType } from 'antd/es/table';
-import { useEffect, useMemo, useState } from 'react';
-import { addPayment, deletePayment, updatePayment } from '../../apiclient/paymentApi';
+import { useMemo, useState } from 'react';
+import { addPayment, deletePayment, getPayment, updatePayment } from '../../apiclient/paymentApi';
 import { MessageBanner } from '../../component/MessageBanner';
 import PaymentModal from '../../component/PaymentModal';
 import SearchFilterBar from '../../component/SearchFilterBar.jsx';
 import Sidebar from "../../component/Sidebar";
-import { FEE_TYPE, PAYMENT_METHOD } from "../../constants/referenceConstants";
 import { paymentSearchFiltersConfig } from '../../constants/paymentSearchFiltersConfig.ts';
+import { FEE_TYPE, PAYMENT_METHOD } from "../../constants/referenceConstants";
 import { MessageType, Payment, PaymentSearchParams } from '../../constants/types';
 import { useNotification } from "../../context/NotificationContext";
 import { useReference } from "../../context/ReferenceContext";
@@ -16,13 +16,11 @@ import { useApiMessages } from '../../hook/ApiResponseHandler';
 import { usePaginatedPayments } from '../../hook/PaginatedPayments';
 
 const { Title } = Typography;
-const { Option } = Select;
-const { RangePicker } = DatePicker;
 
 export default function PaymentPage() {
 
     const notify = useNotification();
-    const { payments, meta, loading, fetchPayments } = usePaginatedPayments();
+    const { payments, meta, loading, fetchPayments, setPayments } = usePaginatedPayments();
     const { globalMessages, handleError, resetMessages } = useApiMessages<any>();
 
     // search filters
@@ -36,11 +34,6 @@ export default function PaymentPage() {
     const { getReference, toDisplay } = useReference();
     const feeTypes = getReference(FEE_TYPE).map(r => ({ value: r.code, label: r.display }));
     const paymentMethods = getReference(PAYMENT_METHOD).map(r => ({ value: r.code, label: r.display }));
-
-    // Initial load
-    useEffect(() => {
-        fetchPayments().catch(handleError);
-    }, []);
 
     const handleSearch = async () => {
         resetMessages();
@@ -89,15 +82,27 @@ export default function PaymentPage() {
     };
 
     const handleSubmit = async (values: any) => {
-        const resp = selectedRecord?.paymentID ? await updatePayment(values) : await addPayment(values);
+        const isAdd = !selectedRecord?.paymentID;
+        const resp = isAdd ? await addPayment(values) : await updatePayment(values);
 
         if (resp.globalMessages?.[0]?.type === MessageType.SUCCESS) {
             notify.success({ message: "Success", description: resp.globalMessages[0].message });
+
+            if (isAdd && resp.responseData) {
+                // Fetch the newly created payment details
+                const fullPaymentResp = await getPayment(resp.responseData);
+                if (fullPaymentResp.responseData) {
+                    // Prepend to the list
+                    setPayments(prev => [fullPaymentResp.responseData!, ...prev]);
+                }
+            } else if (!isAdd) {
+                // For updates, we still refresh the list to ensure sorting/filtering logic
+                fetchPayments(filters);
+            }
         }
         setModalOpenInd(false);
         setSelectedRecord(null);
         resetMessages();
-        fetchPayments(filters);
     };
 
     const columns: ColumnsType<Payment> = [
@@ -108,7 +113,7 @@ export default function PaymentPage() {
             key: 'feeType',
             render: (code: string) => toDisplay(FEE_TYPE, code)
         },
-        { title: 'Amount', dataIndex: 'amount', key: 'amount', render: (val: any) => `$${val}` },
+        { title: 'Amount', dataIndex: 'amount', key: 'amount', render: (val: number) => `$${val?.toFixed(2) ?? '0.00'}` },
         { title: 'Date', dataIndex: 'dateReceived', key: 'dateReceived' },
         { title: 'Method', dataIndex: 'methodOfPayment', key: 'methodOfPayment', render: (code: string) => toDisplay(PAYMENT_METHOD, code) },
         { title: 'Period', key: 'period', render: (_, record) => record.year && record.quarter ? `${record.year}-Q${record.quarter}` : '' },
@@ -135,46 +140,48 @@ export default function PaymentPage() {
     }, [feeTypes]);
 
     return (
-        <div className="dashboard">
+        <div className="dashboard-layout">
             <Sidebar />
-            <main className="content">
+            <main className="content fade-in">
                 <div style={{ padding: 24 }}>
-                    <div className="content-title">
-                        <Title level={3}>Payments</Title>
+                    <div className="page-header">
+                        <Title level={2} className="page-title">
+                            <DollarOutlined /> Payments
+                        </Title>
                     </div>
 
-                    <Card style={{ marginBottom: 16 }}>
-                        <SearchFilterBar config={searchConfig as any} filters={filters} onChange={setFilters} onSearch={handleSearch} onAdd={openAdd} />
-                    </Card>
+                    <SearchFilterBar config={searchConfig as any} filters={filters} onChange={setFilters} onSearch={handleSearch} onAdd={openAdd} />
 
                     {globalMessages && <MessageBanner messages={globalMessages} />}
 
-                    <Table<Payment>
-                        size="small"
-                        rowKey="paymentID"
-                        dataSource={payments}
-                        columns={columns}
-                        loading={loading}
-                        pagination={{
-                            current: meta ? meta.page + 1 : 1,
-                            pageSize: meta?.pageSize ?? 10,
-                            total: meta?.totalRecords ?? 0,
-                            showSizeChanger: true,
-                        }}
-                        onChange={(pagination, filters, sorter) => {
-                            const sortField = Array.isArray(sorter) ? sorter[0].field : sorter.field;
-                            const sortOrder = Array.isArray(sorter) ? sorter[0].order : sorter.order;
+                    <Card className="glass-card" style={{ padding: 0 }}>
+                        <Table<Payment>
+                            size="small"
+                            rowKey="paymentID"
+                            dataSource={payments}
+                            columns={columns}
+                            loading={loading}
+                            pagination={{
+                                current: meta ? meta.page + 1 : 1,
+                                pageSize: meta?.pageSize ?? 10,
+                                total: meta?.totalRecords ?? 0,
+                                showSizeChanger: true,
+                            }}
+                            onChange={(pagination, _filters, sorter) => {
+                                const sortField = Array.isArray(sorter) ? sorter[0].field : sorter.field;
+                                const sortOrder = Array.isArray(sorter) ? sorter[0].order : sorter.order;
 
-                            resetMessages();
-                            fetchPayments({
-                                ...filters, // your current search filters
-                                page: (pagination.current ?? 1) - 1,
-                                size: pagination.pageSize ?? 10,
-                                sortField: sortField as string,
-                                sortOrder: sortOrder === "ascend" ? "asc" : sortOrder === "descend" ? "desc" : undefined,
-                            }).catch(handleError);
-                        }}
-                    />
+                                resetMessages();
+                                fetchPayments({
+                                    ...filters, // use the state-level search filters
+                                    page: (pagination.current ?? 1) - 1,
+                                    size: pagination.pageSize ?? 10,
+                                    sortField: sortField as string,
+                                    sortOrder: sortOrder === "ascend" ? "asc" : sortOrder === "descend" ? "desc" : undefined,
+                                }).catch(handleError);
+                            }}
+                        />
+                    </Card>
 
                     <PaymentModal
                         open={modalOpenInd}

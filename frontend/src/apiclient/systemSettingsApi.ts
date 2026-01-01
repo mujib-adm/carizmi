@@ -20,5 +20,6 @@ export const deleteSystemSetting = async (id: number) => {
 };
 
 export const searchSystemSettings = async (params: any) => {
-    return await apiClient.get("/system-settings/search", { params });
+  const res = await apiClient.get<GlobalResponse<SystemSetting[]>>(ApiEndpoints.SETTINGS.SEARCH, { params });
+  return res.data;
 };

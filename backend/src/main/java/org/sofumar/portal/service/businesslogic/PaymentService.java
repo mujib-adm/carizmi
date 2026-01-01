@@ -1,5 +1,6 @@
 package org.sofumar.portal.service.businesslogic;
 
+import org.sofumar.portal.data.dto.LatestPaymentDto;
 import org.sofumar.portal.data.dto.PaymentDto;
 import org.sofumar.portal.data.vo.PaymentVO;
 import org.sofumar.portal.framework.bl.BusinessLogic;
@@ -10,7 +11,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface PaymentService extends BusinessLogic<PaymentVO> {
-    ResponseEntity<GlobalResponse<Void>> addPayment(PaymentDto requestDto);
+    ResponseEntity<GlobalResponse<Integer>> addPayment(PaymentDto requestDto);
 
     ResponseEntity<GlobalResponse<Void>> updatePayment(PaymentDto requestDto);
 
@@ -22,4 +23,6 @@ public interface PaymentService extends BusinessLogic<PaymentVO> {
             Integer memberID, String feeType, Integer year, Integer quarter,
             LocalDate dateFrom, LocalDate dateTo,
             int page, int size, String sortField, String sortOrder);
+
+    ResponseEntity<GlobalResponse<List<LatestPaymentDto>>> getLatestPayments(int limit);
 }

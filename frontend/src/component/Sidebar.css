@@ -1,61 +1,69 @@
-.sidebar {
-  width: 250px;
-  flex-shrink: 0;
-  height: 100%;
-  position: relative;
-  z-index: 1;
-  padding: 10px 10px;
-  /* Add padding around the list */
-  background-color: transparent;
-/*  background-color: #e4e4e4;*/
-  /* Or match main bg */
-}
-
-.sidebar ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  /* Space between buttons */
-}
-
-.sidebar li {
-  /* Reset from previous styles */
-  border: none;
-  padding: 0;
-}
-
-.sidebar li a {
-  display: block;
-  text-align: center;
-  padding: 15px 10px;
-  background-color: #e3f1d1;
-  /* Light green for inactive */
-  color: #1a1a1a;
-  text-decoration: none;
-  font-weight: 400;
-  border-radius: 4px;
-  /* Rounded corners */
-  text-transform: uppercase;
-  /* Match "HOME", "ABOUT US" style */
-  font-size: 17px;
+.sidebar-container {
+  width: var(--sidebar-width);
+  min-height: calc(100vh - var(--header-height));
+  background: white;
+  border-right: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 16px 0;
   transition: all 0.3s ease;
+  flex-shrink: 0;
 }
 
-.sidebar li a:hover {
-  background-color: #d4e8b8;
-  /* Slightly darker light green on hover */
-  transform: translateY(-1px);
+.modern-sidebar-menu {
+  border-inline-end: none !important;
 }
 
-.sidebar li a.active {
-  background-color: #5C9013;
-  /* Bright green for active */
-  color: white;
-  /*
-  font-weight: 700;
-*/
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+.modern-sidebar-menu .ant-menu-item {
+  border-radius: 8px !important;
+  margin: 4px 12px !important;
+  height: 48px !important;
+  line-height: 48px !important;
+  font-size: 15px !important;
+}
+
+.modern-sidebar-menu .ant-menu-item-selected {
+  background-color: var(--priColor) !important;
+  color: white !important;
+}
+
+.modern-sidebar-menu .ant-menu-item-selected .anticon {
+  color: white !important;
+}
+
+@media (max-width: 768px) {
+  .sidebar-container {
+    width: 0;
+    min-height: 0;
+    padding: 0;
+    border: none;
+    overflow: hidden;
+    position: absolute;
+    /* Take out of flow */
+  }
+
+  .modern-sidebar-menu {
+    display: flex;
+    justify-content: space-around;
+    padding: 8px 0 !important;
+  }
+
+  .modern-sidebar-menu .ant-menu-item {
+    margin: 0 !important;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: auto !important;
+    line-height: normal !important;
+    padding: 4px 0 !important;
+  }
+
+  .modern-sidebar-menu .ant-menu-item .ant-menu-title-content {
+    display: none !important;
+  }
+
+  .modern-sidebar-menu .ant-menu-item .anticon {
+    font-size: 24px !important;
+    margin: 0 !important;
+  }
 }

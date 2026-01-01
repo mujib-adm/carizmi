@@ -1,63 +1,51 @@
-import { DeleteOutlined, EditOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Card, Form, Input, message, Modal, Select, Space, Table, Tag, Typography } from 'antd';
+import { DeleteOutlined, EditOutlined, SettingOutlined } from '@ant-design/icons';
+import { Button, Card, Form, Input, message, Modal, Space, Table, Tag, Typography } from 'antd';
 import { useEffect, useState } from 'react';
-import { addSystemSetting, deleteSystemSetting, searchSystemSettings, updateSystemSetting } from '../../apiclient/systemSettingsApi';
+import { addSystemSetting, deleteSystemSetting, updateSystemSetting } from '../../apiclient/systemSettingsApi';
+import SearchFilterBar from '../../component/SearchFilterBar.jsx';
 import Sidebar from "../../component/Sidebar";
-import "../../component/Sidebar.css"; // Ensure sidebar styles are loaded
+import "../../component/Sidebar.css";
+import { systemSettingsSearchFiltersConfig } from '../../constants/systemSettingsSearchFiltersConfig';
+import { SystemSetting, SystemSettingSearchParams } from '../../constants/types';
+import { useApiMessages } from "../../hook/ApiResponseHandler";
+import { usePaginatedSystemSettings } from '../../hook/PaginatedSystemSettings';
+import { MessageBanner } from '../../component/MessageBanner.js';
 
 const { Title } = Typography;
-const { Option } = Select;
 
 export default function SystemSettingsPage() {
-    const [settings, setSettings] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [searchParams, setSearchParams] = useState({});
-    const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
+    const { settings, meta, loading, fetchSettings } = usePaginatedSystemSettings();
+    const [filters, setFilters] = useState<SystemSettingSearchParams>({});
+    const { globalMessages, handleError, resetMessages } = useApiMessages<any>();
 
     // Modal state
     const [modalVisible, setModalVisible] = useState(false);
-    const [editingId, setEditingId] = useState<number | null>(null);
+    const [editingRecord, setEditingRecord] = useState<SystemSetting | null>(null);
     const [form] = Form.useForm();
 
+    // Initial load
     useEffect(() => {
-        fetchSettings();
-    }, []);
+        fetchSettings().catch(handleError);
+    }, [fetchSettings, handleError]);
 
-    const fetchSettings = async (params: any = {}, page = 1, size = 10) => {
-        setLoading(true);
+    const handleSearch = async () => {
+        resetMessages();
         try {
-            const res = await searchSystemSettings({ ...params, page: page - 1, size });
-            setSettings(res.data.data || []);
-            setPagination({
-                current: page,
-                pageSize: size,
-                total: res.data.meta?.totalRecords || 0
-            });
-            setSearchParams(params);
-        } catch (e) {
-            message.error("Failed to load settings");
-        } finally {
-            setLoading(false);
+            await fetchSettings({ ...filters, page: 0, size: meta?.pageSize ?? 10 });
+        } catch (e: any) {
+            handleError(e);
         }
     };
 
-    const handleSearch = (vals: any) => {
-        fetchSettings(vals, 1, pagination.pageSize);
-    };
-
-    const handleTableChange = (newPagination: any) => {
-        fetchSettings(searchParams, newPagination.current, newPagination.pageSize);
-    };
-
     const handleAdd = () => {
-        setEditingId(null);
+        setEditingRecord(null);
         form.resetFields();
         form.setFieldsValue({ active: true });
         setModalVisible(true);
     };
 
-    const handleEdit = (record: any) => {
-        setEditingId(record.systemSettingsID);
+    const handleEdit = (record: SystemSetting) => {
+        setEditingRecord(record);
         form.setFieldsValue(record);
         setModalVisible(true);
     };
@@ -70,7 +58,7 @@ export default function SystemSettingsPage() {
                 try {
                     await deleteSystemSetting(id);
                     message.success("Deleted successfully");
-                    fetchSettings(searchParams, pagination.current, pagination.pageSize);
+                    fetchSettings(filters);
                 } catch (e) {
                     message.error("Delete failed");
                 }
@@ -81,15 +69,15 @@ export default function SystemSettingsPage() {
     const handleSave = async () => {
         try {
             const values = await form.validateFields();
-            if (editingId) {
-                await updateSystemSetting({ ...values, systemSettingsID: editingId });
+            if (editingRecord?.systemSettingsID) {
+                await updateSystemSetting({ ...values, systemSettingsID: editingRecord.systemSettingsID });
                 message.success("Updated successfully");
             } else {
                 await addSystemSetting(values);
                 message.success("Added successfully");
             }
             setModalVisible(false);
-            fetchSettings(searchParams, pagination.current, pagination.pageSize);
+            fetchSettings(filters);
         } catch (e) {
             console.error(e);
             message.error("Save failed");
@@ -101,17 +89,10 @@ export default function SystemSettingsPage() {
         { title: 'Type', dataIndex: 'settingType', key: 'settingType', sorter: true },
         { title: 'Key', dataIndex: 'settingKey', key: 'settingKey', sorter: true },
         { title: 'Value', dataIndex: 'settingValue', key: 'settingValue' },
-        { title: 'Effective Date', dataIndex: 'effectiveDate', key: 'effectiveDate' },
-        {
-            title: 'Active',
-            dataIndex: 'active',
-            key: 'active',
-            render: (active: boolean) => active ? <Tag color="green">Active</Tag> : <Tag color="red">Inactive</Tag>
-        },
         {
             title: 'Action',
             key: 'action',
-            render: (_: any, record: any) => (
+            render: (_: any, record: SystemSetting) => (
                 <Space>
                     <Button icon={<EditOutlined />} onClick={() => handleEdit(record)} />
                     <Button icon={<DeleteOutlined />} danger onClick={() => handleDelete(record.systemSettingsID)} />
@@ -121,45 +102,51 @@ export default function SystemSettingsPage() {
     ];
 
     return (
-        <div className="dashboard">
+        <div className="dashboard-layout">
             <Sidebar />
-            <main className="content">
+            <main className="content fade-in">
                 <div style={{ padding: 24 }}>
-                    <div className="settings-header">
-                        <Title level={3}>System Settings</Title>
+                    <div className="page-header">
+                        <Title level={2} className="page-title">
+                            <SettingOutlined /> System Settings
+                        </Title>
                     </div>
 
-                    <Card style={{ marginBottom: 16 }}>
-                        <Form layout="inline" onFinish={handleSearch}>
-                            <Form.Item name="settingType" label="Type">
-                                <Input placeholder="Type" />
-                            </Form.Item>
-                            <Form.Item name="settingKey" label="Key">
-                                <Input placeholder="Key" />
-                            </Form.Item>
-                            <Form.Item>
-                                <Space>
-                                    <Button type="primary" htmlType="submit" icon={<SearchOutlined />}>Search</Button>
-                                    <Button onClick={() => { form.resetFields(); handleSearch({}); }}>Clear</Button>
-                                </Space>
-                            </Form.Item>
-                            <Form.Item>
-                                <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd} style={{ marginLeft: 16 }}>Add New</Button>
-                            </Form.Item>
-                        </Form>
+                    <SearchFilterBar config={systemSettingsSearchFiltersConfig as any} filters={filters} onChange={setFilters as any} onSearch={handleSearch} onAdd={handleAdd} />
+
+                    {globalMessages && <MessageBanner messages={globalMessages} />}
+
+                    <Card className="glass-card" style={{ padding: 0 }}>
+                        <Table<SystemSetting>
+                            dataSource={settings}
+                            columns={columns}
+                            rowKey="systemSettingsID"
+                            loading={loading}
+                            size="small"
+                            pagination={{
+                                current: meta ? meta.page + 1 : 1,
+                                pageSize: meta?.pageSize ?? 10,
+                                total: meta?.totalRecords ?? 0,
+                                showSizeChanger: true,
+                            }}
+                            onChange={(pagination, _filters, sorter) => {
+                                const sortField = Array.isArray(sorter) ? sorter[0].field : sorter.field;
+                                const sortOrder = Array.isArray(sorter) ? sorter[0].order : sorter.order;
+
+                                resetMessages();
+                                fetchSettings({
+                                    ...filters,
+                                    page: (pagination.current ?? 1) - 1,
+                                    size: pagination.pageSize ?? 10,
+                                    sortField: sortField as string,
+                                    sortOrder: sortOrder === "ascend" ? "asc" : sortOrder === "descend" ? "desc" : undefined,
+                                }).catch(handleError);
+                            }}
+                        />
                     </Card>
 
-                    <Table
-                        dataSource={settings}
-                        columns={columns}
-                        rowKey="systemSettingsID"
-                        pagination={pagination}
-                        loading={loading}
-                        onChange={handleTableChange}
-                    />
-
                     <Modal
-                        title={editingId ? "Edit Setting" : "Add Setting"}
+                        title={editingRecord ? "Edit Setting" : "Add Setting"}
                         open={modalVisible}
                         onOk={handleSave}
                         onCancel={() => setModalVisible(false)}
@@ -173,12 +160,6 @@ export default function SystemSettingsPage() {
                             </Form.Item>
                             <Form.Item name="settingValue" label="Value" rules={[{ required: true }]}>
                                 <Input />
-                            </Form.Item>
-                            <Form.Item name="effectiveDate" label="Effective Date">
-                                <Input type="date" />
-                            </Form.Item>
-                            <Form.Item name="active" label="Active" valuePropName="checked">
-                                <Input type="checkbox" />
                             </Form.Item>
                         </Form>
                     </Modal>

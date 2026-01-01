@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.sofumar.portal.constants.FieldConstants;
 import org.sofumar.portal.constants.MessagesConstants;
 import org.sofumar.portal.constants.ReferenceCodeConstants;
+import org.sofumar.portal.data.dto.LatestPaymentDto;
 import org.sofumar.portal.data.dto.PaymentDto;
 import org.sofumar.portal.data.transformer.PaymentDtoTransformer;
 import org.sofumar.portal.data.transformer.PaymentVOTransformer;
@@ -67,7 +68,7 @@ public class PaymentServiceImpl extends AbstractBusinessLogic<PaymentVO, Payment
 
     @Override
     @Transactional
-    public ResponseEntity<GlobalResponse<Void>> addPayment(PaymentDto requestDto) {
+    public ResponseEntity<GlobalResponse<Integer>> addPayment(PaymentDto requestDto) {
         // Duplicate Check logic
         if (ReferenceCodeConstants.FEE_TYPE.MEMBERSHIP_FEE.equalsIgnoreCase(requestDto.getFeeType())) {
             validateDuplicate(requestDto);
@@ -75,8 +76,28 @@ public class PaymentServiceImpl extends AbstractBusinessLogic<PaymentVO, Payment
 
         PaymentVO vo = voTransformer.transform(requestDto);
         validator.validate(vo);
-        add(vo);
-        return ResponseUtils.ok(RECORD_ADDED.addMessageArgs("Payment").getMessageString());
+        PaymentVO savedPayment = add(vo);
+        return ResponseUtils.okWithData(savedPayment.getPaymentID(), RECORD_ADDED.addMessageArgs("Payment").getMessageString());
+    }
+
+    @Override
+    public ResponseEntity<GlobalResponse<List<LatestPaymentDto>>> getLatestPayments(int limit) {
+        logger.info("Fetching {} latest payments", limit);
+        PageRequest pageRequest = PageRequest.of(0, limit,
+                Sort.by(Sort.Direction.DESC, FieldConstants.DATE_RECEIVED, FieldConstants.PAYMENT_ID));
+
+        List<LatestPaymentDto> latest = paymentRepo.findAll(pageRequest).getContent().stream()
+                .map(p -> LatestPaymentDto.builder()
+                        .paymentID(p.getPaymentID())
+                        .memberID(p.getMember().getMemberID())
+                        .memberName(p.getMember().getFirstName() + " " + p.getMember().getLastName())
+                        .feeType(p.getFeeType())
+                        .amount(p.getAmount())
+                        .paymentDate(p.getDateReceived())
+                        .build())
+                .toList();
+
+        return ResponseUtils.okWithData(latest);
     }
 
     @Override
@@ -86,11 +107,6 @@ public class PaymentServiceImpl extends AbstractBusinessLogic<PaymentVO, Payment
 
         PaymentVO existing = paymentRepo.findById(requestDto.getPaymentID())
                 .orElseThrow(() -> new RecordNotFoundException("Payment not found: " + requestDto.getPaymentID()));
-
-        // If critical fields change, re-check duplicate? usually updates are allowed to
-        // correct data.
-        // Assuming strict duplicate check only on creation or if completely changing
-        // the period.
 
         PaymentVO updated = voTransformer.transformForUpdate(requestDto, existing);
         validator.validateForUpdate(updated);

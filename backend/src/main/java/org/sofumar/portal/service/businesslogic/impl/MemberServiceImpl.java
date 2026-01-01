@@ -66,12 +66,12 @@ public class MemberServiceImpl extends AbstractBusinessLogic<MemberVO, MemberRep
 
     @Override
     @Transactional
-    public ResponseEntity<GlobalResponse<Void>> addMember(MemberDto requestDto) {
+    public ResponseEntity<GlobalResponse<Integer>> addMember(MemberDto requestDto) {
         MemberVO memberVO = voTransformer.transform(requestDto);
         validator.validate(memberVO);
         MemberVO savedMember = add(memberVO);
         logger.info("Member added successfully with ID: {}", savedMember.getMemberID());
-        return ResponseUtils.ok(RECORD_ADDED.addMessageArgs("Member").getMessageString());
+        return ResponseUtils.okWithData(savedMember.getMemberID(), RECORD_ADDED.addMessageArgs("Member").getMessageString());
     }
 
     @Override

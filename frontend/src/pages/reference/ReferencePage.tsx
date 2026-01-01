@@ -1,3 +1,4 @@
+import { DatabaseOutlined } from '@ant-design/icons';
 import { Card, Table, Tag, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useEffect, useState } from "react";
@@ -47,46 +48,48 @@ export default function ReferencePage() {
     ];
 
     return (
-        <div className="dashboard">
+        <div className="dashboard-layout">
             <Sidebar />
-            <main className="content">
+            <main className="content fade-in">
                 <div style={{ padding: 24 }}>
-                    <div className="content-title">
-                        <Title level={3}>References</Title>
+                    <div className="page-header">
+                        <Title level={2} className="page-title">
+                            <DatabaseOutlined /> References
+                        </Title>
                     </div>
 
-                    <Card style={{ marginBottom: 16 }}>
-                        <SearchFilterBar config={referenceSearchFiltersConfig as any} filters={filters} onChange={setFilters as any} onSearch={handleSearch} onAdd={undefined as any} />
-                    </Card>
+                    <SearchFilterBar config={referenceSearchFiltersConfig as any} filters={filters} onChange={setFilters as any} onSearch={handleSearch} onAdd={undefined as any} />
 
                     {globalMessages && <MessageBanner messages={globalMessages} />}
 
-                    <Table<Reference>
-                        size="small"
-                        rowKey="referenceID"
-                        dataSource={references}
-                        columns={columns}
-                        loading={loading}
-                        pagination={{
-                            current: meta ? meta.page + 1 : 1,
-                            pageSize: meta?.pageSize ?? 10,
-                            total: meta?.totalRecords ?? 0,
-                            showSizeChanger: true,
-                        }}
-                        onChange={(pagination, filters, sorter) => {
-                            const sortField = Array.isArray(sorter) ? sorter[0].field : sorter.field;
-                            const sortOrder = Array.isArray(sorter) ? sorter[0].order : sorter.order;
+                    <Card className="glass-card" style={{ padding: 0 }}>
+                        <Table<Reference>
+                            size="small"
+                            rowKey="referenceID"
+                            dataSource={references}
+                            columns={columns}
+                            loading={loading}
+                            pagination={{
+                                current: meta ? meta.page + 1 : 1,
+                                pageSize: meta?.pageSize ?? 10,
+                                total: meta?.totalRecords ?? 0,
+                                showSizeChanger: true,
+                            }}
+                            onChange={(pagination, _filters, sorter) => {
+                                const sortField = Array.isArray(sorter) ? sorter[0].field : sorter.field;
+                                const sortOrder = Array.isArray(sorter) ? sorter[0].order : sorter.order;
 
-                            resetMessages();
-                            fetchReferences({
-                                ...filters,
-                                page: (pagination.current ?? 1) - 1,
-                                size: pagination.pageSize ?? 10,
-                                sortField: sortField as string,
-                                sortOrder: sortOrder === "ascend" ? "asc" : sortOrder === "descend" ? "desc" : undefined,
-                            }).catch(handleError);
-                        }}
-                    />
+                                resetMessages();
+                                fetchReferences({
+                                    ...filters,
+                                    page: (pagination.current ?? 1) - 1,
+                                    size: pagination.pageSize ?? 10,
+                                    sortField: sortField as string,
+                                    sortOrder: sortOrder === "ascend" ? "asc" : sortOrder === "descend" ? "desc" : undefined,
+                                }).catch(handleError);
+                            }}
+                        />
+                    </Card>
                 </div>
             </main>
         </div>

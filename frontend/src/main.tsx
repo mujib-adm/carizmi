@@ -1,8 +1,9 @@
-import {ConfigProvider, theme} from "antd";
+import { ConfigProvider, theme } from "antd";
 import { LoadingProvider } from "./context/LoadingContext.tsx";
 import ReactDOM from "react-dom/client";
 import "./themes/main-styles.css";
 import "./themes/style.min.css";
+import "./themes/modern-ui.css";
 import App from "./App";
 
 const sofumarTheme = {
@@ -23,9 +24,9 @@ if (!rootElement) {
 }
 
 ReactDOM.createRoot(rootElement).render(
-    <ConfigProvider theme={sofumarTheme}>
-      <LoadingProvider>
-        <App />
-      </LoadingProvider>
-    </ConfigProvider>
+  <ConfigProvider theme={sofumarTheme}>
+    <LoadingProvider>
+      <App />
+    </LoadingProvider>
+  </ConfigProvider>
 );

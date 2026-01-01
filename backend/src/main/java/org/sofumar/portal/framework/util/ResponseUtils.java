@@ -93,6 +93,12 @@ public class ResponseUtils {
         return ResponseEntity.ok(response);
     }
 
+    public static <T> ResponseEntity<GlobalResponse<T>> okWithData(T data, String msg) {
+        GlobalResponse<T> response = GlobalResponse.withResponseData(data);
+        response.setGlobalMessages(List.of(new GlobalMsg(Message.Type.SUCCESS, msg)));
+        return ResponseEntity.ok(response);
+    }
+
     public static <T> ResponseEntity<GlobalResponse<T>> badRequestWithData(String msg) {
         return ResponseEntity.badRequest().body(GlobalResponse.error(msg));
     }

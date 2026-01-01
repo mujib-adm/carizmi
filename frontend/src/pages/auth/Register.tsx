@@ -40,31 +40,80 @@ export default function Register() {
   if (!isLoading && token) return <Navigate to="/" />;
 
   return (
-    <div className="auth-container">
-      <form className="auth-form" onSubmit={handleSubmit(onSubmit)}>
-        <h2 style={{ marginBottom: "30px" }}>Register</h2>
+    <div className="modern-login-container">
+      <div className="login-glass-card">
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <h2>REGISTER</h2>
 
+          <div className="modern-field-label">
+            First Name <span className="required">*</span>
+          </div>
+          <FormField
+            type="text"
+            placeholder="Enter first name..."
+            registerProps={register("firstName", { required: "First Name is required" })}
+            error={errors.firstName}
+          />
 
-        <div className="form_label"><label className="text_uppercase"> First Name <span className="required_filed">*</span> </label></div>
-        <FormField type="text" placeholder="Enter first name..." registerProps={register("firstName", { required: "First Name is required" })} error={errors.firstName} />
+          <div style={{ marginTop: '16px' }}>
+            <div className="modern-field-label">
+              Last Name <span className="required">*</span>
+            </div>
+            <FormField
+              type="text"
+              placeholder="Enter last name..."
+              registerProps={register("lastName", { required: "Last Name is required" })}
+              error={errors.lastName}
+            />
+          </div>
 
-        <div className="form_label"><label className="text_uppercase"> Last Name <span className="required_filed">*</span> </label></div>
-        <FormField type="text" placeholder="Enter last name..." registerProps={register("lastName", { required: "Last Name is required" })} error={errors.lastName} />
+          <div style={{ marginTop: '16px' }}>
+            <div className="modern-field-label">
+              Email <span className="required">*</span>
+            </div>
+            <FormField
+              type="email"
+              placeholder="Enter email..."
+              registerProps={register("email", { required: "Email is required" })}
+              error={errors.email}
+            />
+          </div>
 
-        <div className="form_label"><label className="text_uppercase"> Email <span className="required_filed">*</span> </label></div>
-        <FormField type="email" placeholder="Enter email..." registerProps={register("email", { required: "Email is required" })} error={errors.email} />
+          <div style={{ marginTop: '16px' }}>
+            <div className="modern-field-label">
+              Username <span className="required">*</span>
+            </div>
+            <FormField
+              type="text"
+              placeholder="Enter username..."
+              registerProps={register("username", { required: "Username is required" })}
+              error={errors.username}
+            />
+          </div>
 
-        <div className="form_label"><label className="text_uppercase"> Username <span className="required_filed">*</span> </label></div>
-        <FormField type="text" placeholder="Enter username..." registerProps={register("username", { required: "Username is required" })} error={errors.username} />
+          <div style={{ marginTop: '16px' }}>
+            <div className="modern-field-label">
+              Password <span className="required">*</span>
+            </div>
+            <FormField
+              type="password"
+              placeholder="Enter password..."
+              registerProps={register("password", { required: "Password is required" })}
+              error={errors.password}
+            />
+          </div>
 
-        <div className="form_label"><label className="text_uppercase"> Password <span className="required_filed">*</span> </label></div>
-        <FormField type="password" placeholder="Enter password..." registerProps={register("password", { required: "Password is required" })} error={errors.password} />
+          {globalMessages && <MessageBanner messages={globalMessages} />}
 
-        {globalMessages && <MessageBanner messages={globalMessages} />}
+          <button className="global_btn" type="submit">
+            REGISTER
+          </button>
 
-        <button className="global_btn" type="submit"> Register </button>
-        <p className="auth-link"> Already have an account? <a href="/login">Login here</a> </p>
-      </form>
+          <p className="auth-link">
+            Already have an account? <a href="/login">Login here</a>
+          </p>
+        </form>
+      </div>
     </div>
   );
 }

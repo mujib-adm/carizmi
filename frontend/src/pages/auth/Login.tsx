@@ -25,7 +25,7 @@ export default function Login() {
 
       if (responseBody?.map?.token && responseBody?.map?.role) {
         login(responseBody.map.token, responseBody.map.role);
-        navigate("/");
+        navigate("/dashboard");
       } else if (responseBody.globalMessages?.length > 0) {
         handleResponse(responseBody);
       } else {
@@ -37,21 +37,44 @@ export default function Login() {
   };
 
   return (
-    <div className="auth-container">
-      <form className="auth-form" onSubmit={handleSubmit(onSubmit)}>
-        <h2 style={{ marginBottom: "50px" }}>Login</h2>
+    <div className="modern-login-container">
+      <div className="login-glass-card">
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <h2>LOGIN</h2>
 
-        <div className="form_label"><label className="text_uppercase"> Username <span className="required_filed">*</span> </label></div>
-        <FormField type="text" placeholder="Enter username..." registerProps={register("username", { required: "Username is required" })} error={errors.username} />
+          <div className="modern-field-label">
+            USERNAME <span className="required">*</span>
+          </div>
+          <FormField
+            type="text"
+            placeholder="Enter username..."
+            registerProps={register("username", { required: "Username is required" })}
+            error={errors.username}
+          />
 
-        <div className="form_label"><label className="text_uppercase"> Password <span className="required_filed">*</span> </label></div>
-        <FormField type="password" placeholder="Enter password..." registerProps={register("password", { required: "Password is required" })} error={errors.password} />
+          <div style={{ marginTop: '20px' }}>
+            <div className="modern-field-label">
+              PASSWORD <span className="required">*</span>
+            </div>
+            <FormField
+              type="password"
+              placeholder="Enter password..."
+              registerProps={register("password", { required: "Password is required" })}
+              error={errors.password}
+            />
+          </div>
 
-        {globalMessages && <MessageBanner messages={globalMessages} />}
+          {globalMessages && <MessageBanner messages={globalMessages} />}
 
-        <button className="global_btn" type="submit"> Login </button>
-        <p className="auth-link"> Don't have an account? <a href="/register">Register here</a> </p>
-      </form>
+          <button className="global_btn" type="submit">
+            LOGIN
+          </button>
+
+          <p className="auth-link">
+            Don't have an account? <a href="/register">Register here</a>
+          </p>
+        </form>
+      </div>
     </div>
   );
 }

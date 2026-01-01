@@ -42,15 +42,13 @@ export function MemberModal({ open, onCancel, onSubmit, initial, statusOptions }
   return (
     <Modal
       open={open}
+      className="modern-modal"
       onCancel={onCancel}
       onOk={handleSubmit(submit)}
       okText="Save"
-      title={
-        <div style={{ marginBottom: "30px", textAlign: "center", width: "100%", fontSize: "1.5rem" }}>
-          {title}
-        </div>
-      }
+      title={title}
       destroyOnHidden
+      centered
     >
       <form className="member-form" onSubmit={handleSubmit(submit)}>
         <div className="two-col">

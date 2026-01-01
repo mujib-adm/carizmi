@@ -12,7 +12,7 @@ import java.util.List;
 
 public interface MemberService extends BusinessLogic<MemberVO> {
 
-    ResponseEntity<GlobalResponse<Void>> addMember(MemberDto requestDto);
+    ResponseEntity<GlobalResponse<Integer>> addMember(MemberDto requestDto);
 
     ResponseEntity<GlobalResponse<Void>> updateMember(MemberDto requestDto);
 

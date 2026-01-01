@@ -34,7 +34,7 @@ public class MemberController {
     @PostMapping("/add")
     @Operation(summary = "Add a new member")
     @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
-    public ResponseEntity<GlobalResponse<Void>> addMember(@RequestBody MemberDto requestDto) {
+    public ResponseEntity<GlobalResponse<Integer>> addMember(@RequestBody MemberDto requestDto) {
         return memberService.addMember(requestDto);
     }
 

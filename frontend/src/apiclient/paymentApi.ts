@@ -3,7 +3,7 @@ import { GlobalResponse, Payment, PaymentRequestDto, PaymentSearchParams } from 
 import apiClient from "./ApiClient";
 
 export const addPayment = async (data: PaymentRequestDto) => {
-  const res = await apiClient.post<GlobalResponse>(ApiEndpoints.PAYMENTS.ADD, data);
+  const res = await apiClient.post<GlobalResponse<number>>(ApiEndpoints.PAYMENTS.ADD, data);
   return res.data;
 };
 
@@ -14,6 +14,11 @@ export const updatePayment = async (data: PaymentRequestDto) => {
 
 export const deletePayment = async (paymentID: number) => {
   const res = await apiClient.delete<GlobalResponse>(ApiEndpoints.PAYMENTS.DELETE(paymentID));
+  return res.data;
+};
+
+export const getPayment = async (paymentID: number) => {
+  const res = await apiClient.get<GlobalResponse<Payment>>(ApiEndpoints.PAYMENTS.GET(paymentID));
   return res.data;
 };
 

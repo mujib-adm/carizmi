@@ -1,8 +1,9 @@
-import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, EyeOutlined, UserOutlined } from '@ant-design/icons';
 import { Button, Card, Modal, Space, Table, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { useEffect, useMemo, useState } from "react";
-import { addMember, deleteMember, updateMember } from "../../apiclient/memberApi";
+import { useMemo, useState } from "react";
+import { useNavigate } from 'react-router-dom';
+import { addMember, deleteMember, getMember, updateMember } from "../../apiclient/memberApi";
 import { MemberModal } from "../../component/MemberModal";
 import { MessageBanner } from "../../component/MessageBanner";
 import SearchFilterBar from "../../component/SearchFilterBar";
@@ -19,8 +20,9 @@ const { Title } = Typography;
 
 export default function MemberPage() {
 
+    const navigate = useNavigate();
     const notify = useNotification();
-    const { members, meta, loading, fetchMembers } = usePaginatedMembers();
+    const { members, meta, loading, fetchMembers, setMembers } = usePaginatedMembers();
     const { globalMessages, handleError, resetMessages } = useApiMessages<any>();
 
     // search filters
@@ -35,11 +37,6 @@ export default function MemberPage() {
         () => getReference(MEMBER_STATUS).map(r => ({ value: r.code, label: r.display })),
         [getReference]
     );
-
-    // Initial load
-    useEffect(() => {
-        fetchMembers().catch(handleError);
-    }, []);
 
     const handleSearch = async () => {
         resetMessages();
@@ -88,15 +85,27 @@ export default function MemberPage() {
     };
 
     const handleSubmit = async (values: MemberRequestDto) => {
-        const resp = selectedRecord?.memberID ? await updateMember(values) : await addMember(values);
+        const isAdd = !selectedRecord?.memberID;
+        const resp = isAdd ? await addMember(values) : await updateMember(values);
 
         if (resp.globalMessages?.[0]?.type === MessageType.SUCCESS) {
             notify.success({ message: "Success", description: resp.globalMessages[0].message });
+
+            if (isAdd && resp.responseData) {
+                // Fetch the newly created member details
+                const fullMemberResp = await getMember(resp.responseData);
+                if (fullMemberResp.responseData) {
+                    // Prepend to the list
+                    setMembers(prev => [fullMemberResp.responseData!, ...prev]);
+                }
+            } else if (!isAdd) {
+                // For updates, we still refresh the list to ensure sorting/filtering logic
+                fetchMembers(filters);
+            }
         }
         setModalOpenInd(false);
         setSelectedRecord(null);
         resetMessages();
-        fetchMembers(filters);
     };
 
     const columns: ColumnsType<Member> = [
@@ -111,6 +120,7 @@ export default function MemberPage() {
             key: 'action',
             render: (_, record) => (
                 <Space>
+                    <Button icon={<EyeOutlined />} onClick={() => navigate(`/members/${record.memberID}`)} />
                     <Button icon={<EditOutlined />} onClick={() => openEdit(record)} />
                     <Button icon={<DeleteOutlined />} danger onClick={() => handleDelete(record.memberID, `${record.firstName} ${record.lastName}`)} />
                 </Space>
@@ -119,46 +129,48 @@ export default function MemberPage() {
     ];
 
     return (
-        <div className="dashboard">
+        <div className="dashboard-layout">
             <Sidebar />
-            <main className="content">
+            <main className="content fade-in">
                 <div style={{ padding: 24 }}>
-                    <div className="content-title">
-                        <Title level={3}>Members</Title>
+                    <div className="page-header">
+                        <Title level={2} className="page-title">
+                            <UserOutlined /> Members
+                        </Title>
                     </div>
 
-                    <Card style={{ marginBottom: 16 }}>
-                        <SearchFilterBar config={memberSearchFiltersConfig as any} filters={filters} onChange={setFilters} onSearch={handleSearch} onAdd={openAdd} />
-                    </Card>
+                    <SearchFilterBar config={memberSearchFiltersConfig as any} filters={filters} onChange={setFilters} onSearch={handleSearch} onAdd={openAdd} />
 
                     {globalMessages && <MessageBanner messages={globalMessages} />}
 
-                    <Table<Member>
-                        size="small"
-                        rowKey="memberID"
-                        columns={columns}
-                        dataSource={members}
-                        loading={loading}
-                        pagination={{
-                            current: meta ? meta.page + 1 : 1,
-                            pageSize: meta?.pageSize ?? 10,
-                            total: meta?.totalRecords ?? 0,
-                            showSizeChanger: true,
-                        }}
-                        onChange={(pagination, filters, sorter) => {
-                            const sortField = Array.isArray(sorter) ? sorter[0].field : sorter.field;
-                            const sortOrder = Array.isArray(sorter) ? sorter[0].order : sorter.order;
+                    <Card className="glass-card" style={{ padding: 0 }}>
+                        <Table<Member>
+                            size="small"
+                            rowKey="memberID"
+                            columns={columns}
+                            dataSource={members}
+                            loading={loading}
+                            pagination={{
+                                current: meta ? meta.page + 1 : 1,
+                                pageSize: meta?.pageSize ?? 10,
+                                total: meta?.totalRecords ?? 0,
+                                showSizeChanger: true,
+                            }}
+                            onChange={(pagination, _filters, sorter) => {
+                                const sortField = Array.isArray(sorter) ? sorter[0].field : sorter.field;
+                                const sortOrder = Array.isArray(sorter) ? sorter[0].order : sorter.order;
 
-                            resetMessages();
-                            fetchMembers({
-                                ...filters, // your current search filters
-                                page: (pagination.current ?? 1) - 1,
-                                size: pagination.pageSize ?? 10,
-                                sortField: sortField as string,
-                                sortOrder: sortOrder === "ascend" ? "asc" : sortOrder === "descend" ? "desc" : undefined,
-                            }).catch(handleError);
-                        }}
-                    />
+                                resetMessages();
+                                fetchMembers({
+                                    ...filters, // use the state-level search filters
+                                    page: (pagination.current ?? 1) - 1,
+                                    size: pagination.pageSize ?? 10,
+                                    sortField: sortField as string,
+                                    sortOrder: sortOrder === "ascend" ? "asc" : sortOrder === "descend" ? "desc" : undefined,
+                                }).catch(handleError);
+                            }}
+                        />
+                    </Card>
 
                     <MemberModal
                         open={modalOpenInd}

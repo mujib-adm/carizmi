@@ -1,22 +1,49 @@
-import { NavLink } from 'react-router-dom';
+import {
+    DashboardOutlined,
+    UserOutlined,
+    DollarOutlined,
+    SolutionOutlined,
+    FileSearchOutlined,
+    SettingOutlined,
+    TeamOutlined,
+    LogoutOutlined,
+    DatabaseOutlined
+} from '@ant-design/icons';
+import { Menu } from 'antd';
+import type { MenuProps } from 'antd';
+import { useNavigate, useLocation } from 'react-router-dom';
 import './Sidebar.css';
 
 export default function Sidebar() {
     const role = localStorage.getItem("role") || "USER";
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    const items: MenuProps['items'] = [
+        { key: '/dashboard', icon: <DashboardOutlined />, label: 'Dashboard' },
+        { key: '/payments', icon: <DollarOutlined />, label: 'Payments' },
+        { key: '/members', icon: <UserOutlined />, label: 'Members' },
+//         { key: '/expenses', icon: <SolutionOutlined />, label: 'Expenses' },
+//         { key: '/reporting', icon: <FileSearchOutlined />, label: 'Reporting' },
+        { key: '/references', icon: <DatabaseOutlined />, label: 'Reference' },
+        { key: '/settings', icon: <SettingOutlined />, label: 'System Settings' },
+        ...(role === "ADMIN" ? [{ key: '/users', icon: <TeamOutlined />, label: 'Users' }] : []),
+        { key: '/logout', icon: <LogoutOutlined />, label: 'Logout' },
+    ];
+
+    const onClick: MenuProps['onClick'] = (e) => {
+        navigate(e.key);
+    };
 
     return (
-        <nav className="sidebar">
-            <ul>
-                <li><NavLink to="/dashboard" className={({ isActive }) => isActive ? "active" : ""}>Dashboard</NavLink></li>
-                <li><NavLink to="/members" className={({ isActive }) => isActive ? "active" : ""}>Members</NavLink></li>
-                <li><NavLink to="/payments" className={({ isActive }) => isActive ? "active" : ""}>Payments</NavLink></li>
-                <li><NavLink to="/expenses" className={({ isActive }) => isActive ? "active" : ""}>Expenses</NavLink></li>
-                <li><NavLink to="/reporting" className={({ isActive }) => isActive ? "active" : ""}>Reporting</NavLink></li>
-                <li><NavLink to="/references" className={({ isActive }) => isActive ? "active" : ""}>Reference</NavLink></li>
-                <li><NavLink to="/settings" className={({ isActive }) => isActive ? "active" : ""}>System Settings</NavLink></li>
-                {role === "ADMIN" && <li><NavLink to="/users" className={({ isActive }) => isActive ? "active" : ""}>Users</NavLink></li>}
-                <li><NavLink to="/logout">Logout</NavLink></li>
-            </ul>
-        </nav>
+        <aside className="sidebar-container">
+            <Menu
+                onClick={onClick}
+                selectedKeys={[location.pathname === '/' ? '/dashboard' : location.pathname]}
+                mode="inline"
+                items={items}
+                className="modern-sidebar-menu"
+            />
+        </aside>
     );
 }

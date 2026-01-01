@@ -1,0 +1,527 @@
+/* Modern UI Design System for Sof'umar Portal */
+
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.92);
+  --glass-border: rgba(30, 86, 49, 0.15);
+  /* Subtle primary color glow */
+  --glass-shadow: 0 16px 48px 0 rgba(0, 0, 0, 0.12), 0 2px 12px 0 rgba(31, 38, 135, 0.08);
+  --glass-shadow-hover: 0 24px 60px 0 rgba(0, 0, 0, 0.18), 0 4px 16px 0 rgba(31, 38, 135, 0.12);
+  --vibrant-gradient: linear-gradient(135deg, #1E5631 0%, #5C9013 100%);
+  --accent-blue: #00b4d8;
+  --accent-purple: #7209b7;
+  --soft-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  --premium-rounding: 12px;
+}
+
+/* Glassmorphism Card */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: var(--premium-rounding);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  padding: 24px;
+  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+  width: 100%;
+}
+
+@media (max-width: 576px) {
+  .glass-card {
+    padding: 16px;
+  }
+}
+
+.glass-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--glass-shadow-hover);
+}
+
+/* Statistics Style */
+.stat-value {
+  font-family: var(--priFont);
+  font-weight: 700;
+  font-size: 2rem;
+  color: var(--priColor);
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: var(--otherColor2);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Responsive Grid */
+.modern-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+/* Mobile Transitions */
+@media (max-width: 768px) {
+  .sidebar-collapsed {
+    transform: translateX(-100%);
+  }
+
+  .modern-sidebar-menu {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100vw;
+    z-index: 1000;
+    display: flex;
+    justify-content: space-around;
+    padding: 8px 0 !important;
+    background: white;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* Animation utilities */
+.fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+    filter: blur(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+.title-wrap {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Modern Modal Styling - LIMITED TO TITLE AND BUTTONS ONLY */
+.modern-modal .ant-modal-title {
+  color: var(--priColor) !important;
+  font-weight: 700 !important;
+  font-size: 1.6rem !important;
+  text-align: center !important;
+  width: 100% !important;
+  margin-bottom: 24px !important;
+}
+
+.modern-modal .ant-modal-close {
+  top: 20px;
+  right: 20px;
+}
+
+/* Dashboard Analytics Styles */
+.analytics-card {
+  height: 100%;
+  padding: 32px !important;
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-radius: 24px !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.08) !important;
+  transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+  overflow: hidden;
+  position: relative;
+}
+
+.analytics-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.12) !important;
+}
+
+.metric-label {
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #40916C;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metric-value {
+  font-family: 'Outfit', sans-serif;
+  font-size: 2.8rem;
+  font-weight: 800;
+  color: #1E5631;
+  margin: 0;
+  line-height: 1;
+}
+
+.metric-subtext {
+  font-size: 0.8rem;
+  color: #52665D;
+  margin-top: 8px;
+}
+
+.chart-container {
+  /* min-height: 400px; */
+  /* display: flex; */
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.chart-title {
+  align-self: flex-start;
+  /* margin-bottom: 24px; */
+  font-family: 'Federo', sans-serif;
+  font-size: 1.2rem;
+  color: #1E5631;
+}
+
+.metric-trend-down {
+  color: #e53e3e;
+}
+
+.metric-trend-up {
+  color: #38a169;
+}
+
+/* Decorative wave for metric cards (simulating the mockup) */
+.metric-wave {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 150px;
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* Old header hide */
+.header {
+  display: none !important;
+}
+
+/* Modern Login Styles */
+.modern-login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 80px);
+  /* Adjust based on static header height */
+  background: radial-gradient(circle at top left, #f0fdf4 0%, #dcfce7 40%, #ffffff 80%);
+  padding: 20px;
+}
+
+.login-glass-card {
+  width: 100%;
+  max-width: 440px;
+  padding: 48px;
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-radius: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow:
+    0 10px 40px rgba(31, 38, 135, 0.1),
+    0 1px 3px rgba(0, 0, 0, 0.05);
+  /* box-shadow: var(--glass-shadow-hover); */
+  animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.login-glass-card h2 {
+  font-family: 'Federo', sans-serif;
+  color: #1E5631;
+  font-size: 2.2rem;
+  font-weight: 400;
+  text-align: center;
+  margin-bottom: 40px;
+  letter-spacing: 2px;
+}
+
+.modern-field-label {
+  display: block;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2D6A4F;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.modern-field-label .required {
+  color: #e53e3e;
+  margin-left: 4px;
+}
+
+/* Enhancing existing FormField for modern login */
+.modern-login-container .form_field {
+  background: rgba(255, 255, 255, 0.6) !important;
+  border: 1px solid rgba(64, 145, 108, 0.2) !important;
+  border-radius: 12px !important;
+  height: 52px !important;
+  padding: 0 16px !important;
+  font-size: 1rem !important;
+  transition: all 0.3s ease !important;
+}
+
+.modern-login-container .form_field:focus {
+  background: #ffffff !important;
+  border-color: #40916C !important;
+  box-shadow: 0 0 0 4px rgba(64, 145, 108, 0.1) !important;
+  outline: none !important;
+}
+
+.modern-login-container .global_btn {
+  width: 100%;
+  height: 52px;
+  margin-top: 24px;
+  background: linear-gradient(135deg, #2D6A4F 0%, #1E5631 100%) !important;
+  border-radius: 14px !important;
+  font-weight: 600 !important;
+  font-size: 1rem !important;
+  letter-spacing: 1px !important;
+  box-shadow: 0 4px 15px rgba(30, 86, 49, 0.3) !important;
+  transition: all 0.3s ease !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.modern-login-container .global_btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(30, 86, 49, 0.4) !important;
+  filter: brightness(1.1);
+}
+
+.modern-login-container .auth-link {
+  margin-top: 24px;
+  color: #52665D;
+  font-size: 0.95rem;
+}
+
+.modern-login-container .auth-link a {
+  color: #2D6A4F;
+  font-weight: 700;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.modern-login-container .auth-link a:hover {
+  border-bottom-color: #2D6A4F;
+}
+
+.modern-modal .ant-modal-footer {
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 12px !important;
+  border-top: none !important;
+  padding-top: 12px !important;
+}
+
+.modern-modal .ant-modal-footer .ant-btn {
+  height: 44px !important;
+  padding: 0 24px !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+}
+
+.modern-modal .ant-modal-footer .ant-btn-primary {
+  background: var(--vibrant-gradient) !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(30, 86, 49, 0.2) !important;
+}
+
+.modern-modal .ant-modal-footer .ant-btn-primary:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 16px rgba(30, 86, 49, 0.3) !important;
+}
+
+/* Ensure Modals don't hide under the fixed/absolute top header */
+.ant-modal-root .ant-modal-wrap {
+  padding-top: 80px !important;
+  /* Matches header height */
+  z-index: 1000 !important;
+}
+
+/* For full-screen or large modals on mobile, ensure they are scrollable and start below header */
+@media (max-width: 768px) {
+  .ant-modal-root .ant-modal-wrap {
+    padding-top: 80px !important;
+  }
+}
+
+/* Modern Header Glassmorphism Island */
+.glass-header {
+  position: relative;
+  /* Changed from fixed/static for better integration, no transform needed */
+  width: 100% !important;
+  max-width: none !important;
+  height: 80px !important;
+  /* background: rgba(255, 255, 255, 0.3) !important; */
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  /* border: none !important; */
+  /* Edge to edge, so border usually looks better removed */
+  /* border-bottom: 1px solid rgba(255, 255, 255, 0.4) !important; */
+  /* box-shadow: 0 4px 20px rgba(31, 38, 135, 0.05) !important; */
+
+  background: var(--glass-bg);
+  /* border: 1px solid var(--glass-border) !important; */
+  /* box-shadow: 0 0 22px rgba(30, 86, 49, 0.2) !important; */
+  /* box-shadow: var(--glass-shadow); */
+  box-shadow: var(--glass-shadow-hover);
+  /* border-bottom: 0.5px solid var(--secColor); */
+
+  border-radius: 0 !important;
+  /* Full width span */
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 0 40px !important;
+  z-index: 900;
+  transition: all 0.4s ease;
+}
+
+.glass-header:hover {
+  background: rgba(255, 255, 255, 0.4) !important;
+}
+
+.portal-logo-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.portal-logo-modern {
+  height: 80px !important;
+  width: auto !important;
+  object-fit: contain;
+}
+
+.portal-title-stack {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  line-height: 1.1;
+  margin-left: 16px;
+}
+
+.portal-title-main {
+  font-size: 1.9rem;
+  font-family: var(--fontSecondary);
+  color: #1E5631 !important;
+  margin: 0 !important;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.portal-title-sub {
+  font-size: 0.66rem !important;
+  font-family: var(--fontSecondary);
+  color: #000000 !important;
+  margin: 0 !important;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* Modern Nav Links */
+.header-nav {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.header-nav-link {
+  padding: 8px 16px;
+  border-radius: 8px;
+  color: #4b5563;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.header-nav-link:hover {
+  background: rgba(64, 145, 108, 0.1);
+  color: #1E5631;
+}
+
+.header-nav-link.active {
+  background: rgba(64, 145, 108, 0.15);
+  color: #1E5631;
+}
+
+/* Quick Actions */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .glass-header {
+    width: 100% !important;
+    padding: 0 16px !important;
+  }
+
+  .header-nav {
+    display: none;
+    /* Hidden on mobile, handled by sidebar drawer */
+  }
+
+  .portal-title-modern {
+    font-size: 1.1rem !important;
+  }
+}
+
+/* Layout adjustments for Floating Header */
+.app-wrapper {
+  padding-top: 0 !important;
+  background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 400px) !important;
+  min-height: 100vh;
+}
+
+/* Centralized Page Title Styling */
+.page-header {
+  margin-bottom: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.page-title {
+  margin: 0 !important;
+  color: #1E5631 !important;
+  font-family: 'Federo', sans-serif !important;
+  letter-spacing: 0.5px;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+.page-title span[role="img"] {
+  font-size: 1.1em;
+}
+
+/*
+.header {
+  display: none !important;
+}
+*/
