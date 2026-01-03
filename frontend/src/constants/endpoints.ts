@@ -14,6 +14,10 @@ export const ApiEndpoints = {
     SEARCH: "/payments/search",
     GET: (paymentID: number) => `/payments/get/${paymentID}`,
     DELETE: (paymentID: number) => `/payments/delete/${paymentID}`,
+    LATEST: "/payments/latest",
+  },
+  DASHBOARD: {
+    METRICS: "/dashboard/metrics",
   },
   SETTINGS: {
     ADD: "/system-settings/add",

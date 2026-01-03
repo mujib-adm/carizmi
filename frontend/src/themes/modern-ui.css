@@ -357,7 +357,14 @@
 .ant-modal-root .ant-modal-wrap {
   padding-top: 80px !important;
   /* Matches header height */
-  z-index: 1000 !important;
+  z-index: 1020 !important;
+  /* Content on top */
+  position: fixed !important;
+}
+
+.ant-modal-root .ant-modal-mask {
+  z-index: 1010 !important;
+  /* Mask below content */
 }
 
 /* For full-screen or large modals on mobile, ensure they are scrollable and start below header */

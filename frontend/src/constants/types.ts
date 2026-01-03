@@ -179,16 +179,23 @@ export interface ReferenceData {
 }
 
 // Dashboard
-export interface DashboardMetrics
- {
+export interface DashboardMetrics {
   totalMembers: number;
   totalRevenue: number;
   duesThisQuarter: number;
   overdueTotal: number;
+  quarterlyFeeAmt: number;
+  quarterlyCollections: QuarterlyCollection[];
 }
 
-export interface RecentTransactions
- {
+export interface QuarterlyCollection {
+  quarterLabel: string;
+  collectedAmount: number;
+  percentage: number;
+  status: 'PAST' | 'CURRENT' | 'FUTURE';
+}
+
+export interface RecentTransactions {
   paymentID: number;
   memberID?: number;
   paymentDate: string;

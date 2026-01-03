@@ -6,4 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface ExpenseRepository extends JpaRepository<ExpenseVO, Integer> {
 //    @Query("select sum(e.amount) from ExpenseVO e where e.dateOfExpense between :from and :to")
 //    BigDecimal sumAmountBetween(@Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    @org.springframework.data.jpa.repository.Query("select sum(e.amount) from ExpenseVO e")
+    java.math.BigDecimal sumTotalAmount();
 }
