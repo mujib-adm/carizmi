@@ -24,7 +24,7 @@ export default function Login() {
       const responseBody = response.data;
 
       if (responseBody?.map?.token && responseBody?.map?.role) {
-        login(responseBody.map.token, responseBody.map.role);
+        login(responseBody.map.token, responseBody.map.role, responseBody.map.firstName || '');
         navigate("/dashboard");
       } else if (responseBody.globalMessages?.length > 0) {
         handleResponse(responseBody);

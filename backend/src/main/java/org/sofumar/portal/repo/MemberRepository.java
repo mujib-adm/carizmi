@@ -7,7 +7,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface MemberRepository extends JpaRepository<MemberVO, Integer>, JpaSpecificationExecutor<MemberVO> {
-    long countByStatus(String status);
 }
 
 //public interface MemberRepository extends JpaRepository<MemberVO, Integer> {

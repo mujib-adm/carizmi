@@ -3,10 +3,18 @@ package org.sofumar.portal.repo;
 import org.sofumar.portal.data.vo.ExpenseVO;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface ExpenseRepository extends JpaRepository<ExpenseVO, Integer> {
-//    @Query("select sum(e.amount) from ExpenseVO e where e.dateOfExpense between :from and :to")
-//    BigDecimal sumAmountBetween(@Param("from") LocalDate from, @Param("to") LocalDate to);
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
-    @org.springframework.data.jpa.repository.Query("select sum(e.amount) from ExpenseVO e")
-    java.math.BigDecimal sumTotalAmount();
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
+public interface ExpenseRepository extends JpaRepository<ExpenseVO, Integer>, JpaSpecificationExecutor<ExpenseVO> {
+
+    @Query("select sum(e.amount) from ExpenseVO e where e.dateOfExpense < :date")
+    BigDecimal sumAmountByDateOfExpenseBefore(@Param("date") LocalDate date);
+
+    @Query("select sum(e.amount) from ExpenseVO e where e.dateOfExpense >= :start and e.dateOfExpense <= :end")
+    BigDecimal sumAmountByDateOfExpenseBetween(@Param("start") LocalDate start, @Param("end") LocalDate end);
 }

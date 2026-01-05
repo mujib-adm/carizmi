@@ -51,6 +51,6 @@ public class AuthController {
         if (user == null) {
             return ResponseUtils.withStatus(HttpStatus.UNAUTHORIZED, Message.Type.ERROR, "Session expired or User not logged in.");
         }
-        return ResponseUtils.withMap(Map.of("username", user.getUsername(), "role", user.getAuthorities().toString()));
+        return userService.getProfile(user.getUsername());
     }
 }

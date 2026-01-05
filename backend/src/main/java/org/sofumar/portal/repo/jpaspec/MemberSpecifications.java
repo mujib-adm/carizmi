@@ -12,6 +12,10 @@ import java.util.List;
 
 public class MemberSpecifications {
 
+    public static Specification<MemberVO> hasStatus(String status) {
+        return (root, query, cb) -> status == null ? null : cb.equal(root.get(FieldConstants.STATUS), status);
+    }
+
     public static Specification<MemberVO> hasMemberID(Integer memberID) {
         return (root, query, cb) -> memberID == null ? null : cb.equal(root.get(FieldConstants.MEMBER_ID), memberID);
     }

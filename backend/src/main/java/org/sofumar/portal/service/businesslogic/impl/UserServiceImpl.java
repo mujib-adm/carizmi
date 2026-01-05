@@ -100,7 +100,7 @@ public class UserServiceImpl extends AbstractBusinessLogic<UserVO, UserRepositor
                 .setIssuer("sofumar.portal").setIssuedAt(new Date())
                 .setExpiration(Date.from(Instant.now().plus(expMin, ChronoUnit.MINUTES)))
                 .signWith(Keys.hmacShaKeyFor(Base64.getDecoder().decode(secret)), SignatureAlgorithm.HS256).compact();
-        return ResponseUtils.withMap(Map.of("token", token, "role", userVO.getRole()));
+        return ResponseUtils.withMap(Map.of("token", token, "role", userVO.getRole(), "firstName", userVO.getFirstName()));
     }
 
     @Override
@@ -114,8 +114,20 @@ public class UserServiceImpl extends AbstractBusinessLogic<UserVO, UserRepositor
 
         long expSeconds = (claims.getExpiration().getTime() - System.currentTimeMillis()) / 1000;
 
-        logger.info("Revoking token: {}", token);
         blacklistService.revokeToken(token, expSeconds);
+    }
+
+    @Override
+    public ResponseEntity<?> getProfile(String username) {
+        UserVO userVO = userRepo.findOne(UserSpecifications.hasUsername(username)).orElse(null);
+        if (userVO == null) {
+            return ResponseUtils.withStatus(HttpStatus.UNAUTHORIZED, Message.Type.ERROR, "User not found.");
+        }
+        return ResponseUtils.withMap(Map.of(
+                "username", userVO.getUsername(),
+                "role", userVO.getRole(),
+                "firstName", userVO.getFirstName(),
+                "lastName", userVO.getLastName()));
     }
 
 }

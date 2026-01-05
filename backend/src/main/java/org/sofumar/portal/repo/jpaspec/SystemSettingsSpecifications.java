@@ -41,4 +41,14 @@ public class SystemSettingsSpecifications {
                     cb.like(cb.lower(root.get(FieldConstants.SETTING_VALUE)), likePattern));
         };
     }
+
+    public static Specification<SystemSettingsVO> isSettingKey(String settingKey) {
+        return (root, query, cb) -> settingKey == null ? null
+                : cb.equal(cb.lower(root.get(FieldConstants.SETTING_KEY)), settingKey.toLowerCase());
+    }
+
+    public static Specification<SystemSettingsVO> isSettingType(String settingType) {
+        return (root, query, cb) -> settingType == null ? null
+                : cb.equal(cb.lower(root.get(FieldConstants.SETTING_TYPE)), settingType.toLowerCase());
+    }
 }

@@ -1,22 +1,28 @@
 package org.sofumar.portal.repo;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+
 import org.sofumar.portal.data.vo.PaymentVO;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface PaymentRepository extends JpaRepository<PaymentVO, Integer>, JpaSpecificationExecutor<PaymentVO> {
 
-    @org.springframework.data.jpa.repository.Query("select sum(p.amount) from PaymentVO p")
-    java.math.BigDecimal sumTotalAmount();
+    @Query("select sum(p.amount) from PaymentVO p where p.dateReceived < :date")
+    BigDecimal sumAmountByDateReceivedBefore(@Param("date") LocalDate date);
 
-    @org.springframework.data.jpa.repository.Query("select sum(p.amount) from PaymentVO p where p.year = :year and p.quarter = :quarter")
-    java.math.BigDecimal sumAmountByYearAndQuarter(
-            @org.springframework.data.repository.query.Param("year") Integer year,
-            @org.springframework.data.repository.query.Param("quarter") Integer quarter);
+    @Query("select sum(p.amount) from PaymentVO p where p.dateReceived >= :start and p.dateReceived <= :end")
+    BigDecimal sumAmountByDateReceivedBetween(@Param("start") LocalDate start, @Param("end") LocalDate end);
 
-    @org.springframework.data.jpa.repository.Query("select p.member.memberID as memberID, p.year as year, p.quarter as quarter, sum(p.amount) as totalPaid from PaymentVO p where p.feeType = :feeType group by p.member.memberID, p.year, p.quarter")
-    java.util.List<PaymentSummary> findPaymentSummaries(
-            @org.springframework.data.repository.query.Param("feeType") String feeType);
+    @Query("select sum(p.amount) from PaymentVO p where p.year = :year and p.quarter = :quarter")
+    BigDecimal sumAmountByYearAndQuarter(@Param("year") Integer year, @Param("quarter") Integer quarter);
+
+    @Query("select p.member.memberID as memberID, p.year as year, p.quarter as quarter, sum(p.amount) as totalPaid from PaymentVO p where p.feeType = :feeType and p.year = :year group by p.member.memberID, p.year, p.quarter")
+    List<PaymentSummary> findPaymentSummaries(@Param("feeType") String feeType, @Param("year") Integer year);
 
     interface PaymentSummary {
         Integer getMemberID();
@@ -25,7 +31,7 @@ public interface PaymentRepository extends JpaRepository<PaymentVO, Integer>, Jp
 
         Integer getQuarter();
 
-        java.math.BigDecimal getTotalPaid();
+        BigDecimal getTotalPaid();
     }
 }
 //    Page<Payment> findByMemberID(Integer memberID, Pageable pageable);

@@ -145,7 +145,7 @@ public class SystemSettingsServiceImpl extends AbstractBusinessLogic<SystemSetti
 
     @Override
     public ResponseEntity<GlobalResponse<List<SystemSettingsDto>>> getSettingsByKey(String key) {
-        List<SystemSettingsVO> list = settingsRepo.findBySettingKey(key);
+        List<SystemSettingsVO> list = settingsRepo.findAll(SystemSettingsSpecifications.isSettingKey(key));
         return ResponseUtils.okWithData(dtoTransformer.transformList(list));
     }
 }

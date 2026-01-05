@@ -19,6 +19,9 @@ import java.util.Map;
  * Synchronizes the database reference table with the definitions in
  * reference-data.json on startup.
  */
+import org.sofumar.portal.repo.jpaspec.ReferenceSpecifications;
+import org.springframework.data.jpa.domain.Specification;
+
 @Component
 @RequiredArgsConstructor
 public class ReferenceDataLoader implements CommandLineRunner {
@@ -62,7 +65,8 @@ public class ReferenceDataLoader implements CommandLineRunner {
         String display = item.get("display").asText();
         boolean active = !item.has("active") || item.get("active").asBoolean();
 
-        ReferenceVO existing = referenceRepository.findByReferenceNameAndReferenceCode(referenceName, code);
+        Specification<ReferenceVO> spec = ReferenceSpecifications.hasReferenceName(referenceName).and(ReferenceSpecifications.hasReferenceCode(code));
+        ReferenceVO existing = referenceRepository.findOne(spec).orElse(null);
 
         if (existing != null) {
             // Update if changed

@@ -15,6 +15,8 @@ import org.sofumar.portal.repo.ExpenseRepository;
 import org.sofumar.portal.repo.MemberRepository;
 import org.sofumar.portal.repo.PaymentRepository;
 import org.sofumar.portal.repo.PaymentRepository.PaymentSummary;
+import org.sofumar.portal.repo.jpaspec.MemberSpecifications;
+import org.sofumar.portal.service.businesslogic.BaselineService;
 import org.sofumar.portal.service.businesslogic.DashboardService;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
@@ -34,13 +36,14 @@ import java.util.Map;
 public class DashboardServiceImpl implements DashboardService {
     private static final Logger logger = LoggerFactory.getLogger(DashboardServiceImpl.class);
 
-    // Baseline revenue amount hardcoded temporarily
-    private static final BigDecimal baseline = new BigDecimal("59863.68");
+    // Baseline revenue amount hardcoded for 2026
+    private static final BigDecimal YEARLY_BASELINE_2026 = new BigDecimal("59863.68");
     private static final BigDecimal quarterlyFeeAmt = new BigDecimal("60");
 
     private final MemberRepository memberRepo;
     private final PaymentRepository paymentRepo;
     private final ExpenseRepository expenseRepo;
+    private final BaselineService baselineService;
 
     @Override
     public ResponseEntity<GlobalResponse<DashboardMetricsDto>> getMetrics() {
@@ -49,20 +52,26 @@ public class DashboardServiceImpl implements DashboardService {
         LocalDate now = LocalDate.now();
         int currentYear = now.getYear();
         int currentQuarter = (now.getMonthValue() - 1) / 3 + 1;
+        LocalDate startOfYear = LocalDate.of(currentYear, 1, 1);
 
         // 1. Total Active Members
-        long totalActiveMembers = memberRepo.countByStatus(ReferenceCodeConstants.MEMBER_STATUS.ACTIVE);
+        long totalActiveMembers = memberRepo.count(MemberSpecifications.hasStatus(ReferenceCodeConstants.MEMBER_STATUS.ACTIVE));
 
-        // 2. Total Revenue: Baseline + Payments - Expenses
-        BigDecimal totalPayments = paymentRepo.sumTotalAmount();
-        BigDecimal totalExpenses = expenseRepo.sumTotalAmount();
+        // 2. Total Revenue: Yearly Baseline + Current Year Payments - Current Year Expenses
+        BigDecimal yearlyBaseline = baselineService.getBaselineForYear(currentYear);
+        if (currentYear == 2026) {
+            yearlyBaseline = YEARLY_BASELINE_2026;
+        }
 
-        if (totalPayments == null)
-            totalPayments = BigDecimal.ZERO;
-        if (totalExpenses == null)
-            totalExpenses = BigDecimal.ZERO;
+        BigDecimal currentYearPayments = paymentRepo.sumAmountByDateReceivedBetween(startOfYear, now);
+        BigDecimal currentYearExpenses = expenseRepo.sumAmountByDateOfExpenseBetween(startOfYear, now);
 
-        BigDecimal totalRevenue = baseline.add(totalPayments).subtract(totalExpenses);
+        if (currentYearPayments == null)
+            currentYearPayments = BigDecimal.ZERO;
+        if (currentYearExpenses == null)
+            currentYearExpenses = BigDecimal.ZERO;
+
+        BigDecimal totalRevenue = yearlyBaseline.add(currentYearPayments).subtract(currentYearExpenses);
 
         // 3. Dues for Current Quarter
         // Expected: Active Members * quarterlyFeeAmt
@@ -78,14 +87,14 @@ public class DashboardServiceImpl implements DashboardService {
         }
 
         // 4. Overdues (Excluding Current Quarter)
-        // Fetch Membership Fee payments grouped by member/year/quarter
-        List<PaymentSummary> summaries = paymentRepo.findPaymentSummaries(ReferenceCodeConstants.FEE_TYPE.MEMBERSHIP_FEE);
+        // Fetch Membership Fee payments aggregated for the current year only
+        List<PaymentSummary> summaries = paymentRepo.findPaymentSummaries(ReferenceCodeConstants.FEE_TYPE.MEMBERSHIP_FEE, currentYear);
 
-        // Map: MemberID -> "Year-Quarter" -> Amount
-        Map<Integer, Map<String, BigDecimal>> paymentMap = new HashMap<>();
+        // Map: MemberID -> Quarter -> Amount
+        Map<Integer, Map<Integer, BigDecimal>> paymentMap = new HashMap<>();
         for (PaymentSummary s : summaries) {
             paymentMap.computeIfAbsent(s.getMemberID(), k -> new HashMap<>())
-                    .put(s.getYear() + "-" + s.getQuarter(), s.getTotalPaid());
+                    .merge(s.getQuarter(), s.getTotalPaid(), BigDecimal::add);
         }
 
         BigDecimal overdueTotal = BigDecimal.ZERO;
@@ -94,34 +103,29 @@ public class DashboardServiceImpl implements DashboardService {
         List<MemberVO> activeMembers = listActiveMembers();
 
         for (MemberVO m : activeMembers) {
-            LocalDate startDate = m.getJoinDate();
-            if (startDate == null)
-                startDate = LocalDate.now(); // Fallback
+            LocalDate joinDate = m.getJoinDate();
+            if (joinDate == null)
+                joinDate = LocalDate.now();
 
-            // Iterate from startDate to Quarter Before Current
-            LocalDate iterDate = startDate;
+            // We only care about overdues in the current year
+            // Start assessment from Q1 of current year, or the member's join quarter (if
+            // joined this year)
+            int startQ = 1;
+            if (joinDate.getYear() == currentYear) {
+                startQ = (joinDate.getMonthValue() - 1) / 3 + 1;
+            } else if (joinDate.getYear() > currentYear) {
+                continue; // Joined in the future? Skip.
+            }
 
-            // Safety brake: don't go back too far if data is bad (the app was launched in 2026)
-            if (iterDate.getYear() < 2026)
-                iterDate = LocalDate.of(2026, 1, 1);
+            // Iterate through "Past" quarters of the current year
+            for (int q = startQ; q < currentQuarter; q++) {
+                BigDecimal paid = paymentMap.getOrDefault(m.getMemberID(), Collections.emptyMap())
+                        .getOrDefault(q, BigDecimal.ZERO);
 
-            // Important: We need to normalize iterDate to the start of its quarter to avoid
-            // issues with day-of-month logic
-            iterDate = getQuarterStart(iterDate);
-
-            while (isBeforeCurrentQuarter(iterDate, currentYear, currentQuarter)) {
-                int y = iterDate.getYear();
-                int q = (iterDate.getMonthValue() - 1) / 3 + 1;
-                String key = y + "-" + q;
-
-                BigDecimal paid = paymentMap.getOrDefault(m.getMemberID(), Collections.emptyMap()).getOrDefault(key, BigDecimal.ZERO);
                 BigDecimal due = quarterlyFeeAmt.subtract(paid);
                 if (due.compareTo(BigDecimal.ZERO) > 0) {
                     overdueTotal = overdueTotal.add(due);
                 }
-
-                // Move to next quarter
-                iterDate = iterDate.plusMonths(3);
             }
         }
 
@@ -145,22 +149,8 @@ public class DashboardServiceImpl implements DashboardService {
     }
 
     private List<MemberVO> listActiveMembers() {
-        Specification<MemberVO> spec = (root, query, cb)
-                -> cb.equal(root.get(FieldConstants.STATUS), ReferenceCodeConstants.MEMBER_STATUS.ACTIVE);
+        Specification<MemberVO> spec = (root, query, cb) -> cb.equal(root.get(FieldConstants.STATUS), ReferenceCodeConstants.MEMBER_STATUS.ACTIVE);
         return memberRepo.findAll(spec);
-    }
-
-    private LocalDate getQuarterStart(LocalDate date) {
-        int qMonth = ((date.getMonthValue() - 1) / 3) * 3 + 1;
-        return LocalDate.of(date.getYear(), qMonth, 1);
-    }
-
-    private boolean isBeforeCurrentQuarter(LocalDate date, int currentYear, int currentQuarter) {
-        int y = date.getYear();
-        int q = (date.getMonthValue() - 1) / 3 + 1;
-        if (y < currentYear)
-            return true;
-        return y == currentYear && q < currentQuarter;
     }
 
     private QuarterlyCollectionDto computeQuarterData(int year, int quarter, int currentQuarter, long totalActiveMembers) {

@@ -6,7 +6,4 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 public interface ReferenceRepository
         extends JpaRepository<ReferenceVO, Integer>, JpaSpecificationExecutor<ReferenceVO> {
-    boolean existsByReferenceNameAndReferenceCodeAndActiveTrue(String referenceName, String referenceCode);
-
-    ReferenceVO findByReferenceNameAndReferenceCode(String referenceName, String referenceCode);
 }
