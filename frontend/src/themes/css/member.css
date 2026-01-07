@@ -44,7 +44,10 @@
 .member-form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+}
+
+.member-form .ant-form-item {
+  margin-bottom: 12px;
 }
 
 .member-form .two-col {

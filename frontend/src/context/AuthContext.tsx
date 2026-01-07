@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { setAuthToken } from "../apiclient/ApiClient";
+import { onUnauthorized, setAuthToken } from "../apiclient/ApiClient";
 
 type AuthContextType = {
   token: string | null;
@@ -44,6 +44,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setRole("User");
     setFirstName("");
   };
+
+  // Register unauthorized callback to trigger logout on 401
+  useEffect(() => {
+    onUnauthorized(logout);
+  }, []);
 
   useEffect(() => {
     setToken(localStorage.getItem("token"));

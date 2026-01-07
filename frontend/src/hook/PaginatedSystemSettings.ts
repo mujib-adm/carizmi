@@ -4,7 +4,7 @@ import { GlobalResponse, PaginationMeta, SystemSetting, SystemSettingSearchParam
 
 export function usePaginatedSystemSettings(initialParams: SystemSettingSearchParams = {}) {
     const [settings, setSettings] = useState<SystemSetting[]>([]);
-    const [meta, setMeta] = useState<PaginationMeta | undefined>(undefined);
+    const [meta, setMeta] = useState<PaginationMeta | null>(null);
     const [loading, setLoading] = useState(false);
 
     const fetchSettings = useCallback(async (params: SystemSettingSearchParams = {}) => {
@@ -12,12 +12,9 @@ export function usePaginatedSystemSettings(initialParams: SystemSettingSearchPar
         try {
             const mergedParams = { ...initialParams, ...params };
             const resp: GlobalResponse<SystemSetting[]> = await searchSystemSettings(mergedParams);
-            if (resp && resp.responseData) {
-                setSettings(resp.responseData);
-                setMeta(resp.meta);
-            }
+            setSettings(resp.responseData ?? []);
+            setMeta(resp.meta ?? null);
         } catch (error) {
-            console.error("Failed to fetch system settings", error);
             throw error;
         } finally {
             setLoading(false);

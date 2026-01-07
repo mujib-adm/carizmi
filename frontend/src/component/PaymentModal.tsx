@@ -38,6 +38,11 @@ export default function PaymentModal({ open, onCancel, onSubmit, initialValues, 
                 });
             } else {
                 form.resetFields();
+                form.setFieldsValue({ 
+                    dateReceived: dayjs(),
+                    feeType: ReferenceCodeConstants.FEE_TYPE.MEMBERSHIP_FEE,
+                    quarter: Math.floor(dayjs().month() / 3) + 1
+                });
             }
         }
     }, [open, initialValues, form, resetMessages]);

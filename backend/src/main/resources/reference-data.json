@@ -58,5 +58,37 @@
             "constant": "DIRECT_DEPOSIT",
             "active": true
         }
+    ],
+    "expenseCategory": [
+        {
+            "code": "01",
+            "display": "Community Picnic",
+            "constant": "COMMUNITY_PICNIC",
+            "active": true
+        },
+        {
+            "code": "02",
+            "display": "Office Supplies",
+            "constant": "OFFICE_SUPPLIES",
+            "active": true
+        },
+        {
+            "code": "03",
+            "display": "Transportation",
+            "constant": "TRANSPORTATION",
+            "active": true
+        },
+        {
+            "code": "04",
+            "display": "Event",
+            "constant": "EVENT",
+            "active": true
+        },
+        {
+            "code": "05",
+            "display": "Other",
+            "constant": "OTHER",
+            "active": true
+        }
     ]
 }

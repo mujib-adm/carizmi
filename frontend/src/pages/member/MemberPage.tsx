@@ -1,4 +1,4 @@
-import { DeleteOutlined, EditOutlined, EyeOutlined, UserOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, EyeOutlined, TeamOutlined } from '@ant-design/icons';
 import { Button, Card, Modal, Space, Table, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useMemo, useState } from "react";
@@ -135,7 +135,7 @@ export default function MemberPage() {
                 <div style={{ padding: 24 }}>
                     <div className="page-header">
                         <Title level={2} className="page-title">
-                            <UserOutlined /> Members
+                            <TeamOutlined /> Members
                         </Title>
                     </div>
 

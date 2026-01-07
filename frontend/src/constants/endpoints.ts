@@ -16,6 +16,13 @@ export const ApiEndpoints = {
     DELETE: (paymentID: number) => `/payments/delete/${paymentID}`,
     LATEST: "/payments/latest",
   },
+  EXPENSES: {
+    ADD: "/expenses/add",
+    UPDATE: "/expenses/update",
+    SEARCH: "/expenses/search",
+    GET: (expenseID: number) => `/expenses/get/${expenseID}`,
+    DELETE: (expenseID: number) => `/expenses/delete/${expenseID}`,
+  },
   DASHBOARD: {
     METRICS: "/dashboard/metrics",
   },

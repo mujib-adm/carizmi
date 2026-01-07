@@ -81,9 +81,10 @@ export default function SearchFilterBar({
                         {field.type === "select" && (
                             <Select
                                 allowClear
-                                style={{ minWidth: field.width || 150, borderRadius: 6 }}
+                                style={{ minWidth: field.width || 180, borderRadius: 6 }}
                                 placeholder={field.placeholder}
                                 options={field.options}
+                                popupMatchSelectWidth={false}
                             />
                         )}
 
@@ -102,22 +103,18 @@ export default function SearchFilterBar({
                         Search
                     </Button>
                 </Form.Item>
-
-                <div style={{ marginLeft: 'auto', display: 'flex', gap: '12px', marginBottom: 8 }}>
-                    {/* Add New Button on the right */}
-                    {onAdd && (
-                        <Form.Item style={{ margin: 0 }}>
-                            <Button
-                                type="primary"
-                                icon={<PlusOutlined />}
-                                onClick={onAdd}
-                                style={{ background: '#1E5631', border: 'none', borderRadius: 6, fontWeight: 600 }}
-                            >
-                                Add New
-                            </Button>
-                        </Form.Item>
-                    )}
-                </div>
+                {onAdd && (
+                    <Form.Item style={{ margin: 0 }}>
+                        <Button
+                            type="primary"
+                            icon={<PlusOutlined />}
+                            onClick={onAdd}
+                            style={{ background: '#1E5631', border: 'none', borderRadius: 6, fontWeight: 600 }}
+                        >
+                            Add New
+                        </Button>
+                    </Form.Item>
+                )}
             </Form>
         </div>
     );

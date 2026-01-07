@@ -7,28 +7,19 @@ export function usePaginatedPayments(initialParams: PaymentSearchParams = {}) {
     const [meta, setMeta] = useState<PaginationMeta | null>(null);
     const [loading, setLoading] = useState(false);
 
-    const fetchPayments = useCallback(
-        async (override: PaymentSearchParams = {}) => {
-            setLoading(true);
-            try {
-                const merged = { ...initialParams, ...override };
-                const resp: GlobalResponse<Payment[]> = await searchPayments(merged);
-                setPayments(resp.responseData ?? []);
-                setMeta(resp.meta ?? null);
-            } catch (e: any) {
-                throw e;
-            } finally {
-                setLoading(false);
-            }
-        },
-        []
-    );
+    const fetchPayments = useCallback(async (override: PaymentSearchParams = {}) => {
+        setLoading(true);
+        try {
+            const merged = { ...initialParams, ...override };
+            const resp: GlobalResponse<Payment[]> = await searchPayments(merged);
+            setPayments(resp.responseData ?? []);
+            setMeta(resp.meta ?? null);
+        } catch (e: any) {
+            throw e;
+        } finally {
+            setLoading(false);
+        }
+    }, [] );
 
-    return {
-        payments,
-        meta,
-        loading,
-        fetchPayments,
-        setPayments
-    };
+    return { payments, meta, loading, fetchPayments, setPayments };
 }

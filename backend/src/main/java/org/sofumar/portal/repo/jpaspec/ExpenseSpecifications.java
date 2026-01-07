@@ -1,14 +1,18 @@
 package org.sofumar.portal.repo.jpaspec;
 
+import java.time.LocalDate;
+
 import org.sofumar.portal.constants.FieldConstants;
 import org.sofumar.portal.data.vo.ExpenseVO;
 import org.springframework.data.jpa.domain.Specification;
 
-import java.time.LocalDate;
-
 public class ExpenseSpecifications {
 
-    public static Specification<ExpenseVO> dateBetween(LocalDate from, LocalDate to) {
+    public static Specification<ExpenseVO> hasCategory(String category) {
+        return (root, query, cb) -> category == null ? null : cb.equal(root.get(FieldConstants.CATEGORY), category);
+    }
+
+    public static Specification<ExpenseVO> dateOfExpenseBetween(LocalDate from, LocalDate to) {
         return (root, query, cb) -> {
             if (from == null && to == null)
                 return null;

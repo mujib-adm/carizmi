@@ -7,8 +7,7 @@ export function usePaginatedMembers(initialParams: MemberSearchParams = {}) {
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const fetchMembers = useCallback(
-    async (override: MemberSearchParams = {}) => {
+  const fetchMembers = useCallback( async (override: MemberSearchParams = {}) => {
       setLoading(true);
       try {
         const merged = { ...initialParams, ...override };
@@ -20,15 +19,7 @@ export function usePaginatedMembers(initialParams: MemberSearchParams = {}) {
       } finally {
         setLoading(false);
       }
-    },
-    []
-  );
+    }, []);
 
-  return {
-    members,
-    meta,
-    loading,
-    fetchMembers,
-    setMembers
-  };
+  return { members, meta, loading, fetchMembers, setMembers };
 }

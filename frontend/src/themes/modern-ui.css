@@ -532,3 +532,48 @@
   display: none !important;
 }
 */
+
+/* Global Ant Design Form Overrides */
+.ant-form-item-row {
+  align-items: center !important; /* Default centering for horizontal/inline items */
+}
+
+.ant-form-vertical .ant-form-item-row {
+  align-items: stretch !important; /* Force left-alignment for stacked (vertical) items */
+}
+
+.ant-form-item-label {
+  padding-bottom: 0 !important; /* Extremely tight spacing */
+  text-align: left !important; /* Ensure labels are always left-aligned */
+}
+
+.ant-form-item-label > label {
+  height: auto !important;
+  color: #666666 !important; /* Neutral gray for labels */
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  justify-content: flex-start !important;
+}
+
+.ant-form-item {
+  margin-bottom: 14px !important; /* Global compact feel */
+}
+
+.ant-input:not(.ant-input-disabled),
+.ant-input-affix-wrapper:not(.ant-input-affix-wrapper-disabled),
+.ant-select:not(.ant-select-customize-input):not(.ant-select-disabled):not(.member-lookup-select) .ant-select-selector,
+.ant-picker:not(.ant-picker-disabled),
+.ant-input-number:not(.ant-input-number-disabled) {
+  background-color: #ffffff !important; /* Stark white for interactive look */
+  border-color: rgba(64, 145, 108, 0.2) !important;
+  border-radius: 8px !important;
+}
+
+.ant-input:focus,
+.ant-input-affix-wrapper-focused,
+.ant-select-focused:not(.ant-select-disabled):not(.member-lookup-select) .ant-select-selector,
+.ant-picker-focused,
+.ant-input-number-focused {
+  border-color: #40916C !important;
+  box-shadow: 0 0 0 2px rgba(64, 145, 108, 0.1) !important;
+}

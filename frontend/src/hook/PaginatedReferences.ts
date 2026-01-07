@@ -4,7 +4,7 @@ import { GlobalResponse, PaginationMeta, Reference, ReferenceSearchParams } from
 
 export function usePaginatedReferences(initialParams: ReferenceSearchParams = {}) {
     const [references, setReferences] = useState<Reference[]>([]);
-    const [meta, setMeta] = useState<PaginationMeta | undefined>(undefined);
+    const [meta, setMeta] = useState<PaginationMeta | null>(null);
     const [loading, setLoading] = useState(false);
 
     const fetchReferences = useCallback(async (params: ReferenceSearchParams = {}) => {
@@ -12,12 +12,9 @@ export function usePaginatedReferences(initialParams: ReferenceSearchParams = {}
         try {
             const mergedParams = { ...initialParams, ...params };
             const resp: GlobalResponse<Reference[]> = await searchReferences(mergedParams);
-            if (resp && resp.responseData) {
-                setReferences(resp.responseData);
-                setMeta(resp.meta);
-            }
+            setReferences(resp.responseData ?? []);
+            setMeta(resp.meta ?? null);
         } catch (error) {
-            console.error("Failed to fetch references", error);
             throw error;
         } finally {
             setLoading(false);

@@ -1,11 +1,12 @@
-import { Modal } from "antd";
+import { Col, Form, Modal, Row } from "antd";
+import dayjs from "dayjs";
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { ReferenceCodeConstants } from "../constants/ReferenceCodeConstants";
 import { Member, MemberRequestDto } from "../constants/types";
 import { useApiMessages } from "../hook/ApiResponseHandler";
 import "../themes/css/member.css";
+import { AntdFormItem } from "./AntdFormItem";
 import { MessageBanner } from "./MessageBanner";
-import { ModalField } from "./ModalField";
 
 type Props = {
   open: boolean;
@@ -16,24 +17,53 @@ type Props = {
 };
 
 export function MemberModal({ open, onCancel, onSubmit, initial, statusOptions }: Props) {
-  const { control, register, handleSubmit, setError, reset, formState: { errors } } = useForm<MemberRequestDto>({
-    defaultValues: initial ?? { state: "MN", status: "" }
-  });
-
-  const { globalMessages, handleError, resetMessages } = useApiMessages<MemberRequestDto>(setError);
+  const [form] = Form.useForm();
+  
+  const { globalMessages, handleError, resetMessages } = useApiMessages<MemberRequestDto>(
+    undefined,
+    (field, msg) => {
+      form.setFields([{ name: field, errors: [msg] }]);
+    }
+  );
 
   useEffect(() => {
-    reset(initial ?? { state: "MN", status: "" });
-  }, [initial, open, reset]);
+    if (open) {
+      resetMessages();
+      if (initial) {
+        form.setFieldsValue({
+          ...initial,
+          joinDate: initial.joinDate ? dayjs(initial.joinDate) : null,
+        });
+      } else {
+        form.resetFields();
+        form.setFieldsValue({
+          status: ReferenceCodeConstants.MEMBER_STATUS.ACTIVE,
+          joinDate: dayjs(),
+          state: "MN",
+        });
+      }
+    }
+  }, [initial, open, form, resetMessages]);
 
-  const submit = async (values: MemberRequestDto) => {
+  const handleOk = async () => {
     try {
       resetMessages();
-      await onSubmit(values);
+      const values = await form.validateFields();
+      
+      const payload: MemberRequestDto = {
+        ...values,
+        joinDate: values.joinDate ? values.joinDate.format("YYYY-MM-DD") : null,
+      };
+      
+      await onSubmit(payload);
       onCancel();
     } catch (e: any) {
       console.error("Error submitting member form. MemberModal.submit: ", e);
-      handleError(e);
+      if (e.errorFields) {
+        // Ant Design form validation error, do nothing
+      } else {
+        handleError(e);
+      }
     }
   };
 
@@ -44,40 +74,58 @@ export function MemberModal({ open, onCancel, onSubmit, initial, statusOptions }
       open={open}
       className="modern-modal"
       onCancel={onCancel}
-      onOk={handleSubmit(submit)}
+      onOk={handleOk}
       okText="Save"
       title={title}
       destroyOnHidden
       centered
+      width={520}
     >
-      <form className="member-form" onSubmit={handleSubmit(submit)}>
-        <div className="two-col">
-          <ModalField as="input" type="text" name="firstName" label="First Name" placeholder="First Name" registerProps={register("firstName", { required: "First Name is required" })} error={errors.firstName} />
-          <ModalField as="input" type="text" name="lastName" label="Last Name" placeholder="Last Name" registerProps={register("lastName", { required: "Last Name is required" })} error={errors.lastName} />
-        </div>
+      <Form form={form} layout="vertical" className="member-form" requiredMark={false}>
+        <Row gutter={12}>
+          <Col span={12}>
+            <AntdFormItem name="firstName" label="First Name" rules={[{ required: true, message: "First Name is required" }]} placeholder="First Name" />
+          </Col>
+          <Col span={12}>
+            <AntdFormItem name="lastName" label="Last Name" rules={[{ required: true, message: "Last Name is required" }]} placeholder="Last Name" />
+          </Col>
+        </Row>
 
-        <div className="two-col">
-          <ModalField as="input" type="text" name="phone" label="Phone" placeholder="Phone" registerProps={register("phone", { required: "Phone is required" })} error={errors.phone} />
-          <ModalField as="input" type="email" name="email" label="Email" placeholder="Email" registerProps={register("email")} error={errors.email} />
-        </div>
+        <Row gutter={12}>
+          <Col span={12}>
+            <AntdFormItem name="phone" label="Phone" type="tel" rules={[{ required: true, message: "Phone is required" }]} placeholder="Phone" />
+          </Col>
+          <Col span={12}>
+            <AntdFormItem name="email" label="Email" type="email" placeholder="Email" />
+          </Col>
+        </Row>
 
-        <div className="two-col">
-          <ModalField as="select" name="status" label="Status" control={control} placeholder="Pick status" options={statusOptions} registerProps={register("status", { required: "Status is required" })} error={errors.status} />
-          <ModalField as="date" name="joinDate" label="Join Date" control={control} placeholder="mm/dd/yyyy" registerProps={register("joinDate", { required: "Join Date is required" })} error={errors.joinDate} />
-        </div>
+        <Row gutter={12}>
+          <Col span={12}>
+            <AntdFormItem name="status" label="Status" type="select" options={statusOptions} rules={[{ required: true, message: "Status is required" }]} placeholder="Pick status" />
+          </Col>
+          <Col span={12}>
+            <AntdFormItem name="joinDate" label="Join Date" type="date" rules={[{ required: true, message: "Join Date is required" }]} placeholder="mm/dd/yyyy" />
+          </Col>
+        </Row>
 
-        <ModalField as="input" type="text" name="address1" label="Address 1" placeholder="Address 1" registerProps={register("address1")} error={errors.address1} />
-        <ModalField as="input" type="text" name="address2" label="Address 2" placeholder="Address 2" registerProps={register("address2")} error={errors.address2} />
+        <AntdFormItem name="address1" label="Address 1" placeholder="Address 1" />
+        <AntdFormItem name="address2" label="Address 2" placeholder="Address 2" />
 
-        <div className="three-col">
-          <ModalField as="input" type="text" name="city" label="City" placeholder="City" registerProps={register("city")} error={errors.city} />
-          <ModalField as="input" type="text" name="state" label="State" placeholder="State" registerProps={register("state", { required: "State is required" })} error={errors.state} />
-          <ModalField as="input" type="text" name="zip" label="ZIP" placeholder="ZIP" registerProps={register("zip")} error={errors.zip} />
-        </div>
+        <Row gutter={12}>
+          <Col span={14}>
+            <AntdFormItem name="city" label="City" placeholder="City" />
+          </Col>
+          <Col span={5}>
+            <AntdFormItem name="state" label="State" rules={[{ required: true, message: "State is required" }]} placeholder="MN" />
+          </Col>
+          <Col span={5}>
+            <AntdFormItem name="zip" label="ZIP" placeholder="ZIP" />
+          </Col>
+        </Row>
 
         {globalMessages && <MessageBanner messages={globalMessages} />}
-
-      </form>
+      </Form>
     </Modal>
   );
-};
+}

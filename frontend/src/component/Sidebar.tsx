@@ -1,17 +1,16 @@
 import {
     DashboardOutlined,
-    UserOutlined,
+    DatabaseOutlined,
     DollarOutlined,
-    SolutionOutlined,
-    FileSearchOutlined,
-    SettingOutlined,
-    TeamOutlined,
     LogoutOutlined,
-    DatabaseOutlined
+    SettingOutlined,
+    ShoppingCartOutlined,
+    TeamOutlined,
+    UserOutlined
 } from '@ant-design/icons';
-import { Menu } from 'antd';
 import type { MenuProps } from 'antd';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Menu } from 'antd';
+import { useLocation, useNavigate } from 'react-router-dom';
 import './Sidebar.css';
 
 export default function Sidebar() {
@@ -22,12 +21,12 @@ export default function Sidebar() {
     const items: MenuProps['items'] = [
         { key: '/dashboard', icon: <DashboardOutlined />, label: 'Dashboard' },
         { key: '/payments', icon: <DollarOutlined />, label: 'Payments' },
-        { key: '/members', icon: <UserOutlined />, label: 'Members' },
-//         { key: '/expenses', icon: <SolutionOutlined />, label: 'Expenses' },
+        { key: '/expenses', icon: <ShoppingCartOutlined />, label: 'Expenses' },
+        { key: '/members', icon: <TeamOutlined />, label: 'Members' },
 //         { key: '/reporting', icon: <FileSearchOutlined />, label: 'Reporting' },
         { key: '/references', icon: <DatabaseOutlined />, label: 'Reference' },
         { key: '/settings', icon: <SettingOutlined />, label: 'System Settings' },
-        ...(role === "ADMIN" ? [{ key: '/users', icon: <TeamOutlined />, label: 'Users' }] : []),
+        ...(role === "ADMIN" ? [{ key: '/users', icon: <UserOutlined />, label: 'User' }] : []),
         { key: '/logout', icon: <LogoutOutlined />, label: 'Logout' },
     ];
 

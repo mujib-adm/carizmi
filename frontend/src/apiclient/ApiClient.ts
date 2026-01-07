@@ -8,6 +8,16 @@ const API_BASE = (import.meta as any).env?.VITE_API_URL || "http://localhost:808
 let authToken: string | null = localStorage.getItem("token"); // initialize from storage
 export const setAuthToken = (token: string | null) => { authToken = token; };
 
+type UnauthorizedCallback = () => void;
+let unauthorizedCallback: UnauthorizedCallback | null = null;
+
+/**
+ * Register a callback to be invoked when a 401 Unauthorized error is received.
+ */
+export const onUnauthorized = (callback: UnauthorizedCallback) => {
+  unauthorizedCallback = callback;
+};
+
 const apiClient = axios.create({
   baseURL: API_BASE,
   headers: { "Content-Type": "application/json", Accept: "application/json", Authorization: authToken ? `Bearer ${authToken}` : "" },
@@ -40,6 +50,19 @@ apiClient.interceptors.response.use(
   (error: AxiosError<GlobalResponse>) => {
     setGlobalLoading(false);
     console.log("Response - Error: ", error); // TODO: remove in production
+    
+    // Global 401 handler: clear storage and redirect to login if unauthorized
+    if (error.response?.status === 401) {
+      if (unauthorizedCallback) {
+        unauthorizedCallback();
+      } else {
+        // Fallback to reload if no callback registered
+        localStorage.clear();
+        setAuthToken(null);
+        window.location.href = "/login";
+      }
+    }
+    
     return Promise.reject(error); // let caller handle error
   }
 );

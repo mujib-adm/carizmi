@@ -1,8 +1,12 @@
 package org.sofumar.portal.service.businesslogic.impl;
 
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Base64;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sofumar.portal.constants.RoleConstants;
@@ -26,12 +30,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Base64;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
 
 @Service
 public class UserServiceImpl extends AbstractBusinessLogic<UserVO, UserRepository> implements UserService {
@@ -105,16 +107,22 @@ public class UserServiceImpl extends AbstractBusinessLogic<UserVO, UserRepositor
 
     @Override
     public void logout(String token) {
-        // Parse JWT to get expiration
-        var claims = Jwts.parserBuilder()
-                .setSigningKey(Keys.hmacShaKeyFor(Base64.getDecoder().decode(secret)))
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
+        try {
+            // Parse JWT to get expiration
+            var claims = Jwts.parserBuilder()
+                    .setSigningKey(Keys.hmacShaKeyFor(Base64.getDecoder().decode(secret)))
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
 
-        long expSeconds = (claims.getExpiration().getTime() - System.currentTimeMillis()) / 1000;
+            long expSeconds = (claims.getExpiration().getTime() - System.currentTimeMillis()) / 1000;
 
-        blacklistService.revokeToken(token, expSeconds);
+            if (expSeconds > 0) {
+                blacklistService.revokeToken(token, expSeconds);
+            }
+        } catch (JwtException e) {
+            // If token is already expired or invalid, we don't need to blacklist it.
+        }
     }
 
     @Override

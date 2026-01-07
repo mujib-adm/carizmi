@@ -27,4 +27,13 @@ public final class ReferenceCodeConstants {
         public static final String DIRECT_DEPOSIT = "04";
     }
 
+    public static final class EXPENSE_CATEGORY {
+        public static final String NAME = "expenseCategory";
+        public static final String COMMUNITY_PICNIC = "01";
+        public static final String OFFICE_SUPPLIES = "02";
+        public static final String TRANSPORTATION = "03";
+        public static final String EVENT = "04";
+        public static final String OTHER = "05";
+    }
+
 }

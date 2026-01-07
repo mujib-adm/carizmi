@@ -1,6 +1,6 @@
 import { DashboardOutlined, DollarOutlined, TeamOutlined } from "@ant-design/icons";
 import { Card, Col, Row, Table, Typography } from "antd";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { getDashboardMetrics, getLatestPayments } from "../../apiclient/dashboardApi";
@@ -97,7 +97,7 @@ export default function Dashboard() {
   // Prepare Pie Data for 4 Part Visualization
   // We want: [Gap, Q1 Paid, Q1 Unpaid, Gap, Q2 Paid, Q2 Unpaid...]
   // Total Potential per Quarter is constant: Active * quarterlyFeeAmt
-  const activeMembers = metrics.totalMembers || 1;
+  const activeMembers = metrics.totalMembers || 0;
   const potentialPerQ = activeMembers * metrics.quarterlyFeeAmt;
   const gapSize = potentialPerQ * 0.03; // Gap size (3%)
 

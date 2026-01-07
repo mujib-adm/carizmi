@@ -36,8 +36,6 @@ import java.util.Map;
 public class DashboardServiceImpl implements DashboardService {
     private static final Logger logger = LoggerFactory.getLogger(DashboardServiceImpl.class);
 
-    // Baseline revenue amount hardcoded for 2026
-    private static final BigDecimal YEARLY_BASELINE_2026 = new BigDecimal("59863.68");
     private static final BigDecimal quarterlyFeeAmt = new BigDecimal("60");
 
     private final MemberRepository memberRepo;
@@ -59,9 +57,6 @@ public class DashboardServiceImpl implements DashboardService {
 
         // 2. Total Revenue: Yearly Baseline + Current Year Payments - Current Year Expenses
         BigDecimal yearlyBaseline = baselineService.getBaselineForYear(currentYear);
-        if (currentYear == 2026) {
-            yearlyBaseline = YEARLY_BASELINE_2026;
-        }
 
         BigDecimal currentYearPayments = paymentRepo.sumAmountByDateReceivedBetween(startOfYear, now);
         BigDecimal currentYearExpenses = expenseRepo.sumAmountByDateOfExpenseBetween(startOfYear, now);
