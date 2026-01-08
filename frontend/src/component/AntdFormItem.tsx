@@ -13,8 +13,7 @@ interface AntdFormItemProps extends FormItemProps {
     rules?: Rule[];
     initialValue?: any;
     children?: React.ReactNode;
-    // Add other specific props as needed (e.g. onChange for select?)
-    // For now we rely on Ant Form's context
+    disabled?: boolean;
     inputProps?: any; // Pass props to the underlying input
 }
 
@@ -27,9 +26,12 @@ export function AntdFormItem({
     rules,
     initialValue,
     children,
+    disabled = false,
     inputProps,
     ...rest
 }: AntdFormItemProps) {
+
+    const mergedInputProps = { ...inputProps, disabled };
 
     const renderInput = () => {
         if (children) return children;
@@ -37,7 +39,7 @@ export function AntdFormItem({
         switch (type) {
             case 'select':
                 return (
-                    <Select placeholder={placeholder} allowClear {...inputProps}>
+                    <Select placeholder={placeholder} allowClear {...mergedInputProps}>
                         {options.map(opt => (
                             <Option key={opt.value} value={opt.value}>
                                 {opt.label}
@@ -51,18 +53,18 @@ export function AntdFormItem({
                         style={{ width: '100%' }}
                         placeholder={placeholder}
                         format="MM/DD/YYYY"
-                        {...inputProps}
+                        {...mergedInputProps}
                     />
                 );
             case 'number':
-                return <Input type="number" placeholder={placeholder} {...inputProps} />;
+                return <Input type="number" placeholder={placeholder} {...mergedInputProps} />;
             case 'tel':
-                return <Input type="tel" placeholder={placeholder} {...inputProps} />;
+                return <Input type="tel" placeholder={placeholder} {...mergedInputProps} />;
             case 'email':
-                return <Input type="email" placeholder={placeholder} {...inputProps} />;
+                return <Input type="email" placeholder={placeholder} {...mergedInputProps} />;
             case 'text':
             default:
-                return <Input placeholder={placeholder} {...inputProps} />;
+                return <Input placeholder={placeholder} {...mergedInputProps} />;
         }
     };
 

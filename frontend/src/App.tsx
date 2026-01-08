@@ -1,10 +1,11 @@
-import { Image, Layout } from "antd";
+import { Layout } from "antd";
 import { BrowserRouter } from "react-router-dom";
-import Router from "./pages/Router";
 import { AuthProvider } from "./context/AuthContext";
 import { NotificationProvider } from "./context/NotificationContext";
 import { ReferenceProvider } from "./context/ReferenceContext";
+import { SystemSettingsProvider } from "./context/SystemSettingsContext";
 import AppHeader from "./pages/AppHeader";
+import Router from "./pages/Router";
 
 const { Content, Footer } = Layout;
 const year = new Date().getFullYear();
@@ -13,7 +14,8 @@ export default function App() {
   return (
     <AuthProvider>
       <ReferenceProvider>
-        <Layout className="app-wrapper">
+        <SystemSettingsProvider>
+          <Layout className="app-wrapper">
           <BrowserRouter>
             <NotificationProvider>
               <AppHeader />
@@ -28,6 +30,7 @@ export default function App() {
             </NotificationProvider>
           </BrowserRouter>
         </Layout>
+        </SystemSettingsProvider>
       </ReferenceProvider>
     </AuthProvider>
   );

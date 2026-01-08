@@ -106,6 +106,12 @@ export type MemberLookupResponse = {
   phone: string;
 };
 
+export type MemberSummary = {
+  totalPaid: number;
+  outstanding: number;
+  overdue: number;
+};
+
 // Payment types
 export type Payment = {
   paymentID: number;

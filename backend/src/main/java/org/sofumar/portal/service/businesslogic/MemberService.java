@@ -1,14 +1,15 @@
 package org.sofumar.portal.service.businesslogic;
 
-import org.sofumar.portal.data.dto.MemberDto;
-import org.sofumar.portal.data.dto.MemberLookupDto;
-import org.sofumar.portal.framework.bl.BusinessLogic;
-import org.sofumar.portal.framework.data.response.GlobalResponse;
-import org.sofumar.portal.data.vo.MemberVO;
-import org.springframework.http.ResponseEntity;
-
 import java.time.LocalDate;
 import java.util.List;
+
+import org.sofumar.portal.data.dto.MemberDto;
+import org.sofumar.portal.data.dto.MemberLookupDto;
+import org.sofumar.portal.data.dto.MemberSummaryDto;
+import org.sofumar.portal.data.vo.MemberVO;
+import org.sofumar.portal.framework.bl.BusinessLogic;
+import org.sofumar.portal.framework.data.response.GlobalResponse;
+import org.springframework.http.ResponseEntity;
 
 public interface MemberService extends BusinessLogic<MemberVO> {
 
@@ -25,5 +26,7 @@ public interface MemberService extends BusinessLogic<MemberVO> {
                                                                   LocalDate joinDateFrom, LocalDate joinDateTo, int page, int size, String sortField, String sortOrder);
 
     ResponseEntity<GlobalResponse<List<MemberLookupDto>>> lookupMembers(String query);
+
+    ResponseEntity<GlobalResponse<MemberSummaryDto>> getMemberSummary(Integer memberID);
 
 }

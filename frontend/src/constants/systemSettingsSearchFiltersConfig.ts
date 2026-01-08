@@ -1,9 +1,9 @@
 
 export const systemSettingsSearchFiltersConfig = [
     {
-        name: "settingKey",
-        label: "Setting Key",
+        name: "settingType",
+        label: "Setting Type",
         type: "input",
-        placeholder: "Setting Key"
+        placeholder: "Setting Type"
     }
 ];

@@ -21,6 +21,15 @@ public interface PaymentRepository extends JpaRepository<PaymentVO, Integer>, Jp
     @Query("select sum(p.amount) from PaymentVO p where p.year = :year and p.quarter = :quarter")
     BigDecimal sumAmountByYearAndQuarter(@Param("year") Integer year, @Param("quarter") Integer quarter);
 
+    @Query("select sum(p.amount) from PaymentVO p where p.member.memberID = :memberID")
+    BigDecimal sumAmountByMemberID(@Param("memberID") Integer memberID);
+
+    @Query("select sum(p.amount) from PaymentVO p where p.member.memberID = :memberID and p.year = :year and p.quarter = :quarter")
+    BigDecimal sumAmountByMemberIDAndYearAndQuarter(@Param("memberID") Integer memberID, @Param("year") Integer year, @Param("quarter") Integer quarter);
+
+    @Query("select p.year as year, p.quarter as quarter, sum(p.amount) as totalPaid from PaymentVO p where p.member.memberID = :memberID and p.feeType = :feeType group by p.year, p.quarter")
+    List<PaymentSummary> findMemberPaymentSummaries(@Param("memberID") Integer memberID, @Param("feeType") String feeType);
+
     @Query("select p.member.memberID as memberID, p.year as year, p.quarter as quarter, sum(p.amount) as totalPaid from PaymentVO p where p.feeType = :feeType and p.year = :year group by p.member.memberID, p.year, p.quarter")
     List<PaymentSummary> findPaymentSummaries(@Param("feeType") String feeType, @Param("year") Integer year);
 

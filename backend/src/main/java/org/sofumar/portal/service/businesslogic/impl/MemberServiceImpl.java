@@ -4,8 +4,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sofumar.portal.constants.FieldConstants;
+import org.sofumar.portal.constants.ReferenceCodeConstants;
 import org.sofumar.portal.data.dto.MemberDto;
 import org.sofumar.portal.data.dto.MemberLookupDto;
+import org.sofumar.portal.data.dto.MemberSummaryDto;
 import org.sofumar.portal.data.transformer.MemberDtoTransformer;
 import org.sofumar.portal.data.transformer.MemberVOTransformer;
 import org.sofumar.portal.data.vo.MemberVO;
@@ -16,6 +18,8 @@ import org.sofumar.portal.framework.exception.RecordNotFoundException;
 import org.sofumar.portal.framework.util.LabelUtils;
 import org.sofumar.portal.framework.util.ResponseUtils;
 import org.sofumar.portal.repo.MemberRepository;
+import org.sofumar.portal.repo.PaymentRepository;
+import org.sofumar.portal.repo.PaymentRepository.PaymentSummary;
 import org.sofumar.portal.repo.jpaspec.MemberSpecifications;
 import org.sofumar.portal.service.businesslogic.MemberService;
 import org.sofumar.portal.service.validation.MemberValidator;
@@ -28,9 +32,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.sofumar.portal.constants.MessagesConstants.RECORD_ADDED;
 import static org.sofumar.portal.constants.MessagesConstants.RECORD_DELETED;
@@ -41,14 +50,18 @@ import static org.sofumar.portal.constants.MessagesConstants.REQUIRED_FIELD;
 public class MemberServiceImpl extends AbstractBusinessLogic<MemberVO, MemberRepository> implements MemberService {
     private static final Logger logger = LoggerFactory.getLogger(MemberServiceImpl.class);
 
+    private static final BigDecimal quarterlyFeeAmt = new BigDecimal("60");
+
     private final MemberRepository memberRepo;
+    private final PaymentRepository paymentRepo;
     private final MemberVOTransformer voTransformer;
     private final MemberDtoTransformer dtoTransformer;
     private final MemberValidator validator;
 
     @Autowired
-    public MemberServiceImpl(final MemberRepository memberRepo, final MemberVOTransformer voTransformer, MemberDtoTransformer dtoTransformer, final MemberValidator validator) {
+    public MemberServiceImpl(final MemberRepository memberRepo, final PaymentRepository paymentRepo, final MemberVOTransformer voTransformer, MemberDtoTransformer dtoTransformer, final MemberValidator validator) {
         this.memberRepo = memberRepo;
+        this.paymentRepo = paymentRepo;
         this.voTransformer = voTransformer;
         this.dtoTransformer = dtoTransformer;
         this.validator = validator;
@@ -170,8 +183,76 @@ public class MemberServiceImpl extends AbstractBusinessLogic<MemberVO, MemberRep
                         .lastName(m.getLastName())
                         .phone(m.getPhone())
                         .build())
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
 
         return ResponseUtils.okWithData(dtos);
+    }
+
+    @Override
+    public ResponseEntity<GlobalResponse<MemberSummaryDto>> getMemberSummary(Integer memberID) {
+
+        Optional<MemberVO> memberOpt = memberRepo.findById(memberID);
+        if (memberOpt.isEmpty()) {
+            return ResponseUtils.okWithData(MemberSummaryDto.builder()
+                    .totalPaid(BigDecimal.ZERO)
+                    .outstanding(BigDecimal.ZERO)
+                    .overdue(BigDecimal.ZERO)
+                    .build());
+        }
+
+        MemberVO member = memberOpt.get();
+
+        LocalDate now = LocalDate.now();
+        int currentYear = now.getYear();
+        int currentQuarter = (now.getMonthValue() - 1) / 3 + 1;
+
+        // 1. Total Paid
+        BigDecimal totalPaid = paymentRepo.sumAmountByMemberID(memberID);
+        if (totalPaid == null) totalPaid = BigDecimal.ZERO;
+
+        // 2. Outstanding (Current Quarter)
+        BigDecimal collectedCurrentQ = paymentRepo.sumAmountByMemberIDAndYearAndQuarter(memberID, currentYear, currentQuarter);
+        if (collectedCurrentQ == null) collectedCurrentQ = BigDecimal.ZERO;
+
+        BigDecimal outstanding = quarterlyFeeAmt.subtract(collectedCurrentQ);
+        if (outstanding.compareTo(BigDecimal.ZERO) < 0) outstanding = BigDecimal.ZERO;
+
+        // 3. Overdue (Past Quarters since Join Date)
+        List<PaymentSummary> summaries = paymentRepo.findMemberPaymentSummaries(memberID, ReferenceCodeConstants.FEE_TYPE.MEMBERSHIP_FEE);
+        Map<String, BigDecimal> paymentMap = new HashMap<>(); // key: "YYYY-Q"
+        for (PaymentSummary s : summaries) {
+            String key = s.getYear() + "-" + s.getQuarter();
+            paymentMap.put(key, s.getTotalPaid());
+        }
+
+        BigDecimal overdue = BigDecimal.ZERO;
+        LocalDate joinDate = member.getJoinDate();
+        if (joinDate == null) joinDate = LocalDate.now();
+
+        // Iterate through all years and quarters since joinDate up to the quarter BEFORE the current one
+        int joinYear = joinDate.getYear();
+        int joinQuarter = (joinDate.getMonthValue() - 1) / 3 + 1;
+
+        for (int y = joinYear; y <= currentYear; y++) {
+            int startQ = (y == joinYear) ? joinQuarter : 1;
+            int endQ = (y == currentYear) ? currentQuarter - 1 : 4;
+
+            for (int q = startQ; q <= endQ; q++) {
+                String key = y + "-" + q;
+                BigDecimal paid = paymentMap.getOrDefault(key, BigDecimal.ZERO);
+                BigDecimal due = quarterlyFeeAmt.subtract(paid);
+                if (due.compareTo(BigDecimal.ZERO) > 0) {
+                    overdue = overdue.add(due);
+                }
+            }
+        }
+
+        MemberSummaryDto summary = MemberSummaryDto.builder()
+                .totalPaid(totalPaid)
+                .outstanding(outstanding)
+                .overdue(overdue)
+                .build();
+
+        return ResponseUtils.okWithData(summary);
     }
 }

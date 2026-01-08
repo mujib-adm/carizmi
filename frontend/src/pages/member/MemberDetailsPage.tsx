@@ -2,11 +2,11 @@ import { ArrowLeftOutlined, DollarOutlined, ExclamationCircleOutlined, UserOutli
 import { Avatar, Badge, Button, Card, Col, Row, Skeleton, Space, Table, Typography } from "antd";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getMember } from "../../apiclient/memberApi";
+import { getMember, getMemberSummary } from "../../apiclient/memberApi";
 import { searchPayments } from "../../apiclient/paymentApi";
 import Sidebar from "../../component/Sidebar";
 import { FEE_TYPE, MEMBER_STATUS, PAYMENT_METHOD } from "../../constants/referenceConstants";
-import { Member, Payment } from "../../constants/types";
+import { Member, MemberSummary, Payment } from "../../constants/types";
 import { useReference } from "../../context/ReferenceContext";
 import { useApiMessages } from "../../hook/ApiResponseHandler";
 
@@ -20,17 +20,22 @@ export default function MemberDetailsPage() {
 
     const [member, setMember] = useState<Member | null>(null);
     const [payments, setPayments] = useState<Payment[]>([]);
+    const [summary, setSummary] = useState<MemberSummary | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
             if (!id) return;
             try {
-                const memberData = await getMember(Number(id));
+                const memberID = Number(id);
+                const [memberData, paymentData, summaryData] = await Promise.all([
+                    getMember(memberID),
+                    searchPayments({ memberID, size: 10 }),
+                    getMemberSummary(memberID)
+                ]);
                 setMember(memberData.responseData || null);
-
-                const paymentData = await searchPayments({ memberID: Number(id), size: 10 });
                 setPayments(paymentData.responseData || []);
+                setSummary(summaryData.responseData || null);
             } catch (e: any) {
                 handleError(e);
             } finally {
@@ -39,9 +44,6 @@ export default function MemberDetailsPage() {
         };
         fetchData();
     }, [id]);
-
-    const totalPaid = payments
-        .reduce((sum, p) => sum + (p.amount || 0), 0);
 
     const columns = [
         { title: 'Date', dataIndex: 'dateReceived', key: 'dateReceived', render: (d: string) => d ? new Date(d).toLocaleDateString() : 'N/A' },
@@ -85,7 +87,7 @@ export default function MemberDetailsPage() {
                                             <Avatar icon={<DollarOutlined />} style={{ background: 'var(--vibrant-gradient)' }} />
                                             <div>
                                                 <div className="stat-label">Total Paid</div>
-                                                <div className="stat-value">${totalPaid.toFixed(2)}</div>
+                                                <div className="stat-value">${(summary?.totalPaid ?? 0).toFixed(2)}</div>
                                                 <div className="metric-subtext">Total contributions up to date</div>
                                             </div>
                                         </Space>
@@ -97,7 +99,7 @@ export default function MemberDetailsPage() {
                                             <Avatar icon={<ExclamationCircleOutlined />} style={{ background: 'orange' }} />
                                             <div>
                                                 <div className="stat-label">Outstanding</div>
-                                                <div className="stat-value" style={{ color: 'orange' }}>$0.00</div>
+                                                <div className="stat-value" style={{ color: 'orange' }}>${(summary?.outstanding ?? 0).toFixed(2)}</div>
                                                 <div className="metric-subtext"> Unpaid - Current Quarter </div>
                                             </div>
                                         </Space>
@@ -109,7 +111,7 @@ export default function MemberDetailsPage() {
                                             <Avatar icon={<ExclamationCircleOutlined />} style={{ background: 'red' }} />
                                             <div>
                                                 <div className="stat-label">Overdues</div>
-                                                <div className="stat-value" style={{ color: 'red' }}>$0.00</div>
+                                                <div className="stat-value" style={{ color: 'red' }}>${(summary?.overdue ?? 0).toFixed(2)}</div>
                                                 <div className="metric-subtext"> Unpaid - Overall </div>
                                             </div>
                                         </Space>

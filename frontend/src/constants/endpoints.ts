@@ -7,6 +7,7 @@ export const ApiEndpoints = {
     LOOKUP: "/members/lookup",
     GET: (memberID: number) => `/members/get/${memberID}`,
     DELETE: (memberID: number) => `/members/delete/${memberID}`,
+    SUMMARY: (memberID: number) => `/members/${memberID}/summary`,
   },
   PAYMENTS: {
     ADD: "/payments/add",

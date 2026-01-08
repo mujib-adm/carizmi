@@ -1,15 +1,16 @@
-import { DeleteOutlined, EditOutlined, SettingOutlined } from '@ant-design/icons';
-import { Button, Card, Form, Input, message, Modal, Space, Table, Tag, Typography } from 'antd';
+import { EditOutlined, SettingOutlined } from '@ant-design/icons';
+import { Button, Card, Space, Table, Typography } from 'antd';
 import { useEffect, useState } from 'react';
-import { addSystemSetting, deleteSystemSetting, updateSystemSetting } from '../../apiclient/systemSettingsApi';
+import { updateSystemSetting } from '../../apiclient/systemSettingsApi';
+import { MessageBanner } from '../../component/MessageBanner.js';
 import SearchFilterBar from '../../component/SearchFilterBar.jsx';
 import Sidebar from "../../component/Sidebar";
 import "../../component/Sidebar.css";
+import { SystemSettingsModal } from '../../component/SystemSettingsModal';
 import { systemSettingsSearchFiltersConfig } from '../../constants/systemSettingsSearchFiltersConfig';
 import { SystemSetting, SystemSettingSearchParams } from '../../constants/types';
 import { useApiMessages } from "../../hook/ApiResponseHandler";
 import { usePaginatedSystemSettings } from '../../hook/PaginatedSystemSettings';
-import { MessageBanner } from '../../component/MessageBanner.js';
 
 const { Title } = Typography;
 
@@ -18,10 +19,8 @@ export default function SystemSettingsPage() {
     const [filters, setFilters] = useState<SystemSettingSearchParams>({});
     const { globalMessages, handleError, resetMessages } = useApiMessages<any>();
 
-    // Modal state
     const [modalVisible, setModalVisible] = useState(false);
     const [editingRecord, setEditingRecord] = useState<SystemSetting | null>(null);
-    const [form] = Form.useForm();
 
     // Initial load
     useEffect(() => {
@@ -37,50 +36,18 @@ export default function SystemSettingsPage() {
         }
     };
 
-    const handleAdd = () => {
-        setEditingRecord(null);
-        form.resetFields();
-        form.setFieldsValue({ active: true });
-        setModalVisible(true);
-    };
-
     const handleEdit = (record: SystemSetting) => {
         setEditingRecord(record);
-        form.setFieldsValue(record);
         setModalVisible(true);
     };
 
-    const handleDelete = (id: number) => {
-        Modal.confirm({
-            title: "Are you sure?",
-            content: "This action cannot be undone.",
-            onOk: async () => {
-                try {
-                    await deleteSystemSetting(id);
-                    message.success("Deleted successfully");
-                    fetchSettings(filters);
-                } catch (e) {
-                    message.error("Delete failed");
-                }
-            }
-        });
-    };
-
-    const handleSave = async () => {
+    const handleSave = async (values: SystemSetting) => {
         try {
-            const values = await form.validateFields();
-            if (editingRecord?.systemSettingsID) {
-                await updateSystemSetting({ ...values, systemSettingsID: editingRecord.systemSettingsID });
-                message.success("Updated successfully");
-            } else {
-                await addSystemSetting(values);
-                message.success("Added successfully");
-            }
-            setModalVisible(false);
+            await updateSystemSetting(values);
             fetchSettings(filters);
         } catch (e) {
             console.error(e);
-            message.error("Save failed");
+            throw e; // Modal will handle reporting this
         }
     };
 
@@ -95,7 +62,6 @@ export default function SystemSettingsPage() {
             render: (_: any, record: SystemSetting) => (
                 <Space>
                     <Button icon={<EditOutlined />} onClick={() => handleEdit(record)} />
-                    <Button icon={<DeleteOutlined />} danger onClick={() => handleDelete(record.systemSettingsID)} />
                 </Space>
             )
         }
@@ -112,7 +78,7 @@ export default function SystemSettingsPage() {
                         </Title>
                     </div>
 
-                    <SearchFilterBar config={systemSettingsSearchFiltersConfig as any} filters={filters} onChange={setFilters as any} onSearch={handleSearch} onAdd={handleAdd} />
+                    <SearchFilterBar config={systemSettingsSearchFiltersConfig as any} filters={filters} onChange={setFilters as any} onSearch={handleSearch} onAdd={undefined} />
 
                     {globalMessages && <MessageBanner messages={globalMessages} />}
 
@@ -145,24 +111,12 @@ export default function SystemSettingsPage() {
                         />
                     </Card>
 
-                    <Modal
-                        title={editingRecord ? "Edit Setting" : "Add Setting"}
+                    <SystemSettingsModal
                         open={modalVisible}
-                        onOk={handleSave}
                         onCancel={() => setModalVisible(false)}
-                    >
-                        <Form form={form} layout="vertical">
-                            <Form.Item name="settingType" label="Type" rules={[{ required: true }]}>
-                                <Input />
-                            </Form.Item>
-                            <Form.Item name="settingKey" label="Key" rules={[{ required: true }]}>
-                                <Input />
-                            </Form.Item>
-                            <Form.Item name="settingValue" label="Value" rules={[{ required: true }]}>
-                                <Input />
-                            </Form.Item>
-                        </Form>
-                    </Modal>
+                        onSubmit={handleSave}
+                        initial={editingRecord}
+                    />
                 </div>
             </main>
         </div>

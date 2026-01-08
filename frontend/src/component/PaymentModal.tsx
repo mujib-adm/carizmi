@@ -2,7 +2,9 @@ import { Col, Divider, Form, Modal, Row } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect } from 'react';
 import { ReferenceCodeConstants } from '../constants/ReferenceCodeConstants';
+import { SystemSettingsCodeConstants } from '../constants/SystemSettingsCodeConstants';
 import { Payment } from '../constants/types';
+import { useSystemSettings } from '../context/SystemSettingsContext';
 import { useApiMessages } from '../hook/ApiResponseHandler';
 import { AntdFormItem } from './AntdFormItem';
 import MemberLookup from './MemberLookup';
@@ -19,6 +21,8 @@ interface PaymentModalProps {
 
 export default function PaymentModal({ open, onCancel, onSubmit, initialValues, feeTypes, paymentMethods }: PaymentModalProps) {
     const [form] = Form.useForm();
+    const { getNumericSetting } = useSystemSettings();
+
     const { globalMessages, handleError, resetMessages } = useApiMessages(
         undefined,
         (field, msg) => {
@@ -38,9 +42,10 @@ export default function PaymentModal({ open, onCancel, onSubmit, initialValues, 
                 });
             } else {
                 form.resetFields();
-                form.setFieldsValue({ 
-                    dateReceived: dayjs(),
+                form.setFieldsValue({
                     feeType: ReferenceCodeConstants.FEE_TYPE.MEMBERSHIP_FEE,
+                    amount: getNumericSetting(SystemSettingsCodeConstants.FEE.TYPE, SystemSettingsCodeConstants.FEE.MEMBERSHIP_FEE),
+                    dateReceived: dayjs(),
                     quarter: Math.floor(dayjs().month() / 3) + 1
                 });
             }
@@ -84,7 +89,21 @@ export default function PaymentModal({ open, onCancel, onSubmit, initialValues, 
             destroyOnHidden
             centered
         >
-            <Form form={form} layout="vertical" >
+            <Form form={form} layout="vertical" 
+                onValuesChange={(changedValues) => {
+                    if (changedValues.feeType) {
+                        let amount = 0;
+                        if (changedValues.feeType === ReferenceCodeConstants.FEE_TYPE.MEMBERSHIP_FEE) {
+                            amount = getNumericSetting(SystemSettingsCodeConstants.FEE.TYPE, SystemSettingsCodeConstants.FEE.MEMBERSHIP_FEE);
+                        } else if (changedValues.feeType === ReferenceCodeConstants.FEE_TYPE.REGISTRATION_FEE) {
+                            amount = getNumericSetting(SystemSettingsCodeConstants.FEE.TYPE, SystemSettingsCodeConstants.FEE.REGISTRATION_FEE);
+                        }
+                        if (amount > 0) {
+                            form.setFieldsValue({ amount });
+                        }
+                    }
+                }}
+            >
                 <Form.Item name="memberID" label="Member" rules={[{ required: true }]}>
                     <MemberLookup onSelectMember={(m) => {
                         // Optional side effects

@@ -1,5 +1,5 @@
 import { ApiEndpoints } from "../constants/endpoints";
-import { GlobalResponse, Member, MemberLookupResponse, MemberRequestDto, MemberSearchParams } from "../constants/types";
+import { GlobalResponse, Member, MemberLookupResponse, MemberRequestDto, MemberSearchParams, MemberSummary } from "../constants/types";
 import apiClient from "./ApiClient";
 
 export const addMember = async (data: MemberRequestDto) => {
@@ -29,5 +29,10 @@ export const searchMembers = async (params: MemberSearchParams) => {
 
 export const lookupMembers = async (query: string) => {
   const res = await apiClient.get<GlobalResponse<MemberLookupResponse[]>>(ApiEndpoints.MEMBERS.LOOKUP, { params: { query } });
+  return res.data;
+};
+
+export const getMemberSummary = async (memberID: number) => {
+  const res = await apiClient.get<GlobalResponse<MemberSummary>>(ApiEndpoints.MEMBERS.SUMMARY(memberID));
   return res.data;
 };

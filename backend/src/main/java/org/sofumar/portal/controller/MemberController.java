@@ -1,15 +1,16 @@
 package org.sofumar.portal.controller;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
-import org.sofumar.portal.data.dto.MemberLookupDto;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
+import java.time.LocalDate;
+import java.util.List;
+
 import org.sofumar.portal.data.dto.MemberDto;
+import org.sofumar.portal.data.dto.MemberLookupDto;
+import org.sofumar.portal.data.dto.MemberSummaryDto;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
 import org.sofumar.portal.service.businesslogic.MemberService;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,8 +21,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDate;
-import java.util.List;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/members")
@@ -83,5 +85,11 @@ public class MemberController {
     public ResponseEntity<GlobalResponse<List<MemberLookupDto>>> lookupMembers(
             @RequestParam String query) {
         return memberService.lookupMembers(query);
+    }
+
+    @GetMapping("/{memberID}/summary")
+    @Operation(summary = "Get financial summary for a member")
+    public ResponseEntity<GlobalResponse<MemberSummaryDto>> getMemberSummary(@PathVariable Integer memberID) {
+        return memberService.getMemberSummary(memberID);
     }
 }

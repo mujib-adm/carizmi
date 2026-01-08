@@ -30,11 +30,11 @@ public class SystemSettingsVO extends ValueObject {
     private Integer systemSettingsID;
 
     @NotBlank
-    @Column(name = FieldConstants.SETTING_TYPE, unique = true, nullable = false)
-    private String settingType; // MemberStatus, FeeType, Period, MethodOfPayment, ExpenseCategory, StartingAmount
+    @Column(name = FieldConstants.SETTING_TYPE, nullable = false)
+    private String settingType;
 
     @NotBlank
-    @Column(name = FieldConstants.SETTING_KEY, nullable = false)
+    @Column(name = FieldConstants.SETTING_KEY, unique = true, nullable = false)
     private String settingKey;
 
     @NotBlank

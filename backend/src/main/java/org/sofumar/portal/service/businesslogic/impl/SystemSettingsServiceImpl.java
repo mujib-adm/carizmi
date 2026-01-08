@@ -30,10 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.sofumar.portal.constants.MessagesConstants.RECORD_ADDED;
-import static org.sofumar.portal.constants.MessagesConstants.RECORD_DELETED;
 import static org.sofumar.portal.constants.MessagesConstants.RECORD_UPDATED;
-import static org.sofumar.portal.constants.MessagesConstants.REQUIRED_FIELD;
 
 @Service
 public class SystemSettingsServiceImpl extends AbstractBusinessLogic<SystemSettingsVO, SystemSettingsRepository>
@@ -68,50 +65,23 @@ public class SystemSettingsServiceImpl extends AbstractBusinessLogic<SystemSetti
 
     @Override
     @Transactional
-    public ResponseEntity<GlobalResponse<Void>> addSystemSetting(SystemSettingsDto dto) {
-        SystemSettingsVO vo = voTransformer.transform(dto);
-        validator.validate(vo);
-        add(vo);
-        return ResponseUtils.ok(RECORD_ADDED.addMessageArgs("System Setting").getMessageString());
-    }
-
-    @Override
-    @Transactional
     public ResponseEntity<GlobalResponse<Void>> updateSystemSetting(SystemSettingsDto dto) {
-        if (dto.getSystemSettingsID() == null) {
-            return ResponseUtils.badRequest(REQUIRED_FIELD
-                    .addMessageArgs(LabelUtils.toLabel(FieldConstants.SYSTEM_SETTINGS_ID)).getMessageString());
-        }
-
         SystemSettingsVO existing = settingsRepo.findById(dto.getSystemSettingsID())
                 .orElseThrow(() -> new RecordNotFoundException(
                         "System Setting not found with ID: " + dto.getSystemSettingsID()));
 
-        SystemSettingsVO updated = voTransformer.transformForUpdate(dto, existing);
-        validator.validateForUpdate(updated);
-        update(updated);
+        // UI only allows updating settingValue. 
+        // We preserve settingType and settingKey to ensure integrity with sync mechanism.
+        existing.setSettingValue(dto.getSettingValue());
+
+        validator.validateForUpdate(existing);
+        update(existing);
         return ResponseUtils.ok(RECORD_UPDATED.addMessageArgs("System Setting").getMessageString());
     }
 
-    @Override
-    @Transactional
-    public ResponseEntity<GlobalResponse<Void>> deleteSystemSetting(Integer id) {
-        if (id == null) {
-            return ResponseUtils.badRequest(REQUIRED_FIELD
-                    .addMessageArgs(LabelUtils.toLabel(FieldConstants.SYSTEM_SETTINGS_ID)).getMessageString());
-        }
-        SystemSettingsVO existing = settingsRepo.findById(id)
-                .orElseThrow(() -> new RecordNotFoundException("System Setting not found with ID: " + id));
-        delete(existing);
-        return ResponseUtils.ok(RECORD_DELETED.addMessageArgs("System Setting").getMessageString());
-    }
 
     @Override
     public ResponseEntity<GlobalResponse<SystemSettingsDto>> getSystemSetting(Integer id) {
-        if (id == null) {
-            return ResponseUtils.badRequestWithData(REQUIRED_FIELD
-                    .addMessageArgs(LabelUtils.toLabel(FieldConstants.SYSTEM_SETTINGS_ID)).getMessageString());
-        }
         SystemSettingsVO vo = settingsRepo.findById(id)
                 .orElseThrow(() -> new RecordNotFoundException("System Setting not found with ID: " + id));
         return ResponseUtils.okWithData(dtoTransformer.transform(vo));

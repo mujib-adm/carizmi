@@ -1,16 +1,23 @@
 package org.sofumar.portal.controller;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+
 import org.sofumar.portal.data.dto.SystemSettingsDto;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
 import org.sofumar.portal.service.businesslogic.SystemSettingsService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/system-settings")
@@ -20,11 +27,10 @@ public class SystemSettingsController {
 
     private final SystemSettingsService settingsService;
 
-    @PostMapping("/add")
-    @Operation(summary = "Add a new system setting")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<GlobalResponse<Void>> addSystemSetting(@RequestBody SystemSettingsDto dto) {
-        return settingsService.addSystemSetting(dto);
+    @GetMapping("/get/{id}")
+    @Operation(summary = "Get system setting by ID")
+    public ResponseEntity<GlobalResponse<SystemSettingsDto>> getSystemSetting(@PathVariable Integer id) {
+        return settingsService.getSystemSetting(id);
     }
 
     @PutMapping("/update")
@@ -32,19 +38,6 @@ public class SystemSettingsController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<GlobalResponse<Void>> updateSystemSetting(@RequestBody SystemSettingsDto dto) {
         return settingsService.updateSystemSetting(dto);
-    }
-
-    @DeleteMapping("/delete/{id}")
-    @Operation(summary = "Delete system setting by ID")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<GlobalResponse<Void>> deleteSystemSetting(@PathVariable Integer id) {
-        return settingsService.deleteSystemSetting(id);
-    }
-
-    @GetMapping("/get/{id}")
-    @Operation(summary = "Get system setting by ID")
-    public ResponseEntity<GlobalResponse<SystemSettingsDto>> getSystemSetting(@PathVariable Integer id) {
-        return settingsService.getSystemSetting(id);
     }
 
     @GetMapping("/search")
