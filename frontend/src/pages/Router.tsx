@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import Login from "./auth/Login";
 import Logout from "./auth/Logout";
+import ProfilePage from "./auth/ProfilePage";
 import Register from "./auth/Register";
 import Dashboard from "./dashboard/Dashboard";
 // import MembersList from "./pages/MembersList";
@@ -45,6 +46,7 @@ export default function Router() {
       <Route path="/expenses" element={<ExpensePage />} />
       <Route path="/references" element={<ReferencePage />} />
       <Route path="/settings" element={<SystemSettingsPage />} />
+      <Route path="/profile" element={<ProfilePage />} />
 
       <Route path="/logout" element={<Logout />} />
     </Routes >

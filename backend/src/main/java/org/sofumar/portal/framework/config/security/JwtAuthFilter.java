@@ -15,6 +15,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
@@ -33,8 +35,8 @@ import jakarta.servlet.http.HttpServletResponse;
 public class JwtAuthFilter extends OncePerRequestFilter {
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthFilter.class);
     private static final List<String> EXCLUDED_PATHS = List.of(
-            "/auth/**",
-            "/api/auth/**",
+            "/auth/login",
+            "/auth/register",
             "/swagger-ui/**",
             "/v3/api-docs/**"
     );
@@ -81,8 +83,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     @SuppressWarnings("unchecked")
                     List<String> roles = (List<String>) claims.get("roles");
                     Collection<GrantedAuthority> auths = roles.stream().map(r -> new SimpleGrantedAuthority("ROLE_" + r)).collect(Collectors.toSet());
+                    
+                    UserDetails principal = new User(username, "", auths);
                     UsernamePasswordAuthenticationToken auth =
-                            new UsernamePasswordAuthenticationToken(username, null, auths);
+                            new UsernamePasswordAuthenticationToken(principal, null, auths);
                     SecurityContextHolder.getContext().setAuthentication(auth);
                 }
             } catch (JwtException e) {

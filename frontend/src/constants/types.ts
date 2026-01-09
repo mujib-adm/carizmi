@@ -54,6 +54,9 @@ export interface LoginData {
 export interface ProfileData {
   username: string;
   role: string;
+  firstName: string;
+  lastName: string;
+  email: string;
 }
 
 // Forms

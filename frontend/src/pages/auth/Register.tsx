@@ -6,6 +6,7 @@ import "../../themes/css/auth-form.css";
 import apiClient from "../../apiclient/ApiClient";
 import { FormField } from "../../component/FormField";
 import { MessageBanner } from "../../component/MessageBanner";
+import { ApiEndpoints } from "../../constants/endpoints";
 import { GlobalResponse, MessageType, RegisterForm } from "../../constants/types";
 import { useNotification } from "../../context/NotificationContext";
 import { useApiMessages } from "../../hook/ApiResponseHandler";
@@ -21,7 +22,7 @@ export default function Register() {
     try {
       // clear old messages from MessageBanner before starting new call
       resetMessages();
-      const response = await apiClient.post<GlobalResponse>("/auth/register", formValues);
+      const response = await apiClient.post<GlobalResponse>(ApiEndpoints.AUTH.REGISTER, formValues);
       const responseBody = response.data;
 
       if (responseBody.globalMessages?.length > 0) {

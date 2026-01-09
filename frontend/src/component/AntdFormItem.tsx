@@ -7,7 +7,7 @@ const { Option } = Select;
 interface AntdFormItemProps extends FormItemProps {
     name: string;
     label?: string;
-    type?: 'text' | 'number' | 'select' | 'date' | 'tel' | 'email';
+    type?: 'text' | 'number' | 'select' | 'date' | 'tel' | 'email' | 'password';
     options?: { value: string | number; label: string | number }[];
     placeholder?: string;
     rules?: Rule[];
@@ -62,6 +62,8 @@ export function AntdFormItem({
                 return <Input type="tel" placeholder={placeholder} {...mergedInputProps} />;
             case 'email':
                 return <Input type="email" placeholder={placeholder} {...mergedInputProps} />;
+            case 'password':
+                return <Input.Password placeholder={placeholder} {...mergedInputProps} />;
             case 'text':
             default:
                 return <Input placeholder={placeholder} {...mergedInputProps} />;

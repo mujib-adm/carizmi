@@ -1,7 +1,8 @@
 import { UserOutlined } from "@ant-design/icons";
 import { Avatar, Image, Layout, Space, Tooltip } from "antd";
-import Logo from "../images/logo.png";
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import Logo from "../images/logo.png";
 import "../themes/modern-ui.css";
 
 const { Header } = Layout;
@@ -28,16 +29,18 @@ export default function AppHeader() {
         <Space size={24}>
           {token && (
             <Tooltip title={`Welcome, ${firstName}`} placement="bottom">
-              <Avatar
-                size={44}
-                icon={<UserOutlined />}
-                style={{
-                  backgroundColor: '#40916C',
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 12px rgba(64, 145, 108, 0.25)',
-                  border: '2px solid rgba(255, 255, 255, 0.8)'
-                }}
-              />
+              <Link to="/profile">
+                <Avatar
+                  size={44}
+                  icon={<UserOutlined />}
+                  style={{
+                    backgroundColor: '#40916C',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(64, 145, 108, 0.25)',
+                    border: '2px solid rgba(255, 255, 255, 0.8)'
+                  }}
+                />
+              </Link>
             </Tooltip>
           )}
         </Space>

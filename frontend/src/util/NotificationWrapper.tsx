@@ -26,6 +26,8 @@ export function useNotificationWrapper() {
       title={modal.title}
       onOk={closeModal}
       onCancel={closeModal}
+      cancelButtonProps={{ style: { display: 'none' } }}
+      okButtonProps={{ size: 'large', style: { width: '100px' } }}
     >
       <p>{modal.description}</p>
     </Modal>

@@ -58,7 +58,7 @@ spring:
 jwt:
   issuer: sofumar.portal
   secret: ${JWT_SECRET:u8J3s9k7vGZxL1aQ9z3eYkX2q9vJ6tL8c5Q1r8Wz0Yk=}
-  expirationMinutes: 60
+  expirationMinutes: 30
 
 management:
   endpoints:

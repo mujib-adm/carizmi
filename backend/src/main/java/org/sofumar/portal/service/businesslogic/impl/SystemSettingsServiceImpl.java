@@ -3,16 +3,13 @@ package org.sofumar.portal.service.businesslogic.impl;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.sofumar.portal.constants.FieldConstants;
 import org.sofumar.portal.data.dto.SystemSettingsDto;
 import org.sofumar.portal.data.transformer.SystemSettingsDtoTransformer;
-import org.sofumar.portal.data.transformer.SystemSettingsVOTransformer;
 import org.sofumar.portal.data.vo.SystemSettingsVO;
 import org.sofumar.portal.framework.bl.AbstractBusinessLogic;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
 import org.sofumar.portal.framework.data.response.PaginationMeta;
 import org.sofumar.portal.framework.exception.RecordNotFoundException;
-import org.sofumar.portal.framework.util.LabelUtils;
 import org.sofumar.portal.framework.util.ResponseUtils;
 import org.sofumar.portal.repo.SystemSettingsRepository;
 import org.sofumar.portal.repo.jpaspec.SystemSettingsSpecifications;
@@ -38,17 +35,14 @@ public class SystemSettingsServiceImpl extends AbstractBusinessLogic<SystemSetti
     private static final Logger logger = LoggerFactory.getLogger(SystemSettingsServiceImpl.class);
 
     private final SystemSettingsRepository settingsRepo;
-    private final SystemSettingsVOTransformer voTransformer;
     private final SystemSettingsDtoTransformer dtoTransformer;
     private final SystemSettingsValidator validator;
 
     @Autowired
     public SystemSettingsServiceImpl(SystemSettingsRepository settingsRepo,
-            SystemSettingsVOTransformer voTransformer,
             SystemSettingsDtoTransformer dtoTransformer,
             SystemSettingsValidator validator) {
         this.settingsRepo = settingsRepo;
-        this.voTransformer = voTransformer;
         this.dtoTransformer = dtoTransformer;
         this.validator = validator;
     }

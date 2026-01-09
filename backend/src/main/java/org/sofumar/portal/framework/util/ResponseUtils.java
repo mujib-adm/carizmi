@@ -59,16 +59,26 @@ public class ResponseUtils {
 
     public static GlobalResponse<Void> unauthorizedResp(String msg) {
         GlobalResponse<Void> response = GlobalResponse.getInstance();
+        response.setStatusCode(HttpStatus.UNAUTHORIZED.value());
+        response.setStatusDesc(HttpStatus.UNAUTHORIZED.getReasonPhrase());
         response.setGlobalMessages(List.of(new GlobalMsg(Message.Type.ERROR, "Unauthorized - " + msg)));
         return response;
     }
 
     public static ResponseEntity<GlobalResponse<Void>> withStatus(HttpStatus status, GlobalResponse<Void> response) {
+        if (response.getStatusCode() == 0) {
+            response.setStatusCode(status.value());
+            response.setStatusDesc(status.getReasonPhrase());
+        }
         return ResponseEntity.status(status).body(response);
     }
 
     public static ResponseEntity<GlobalResponse<Void>> withStatus(HttpStatus status, Message.Type type, String msg) {
-        GlobalResponse<Void> response = GlobalResponse.getInstance();
+        return withStatusAndData(status, type, msg);
+    }
+
+    public static <T> ResponseEntity<GlobalResponse<T>> withStatusAndData(HttpStatus status, Message.Type type, String msg) {
+        GlobalResponse<T> response = GlobalResponse.getInstance();
         response.setStatusCode(status.value());
         response.setStatusDesc(status.getReasonPhrase());
         response.setGlobalMessages(List.of(new GlobalMsg(type, msg)));

@@ -39,4 +39,10 @@ export const ApiEndpoints = {
     SEARCH: "/reference/search",
     GET_BY_NAME: (referenceName: string) => `/reference/list/${referenceName}`,
   },
+  AUTH: {
+    LOGIN: "/auth/login",
+    REGISTER: "/auth/register",
+    PROFILE: "/auth/profile",
+    PASSWORD_UPDATE: "/auth/password-update",
+  },
 };

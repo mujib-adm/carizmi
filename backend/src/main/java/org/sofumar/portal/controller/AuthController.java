@@ -1,7 +1,9 @@
 package org.sofumar.portal.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.sofumar.portal.data.dto.UserProfileDto;
 import org.sofumar.portal.data.dto.request.LoginRequest;
+import org.sofumar.portal.data.dto.request.PasswordUpdateRequestDto;
 import org.sofumar.portal.data.dto.request.UserRequestDto;
 import org.sofumar.portal.framework.data.msg.Message;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
@@ -47,10 +49,24 @@ public class AuthController {
     }
 
     @GetMapping("/profile")
-    public ResponseEntity<?> getCurrentUser(@AuthenticationPrincipal UserDetails user) {
+    public ResponseEntity<GlobalResponse<UserProfileDto>> getCurrentUser(@AuthenticationPrincipal UserDetails user) {
+        if (user == null) {
+            return ResponseUtils.withStatusAndData(HttpStatus.UNAUTHORIZED, Message.Type.ERROR, "Session expired or User not logged in.");
+        }
+        return userService.getProfile(user.getUsername());
+    }
+
+    @PostMapping("/password-update")
+    public ResponseEntity<GlobalResponse<Void>> updatePassword(@AuthenticationPrincipal UserDetails user, @RequestHeader(name = "Authorization") String authHeader, @RequestBody PasswordUpdateRequestDto requestDto) {
         if (user == null) {
             return ResponseUtils.withStatus(HttpStatus.UNAUTHORIZED, Message.Type.ERROR, "Session expired or User not logged in.");
         }
-        return userService.getProfile(user.getUsername());
+        
+        String token = null;
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            token = authHeader.substring(7);
+        }
+        
+        return userService.updatePassword(user.getUsername(), token, requestDto);
     }
 }

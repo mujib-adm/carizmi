@@ -1,5 +1,9 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import { jwtDecode } from "jwt-decode";
 import { onUnauthorized, setAuthToken } from "../apiclient/ApiClient";
+import apiClient from "../apiclient/ApiClient";
+import { ApiEndpoints } from "../constants/endpoints";
+import { GlobalResponse, ProfileData } from "../constants/types";
 
 type AuthContextType = {
   token: string | null;
@@ -45,6 +49,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setFirstName("");
   };
 
+  // Check token expiration on load and set timer
+  useEffect(() => {
+    if (token) {
+      try {
+        const decoded: any = jwtDecode(token);
+        if (decoded.exp) {
+          const expirationTime = decoded.exp * 1000;
+          const currentTime = Date.now();
+          
+          if (currentTime >= expirationTime) {
+           // Token already expired
+            logout();
+          } else {
+            // Set timer for remaining time
+            const timeoutDuration = expirationTime - currentTime;
+            const timer = setTimeout(() => {
+                logout();
+                window.location.href = "/login"; // Force redirect to ensure clean state
+            }, timeoutDuration);
+            return () => clearTimeout(timer);
+          }
+        }
+      } catch (error) {
+        console.error("Invalid token:", error);
+        logout();
+      }
+    }
+  }, [token]);
+
   // Register unauthorized callback to trigger logout on 401
   useEffect(() => {
     onUnauthorized(logout);
@@ -63,14 +96,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (storedToken) {
       // validate token with backend
-      fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
-        headers: { Authorization: `Bearer ${storedToken}` }
-      })
+      apiClient.get<GlobalResponse<ProfileData>>(ApiEndpoints.AUTH.PROFILE)
         .then(res => {
-          if (!res.ok) throw new Error("Invalid token");
-          return res.json();
-        })
-        .then(data => {
+          const data = res.data;
           setToken(storedToken);
           setRole(storedRole || "User");
           if (data.responseData) {

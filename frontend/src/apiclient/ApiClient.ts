@@ -21,7 +21,7 @@ export const onUnauthorized = (callback: UnauthorizedCallback) => {
 const apiClient = axios.create({
   baseURL: API_BASE,
   headers: { "Content-Type": "application/json", Accept: "application/json", Authorization: authToken ? `Bearer ${authToken}` : "" },
-  // timeout: 10000,
+  timeout: 30000,
 });
 
 // Request interceptor → show loader

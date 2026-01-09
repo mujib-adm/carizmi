@@ -1,6 +1,7 @@
 package org.sofumar.portal.service.businesslogic.impl;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.Date;
@@ -10,12 +11,15 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sofumar.portal.constants.RoleConstants;
+import org.sofumar.portal.data.dto.UserProfileDto;
+import org.sofumar.portal.data.dto.request.PasswordUpdateRequestDto;
 import org.sofumar.portal.data.dto.request.UserRequestDto;
 import org.sofumar.portal.data.transformer.UserVOTransformer;
 import org.sofumar.portal.data.vo.UserVO;
 import org.sofumar.portal.framework.bl.AbstractBusinessLogic;
 import org.sofumar.portal.framework.data.msg.Message;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
+import org.sofumar.portal.framework.exception.RecordNotFoundException;
 import org.sofumar.portal.framework.service.TokenBlacklistService;
 import org.sofumar.portal.framework.util.ResponseUtils;
 import org.sofumar.portal.repo.UserRepository;
@@ -126,16 +130,53 @@ public class UserServiceImpl extends AbstractBusinessLogic<UserVO, UserRepositor
     }
 
     @Override
-    public ResponseEntity<?> getProfile(String username) {
+    public ResponseEntity<GlobalResponse<UserProfileDto>> getProfile(String username) {
+        logger.info("Fetching profile for user: {}", username);
         UserVO userVO = userRepo.findOne(UserSpecifications.hasUsername(username)).orElse(null);
         if (userVO == null) {
-            return ResponseUtils.withStatus(HttpStatus.UNAUTHORIZED, Message.Type.ERROR, "User not found.");
+            logger.warn("User not found: {}", username);
+            return ResponseUtils.withStatusAndData(HttpStatus.UNAUTHORIZED, Message.Type.ERROR, "User not found.");
         }
-        return ResponseUtils.withMap(Map.of(
-                "username", userVO.getUsername(),
-                "role", userVO.getRole(),
-                "firstName", userVO.getFirstName(),
-                "lastName", userVO.getLastName()));
+        
+        UserProfileDto dto = UserProfileDto.builder()
+                .username(userVO.getUsername())
+                .role(userVO.getRole())
+                .firstName(userVO.getFirstName())
+                .lastName(userVO.getLastName())
+                .email(userVO.getEmail())
+                .build();
+                
+        logger.info("Returning profile DTO for user: {}", username);
+        return ResponseUtils.okWithData(dto);
+    }
+
+    @Override
+    @Transactional
+    public ResponseEntity<GlobalResponse<Void>> updatePassword(String username, String token, PasswordUpdateRequestDto requestDto) {
+        UserVO userVO = userRepo.findOne(UserSpecifications.hasUsername(username))
+                .orElseThrow(() -> new RecordNotFoundException("User not found: " + username));
+
+        if (!encoder.matches(requestDto.getOldPassword(), userVO.getPassword())) {
+            return ResponseUtils.badRequest("Incorrect old password.");
+        }
+
+        if (!requestDto.getNewPassword().equals(requestDto.getConfirmPassword())) {
+            return ResponseUtils.badRequest("New password and confirmation do not match.");
+        }
+
+        userVO.setPassword(requestDto.getNewPassword());
+        validator.validate(userVO);
+        userVO.setPassword(encoder.encode(userVO.getPassword()));
+        userVO.setPasswordUpdatedAt(LocalDateTime.now());
+        
+        // Revoke the current token
+        if (token != null) {
+             blacklistService.revokeToken(token, expMin * 60L);
+        }
+
+        update(userVO);
+
+        return ResponseUtils.ok("Password updated successfully! Please log in again.");
     }
 
 }

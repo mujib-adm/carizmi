@@ -1,9 +1,11 @@
 package org.sofumar.portal.service.businesslogic;
 
+import org.sofumar.portal.data.dto.UserProfileDto;
+import org.sofumar.portal.data.dto.request.PasswordUpdateRequestDto;
 import org.sofumar.portal.data.dto.request.UserRequestDto;
+import org.sofumar.portal.data.vo.UserVO;
 import org.sofumar.portal.framework.bl.BusinessLogic;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
-import org.sofumar.portal.data.vo.UserVO;
 import org.springframework.http.ResponseEntity;
 
 public interface UserService extends BusinessLogic<UserVO> {
@@ -13,5 +15,7 @@ public interface UserService extends BusinessLogic<UserVO> {
 
     void logout(String token);
 
-    ResponseEntity<?> getProfile(String username);
+    ResponseEntity<GlobalResponse<UserProfileDto>> getProfile(String username);
+
+    ResponseEntity<GlobalResponse<Void>> updatePassword(String username, String token, PasswordUpdateRequestDto requestDto);
 }

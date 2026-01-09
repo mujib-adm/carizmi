@@ -6,6 +6,7 @@ import "../../themes/css/auth-form.css";
 import apiClient from "../../apiclient/ApiClient";
 import { FormField } from "../../component/FormField";
 import { MessageBanner } from "../../component/MessageBanner";
+import { ApiEndpoints } from "../../constants/endpoints";
 import { GlobalResponse, LoginData, LoginForm } from "../../constants/types";
 import { useApiMessages } from "../../hook/ApiResponseHandler";
 
@@ -20,7 +21,7 @@ export default function Login() {
     // clear old messages from MessageBanner before starting new call
     resetMessages();
     try {
-      const response = await apiClient.post<GlobalResponse<LoginData>>("/auth/login", formValues);
+      const response = await apiClient.post<GlobalResponse<LoginData>>(ApiEndpoints.AUTH.LOGIN, formValues);
       const responseBody = response.data;
 
       if (responseBody?.map?.token && responseBody?.map?.role) {
