@@ -59,6 +59,17 @@ export interface ProfileData {
   email: string;
 }
 
+// User types
+export interface User {
+  userID: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  username: string;
+  role: string;
+  active: boolean;
+}
+
 // Forms
 export interface LoginForm {
   username: string;

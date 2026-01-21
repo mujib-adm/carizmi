@@ -19,9 +19,11 @@ import MemberPage from "./member/MemberPage";
 import PaymentPage from "./payment/PaymentPage";
 import ReferencePage from "./reference/ReferencePage";
 import SystemSettingsPage from "./settings/SystemSettingsPage";
+import UsersPage from "./admin/UsersPage";
+import { RoleConstants } from "../constants/RoleConstants";
 
 export default function Router() {
-  const { token, isLoading } = useAuth();
+  const { token, isLoading, role } = useAuth();
 
   if (isLoading) return <div>Loading...</div>;
 
@@ -47,8 +49,10 @@ export default function Router() {
       <Route path="/references" element={<ReferencePage />} />
       <Route path="/settings" element={<SystemSettingsPage />} />
       <Route path="/profile" element={<ProfilePage />} />
+      {role === RoleConstants.ROLE_ADMIN && <Route path="/users" element={<UsersPage />} />}
 
       <Route path="/logout" element={<Logout />} />
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes >
   );
 }

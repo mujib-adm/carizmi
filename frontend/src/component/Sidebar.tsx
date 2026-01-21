@@ -11,6 +11,7 @@ import {
 import type { MenuProps } from 'antd';
 import { Menu } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { RoleConstants } from '../constants/RoleConstants';
 import './Sidebar.css';
 
 export default function Sidebar() {
@@ -25,8 +26,8 @@ export default function Sidebar() {
         { key: '/members', icon: <TeamOutlined />, label: 'Members' },
 //         { key: '/reporting', icon: <FileSearchOutlined />, label: 'Reporting' },
         { key: '/references', icon: <DatabaseOutlined />, label: 'Reference' },
-        { key: '/settings', icon: <SettingOutlined />, label: 'System Settings' },
-        ...(role === "ADMIN" ? [{ key: '/users', icon: <UserOutlined />, label: 'User' }] : []),
+        { key: '/settings', icon: <SettingOutlined />, label: 'Settings' },
+        ...(role === RoleConstants.ROLE_ADMIN ? [{ key: '/users', icon: <UserOutlined />, label: 'Users' }] : []),
         { key: '/logout', icon: <LogoutOutlined />, label: 'Logout' },
     ];
 

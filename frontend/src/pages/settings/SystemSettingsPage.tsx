@@ -6,11 +6,14 @@ import { MessageBanner } from '../../component/MessageBanner.js';
 import SearchFilterBar from '../../component/SearchFilterBar.jsx';
 import Sidebar from "../../component/Sidebar";
 import "../../component/Sidebar.css";
-import { SystemSettingsModal } from '../../component/SystemSettingsModal';
+import { SystemSettingsModal } from '../../modals/SystemSettingsModal.js';
+import { FEE_TYPE } from '../../constants/referenceConstants';
 import { systemSettingsSearchFiltersConfig } from '../../constants/systemSettingsSearchFiltersConfig';
 import { SystemSetting, SystemSettingSearchParams } from '../../constants/types';
+import { useReference } from "../../context/ReferenceContext";
 import { useApiMessages } from "../../hook/ApiResponseHandler";
 import { usePaginatedSystemSettings } from '../../hook/PaginatedSystemSettings';
+import { useAuthorization } from '../../hook/useAuthorization';
 
 const { Title } = Typography;
 
@@ -18,6 +21,8 @@ export default function SystemSettingsPage() {
     const { settings, meta, loading, fetchSettings } = usePaginatedSystemSettings();
     const [filters, setFilters] = useState<SystemSettingSearchParams>({});
     const { globalMessages, handleError, resetMessages } = useApiMessages<any>();
+
+    const { canWrite } = useAuthorization();
 
     const [modalVisible, setModalVisible] = useState(false);
     const [editingRecord, setEditingRecord] = useState<SystemSetting | null>(null);
@@ -46,17 +51,44 @@ export default function SystemSettingsPage() {
             await updateSystemSetting(values);
             fetchSettings(filters);
         } catch (e) {
-            console.error(e);
             throw e; // Modal will handle reporting this
         }
     };
 
+    // Helper to format codes like BASELINE_REVENUE -> Baseline Revenue
+    const formatCode = (str: string) => {
+        if (!str) return str;
+        return str.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+    };
+
+    const { toDisplay } = useReference();
+
     const columns = [
         { title: 'ID', dataIndex: 'systemSettingsID', key: 'systemSettingsID', width: 80 },
-        { title: 'Type', dataIndex: 'settingType', key: 'settingType', sorter: true },
-        { title: 'Key', dataIndex: 'settingKey', key: 'settingKey', sorter: true },
+        { 
+            title: 'Type', 
+            dataIndex: 'settingType', 
+            key: 'settingType', 
+            sorter: true,
+            render: (text: string) => formatCode(text) 
+        },
+        { 
+            title: 'Key', 
+            dataIndex: 'settingKey', 
+            key: 'settingKey', 
+            sorter: true,
+            render: (text: string, record: SystemSetting) => {
+                // If it's a FEE setting, try to use the feeType reference display
+                if (record.settingType === 'FEE') {
+                    const display = toDisplay(FEE_TYPE, text);
+                    // toDisplay returns code if not found, check if it's different or just format
+                    return display !== text ? display : formatCode(text);
+                }
+                return formatCode(text);
+            }
+        },
         { title: 'Value', dataIndex: 'settingValue', key: 'settingValue' },
-        {
+        ...(canWrite ? [{
             title: 'Action',
             key: 'action',
             render: (_: any, record: SystemSetting) => (
@@ -64,7 +96,7 @@ export default function SystemSettingsPage() {
                     <Button icon={<EditOutlined />} onClick={() => handleEdit(record)} />
                 </Space>
             )
-        }
+        }] : []),
     ];
 
     return (

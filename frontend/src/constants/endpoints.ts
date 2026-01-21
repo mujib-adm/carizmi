@@ -42,7 +42,13 @@ export const ApiEndpoints = {
   AUTH: {
     LOGIN: "/auth/login",
     REGISTER: "/auth/register",
+    REFRESH: "/auth/refresh",
     PROFILE: "/auth/profile",
     PASSWORD_UPDATE: "/auth/password-update",
+  },
+  USERS: {
+    LIST: "/users",
+    UPDATE_ROLE: (userId: number) => `/users/${userId}/role`,
+    UPDATE_STATUS: (userId: number) => `/users/${userId}/status`,
   },
 };

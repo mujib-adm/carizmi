@@ -6,9 +6,9 @@ import { SystemSettingsCodeConstants } from '../constants/SystemSettingsCodeCons
 import { Payment } from '../constants/types';
 import { useSystemSettings } from '../context/SystemSettingsContext';
 import { useApiMessages } from '../hook/ApiResponseHandler';
-import { AntdFormItem } from './AntdFormItem';
-import MemberLookup from './MemberLookup';
-import { MessageBanner } from './MessageBanner';
+import { AntdFormItem } from '../component/AntdFormItem';
+import MemberLookup from '../component/MemberLookup';
+import { MessageBanner } from '../component/MessageBanner';
 
 interface PaymentModalProps {
     open: boolean;
@@ -67,7 +67,6 @@ export default function PaymentModal({ open, onCancel, onSubmit, initialValues, 
 
             await onSubmit(payload);
         } catch (e: any) {
-            console.error("Validation failed or submit error", e);
             if (e.errorFields) {
                 // Ant Design form validation error, do nothing
             } else {
@@ -105,9 +104,12 @@ export default function PaymentModal({ open, onCancel, onSubmit, initialValues, 
                 }}
             >
                 <Form.Item name="memberID" label="Member" rules={[{ required: true }]}>
-                    <MemberLookup onSelectMember={(m) => {
-                        // Optional side effects
-                    }} />
+                    <MemberLookup 
+                        onSelectMember={(m) => {
+                            // Optional side effects
+                        }} 
+                        onError={handleError}
+                    />
                 </Form.Item>
                 <Divider />
 

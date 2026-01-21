@@ -28,7 +28,7 @@ export const setGlobalLoading = (v: boolean) => {
     registeredSetter(v);
   } else {
     // Optional: keep this quiet in production; useful during development
-    console.warn("No loading setter registered yet. Call registerLoadingSetter from LoadingProvider.");
+    // console.warn("No loading setter registered yet. Call registerLoadingSetter from LoadingProvider.");
   }
 };
 

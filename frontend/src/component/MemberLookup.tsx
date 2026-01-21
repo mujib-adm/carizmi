@@ -10,9 +10,10 @@ import './member-lookup.css';
 
 interface MemberLookupProps extends SelectProps<any> {
     onSelectMember?: (member: any) => void;
+    onError?: (error: any) => void;
 }
 
-export default function MemberLookup({ value, onChange, onSelectMember, ...rest }: MemberLookupProps) {
+export default function MemberLookup({ value, onChange, onSelectMember, onError, ...rest }: MemberLookupProps) {
     const [data, setData] = useState<any[]>([]);
     const [fetching, setFetching] = useState(false);
 
@@ -30,7 +31,7 @@ export default function MemberLookup({ value, onChange, onSelectMember, ...rest 
                 setData([]);
             }
         } catch (error) {
-            console.error("Lookup failed", error);
+            if (onError) onError(error);
         } finally {
             setFetching(false);
         }

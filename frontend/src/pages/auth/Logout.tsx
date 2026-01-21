@@ -3,20 +3,23 @@ import { useNavigate } from "react-router-dom";
 import apiClient from "../../apiclient/ApiClient";
 import { GlobalResponse } from "../../constants/types";
 import { useAuth } from "../../context/AuthContext";
+import { useNotification } from "../../context/NotificationContext";
 
 export default function Logout() {
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const notify = useNotification();
 
   useEffect(() => {
     const doLogout = async () => {
       const token = localStorage.getItem("token");
 
       try {
-        const response = await apiClient.post<GlobalResponse>("/auth/logout", {}, { headers: { Authorization: `Bearer ${token}` }, });
+        const refreshToken = localStorage.getItem("refreshToken");
+        await apiClient.post<GlobalResponse>("/auth/logout", { refreshToken }, { headers: { Authorization: `Bearer ${token}` }, });
 
       } catch (err) {
-        console.error("Logout API call failed", err);
+        notify.warning({ message: "Logout Warning", description: "Server-side logout may have failed, but you have been logged out locally." });
       }
 
       logout(); // clear local storage/context
@@ -24,7 +27,7 @@ export default function Logout() {
     };
 
     doLogout();
-  }, [logout, navigate]);
+  }, [logout, navigate, notify]);
 
   return <div>Logging out...</div>;
 }

@@ -7,7 +7,7 @@ import apiClient from "../../apiclient/ApiClient";
 import { FormField } from "../../component/FormField";
 import { MessageBanner } from "../../component/MessageBanner";
 import { ApiEndpoints } from "../../constants/endpoints";
-import { GlobalResponse, LoginData, LoginForm } from "../../constants/types";
+import { GlobalResponse, LoginData, LoginForm, MessageType } from "../../constants/types";
 import { useApiMessages } from "../../hook/ApiResponseHandler";
 
 export default function Login() {
@@ -25,12 +25,18 @@ export default function Login() {
       const responseBody = response.data;
 
       if (responseBody?.map?.token && responseBody?.map?.role) {
-        login(responseBody.map.token, responseBody.map.role, responseBody.map.firstName || '');
+        login(responseBody.map.token, responseBody.map.refreshToken, responseBody.map.role, responseBody.map.firstName || '');
         navigate("/dashboard");
       } else if (responseBody.globalMessages?.length > 0) {
         handleResponse(responseBody);
       } else {
-        console.error("Login response missing a token and/or role");
+        handleResponse({
+             statusCode: 500,
+             statusDesc: "Error",
+             globalMessages: [{ type: MessageType.ERROR, message: "Login failed. Invalid server response (missing token)." }],
+             fieldMessages: [],
+             map: {}
+        });
       }
     } catch (error: any) {
       handleError(error);

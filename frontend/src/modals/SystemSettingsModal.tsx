@@ -2,8 +2,8 @@ import { Form, Modal } from "antd";
 import { useEffect } from "react";
 import { SystemSetting } from "../constants/types";
 import { useApiMessages } from "../hook/ApiResponseHandler";
-import { AntdFormItem } from "./AntdFormItem";
-import { MessageBanner } from "./MessageBanner";
+import { AntdFormItem } from "../component/AntdFormItem";
+import { MessageBanner } from "../component/MessageBanner";
 
 type Props = {
   open: boolean;
@@ -46,7 +46,6 @@ export function SystemSettingsModal({ open, onCancel, onSubmit, initial }: Props
       await onSubmit(payload);
       onCancel();
     } catch (e: any) {
-      console.error("Error submitting system setting form. SystemSettingsModal.submit: ", e);
       if (e.errorFields) {
         // Ant Design form validation error, do nothing
       } else {

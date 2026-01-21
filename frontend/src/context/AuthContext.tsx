@@ -10,7 +10,7 @@ type AuthContextType = {
   role: string;
   firstName: string;
   isLoading: boolean;
-  login: (token: string, role: string, firstName: string) => void;
+  login: (token: string, refreshToken: string, role: string, firstName: string) => void;
   logout: () => void;
 };
 
@@ -33,8 +33,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthToken(token); // keep ApiClient in sync
   }, [token]);
 
-  const login = (newToken: string, newRole: string, newFirstName: string) => {
+  const login = (newToken: string, newRefreshToken: string, newRole: string, newFirstName: string) => {
     localStorage.setItem("token", newToken);
+    localStorage.setItem("refreshToken", newRefreshToken);
     localStorage.setItem("role", newRole);
     localStorage.setItem("firstName", newFirstName);
     setToken(newToken);
@@ -48,35 +49,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setRole("User");
     setFirstName("");
   };
-
-  // Check token expiration on load and set timer
-  useEffect(() => {
-    if (token) {
-      try {
-        const decoded: any = jwtDecode(token);
-        if (decoded.exp) {
-          const expirationTime = decoded.exp * 1000;
-          const currentTime = Date.now();
-          
-          if (currentTime >= expirationTime) {
-           // Token already expired
-            logout();
-          } else {
-            // Set timer for remaining time
-            const timeoutDuration = expirationTime - currentTime;
-            const timer = setTimeout(() => {
-                logout();
-                window.location.href = "/login"; // Force redirect to ensure clean state
-            }, timeoutDuration);
-            return () => clearTimeout(timer);
-          }
-        }
-      } catch (error) {
-        console.error("Invalid token:", error);
-        logout();
-      }
-    }
-  }, [token]);
 
   // Register unauthorized callback to trigger logout on 401
   useEffect(() => {

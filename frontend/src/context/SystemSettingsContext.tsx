@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { searchSystemSettings } from "../apiclient/systemSettingsApi";
 import { SystemSetting } from "../constants/types";
 import { useAuth } from "./AuthContext";
+import { useNotification } from "./NotificationContext";
 
 type SystemSettingsContextType = {
     settings: SystemSetting[];
@@ -21,6 +22,7 @@ const SystemSettingsContext = createContext<SystemSettingsContextType>({
 
 export function SystemSettingsProvider({ children }: { children: React.ReactNode }) {
     const { token } = useAuth();
+    const notify = useNotification();
     const [settings, setSettings] = useState<SystemSetting[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -32,7 +34,10 @@ export function SystemSettingsProvider({ children }: { children: React.ReactNode
                 setSettings(res.responseData);
             }
         } catch (error) {
-            console.error("Failed to fetch system settings:", error);
+            notify.error({ 
+                message: "System Settings Error", 
+                description: "Failed to load system settings. Application may not behave as expected." 
+            });
         } finally {
             setIsLoading(false);
         }

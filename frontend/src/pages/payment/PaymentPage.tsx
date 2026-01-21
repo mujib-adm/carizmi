@@ -4,7 +4,7 @@ import { ColumnsType } from 'antd/es/table';
 import { useMemo, useState } from 'react';
 import { addPayment, deletePayment, getPayment, updatePayment } from '../../apiclient/paymentApi';
 import { MessageBanner } from '../../component/MessageBanner';
-import PaymentModal from '../../component/PaymentModal';
+import PaymentModal from '../../modals/PaymentModal.tsx';
 import SearchFilterBar from '../../component/SearchFilterBar.jsx';
 import Sidebar from "../../component/Sidebar";
 import { paymentSearchFiltersConfig } from '../../constants/paymentSearchFiltersConfig.ts';
@@ -14,6 +14,7 @@ import { useNotification } from "../../context/NotificationContext";
 import { useReference } from "../../context/ReferenceContext";
 import { useApiMessages } from '../../hook/ApiResponseHandler';
 import { usePaginatedPayments } from '../../hook/PaginatedPayments';
+import { useAuthorization } from '../../hook/useAuthorization';
 
 const { Title } = Typography;
 
@@ -29,6 +30,8 @@ export default function PaymentPage() {
     // Modal State
     const [modalOpenInd, setModalOpenInd] = useState(false);
     const [selectedRecord, setSelectedRecord] = useState<any>(null);
+
+    const { canWrite } = useAuthorization();
 
     // Ref Data
     const { getReference, toDisplay } = useReference();
@@ -54,13 +57,15 @@ export default function PaymentPage() {
         setModalOpenInd(true);
     };
 
-    const handleDelete = async (id: number, memberName: string, payment: string) => {
+    const handleDelete = async (record: Payment) => {
+        const feeTypeDisplay = toDisplay(FEE_TYPE, record.feeType) || record.feeType;
         Modal.confirm({
             title: 'Are you sure you want to delete payment record?',
             content: (
-                <div style={{ color: "red", display: 'grid', gridTemplateColumns: '100px auto', rowGap: '6px', lineHeight: '1.6' }} >
-                    <div>Payment:</div> <div>{payment}</div>
-                    <div>Member:</div> <div>{memberName}</div>
+                <div style={{ color: "red", display: 'grid', gridTemplateColumns: 'min-content auto', columnGap: '12px', rowGap: '6px', lineHeight: '1.6' }} >
+                    <div style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Member:</div> <div>{record.memberFullName}</div>
+                    <div style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Fee Type:</div> <div>{feeTypeDisplay}</div>
+                    <div style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Amount:</div> <div>${record.amount.toFixed(2)}</div>
                 </div>
             ),
             okText: 'Delete',
@@ -68,7 +73,7 @@ export default function PaymentPage() {
             onOk: async () => {
                 try {
                     resetMessages();
-                    const resp = await deletePayment(id);
+                    const resp = await deletePayment(record.paymentID);
 
                     if (resp.globalMessages?.[0]?.type === MessageType.SUCCESS) {
                         notify.success({ message: "Deleted", description: "Payment deleted successfully." });
@@ -117,16 +122,16 @@ export default function PaymentPage() {
         { title: 'Date', dataIndex: 'dateReceived', key: 'dateReceived' },
         { title: 'Method', dataIndex: 'methodOfPayment', key: 'methodOfPayment', render: (code: string) => toDisplay(PAYMENT_METHOD, code) },
         { title: 'Period', key: 'period', render: (_, record) => record.year && record.quarter ? `${record.year}-Q${record.quarter}` : '' },
-        {
+        ...(canWrite ? [{
             title: 'Action',
             key: 'action',
-            render: (_, record) => (
+            render: (_: any, record: Payment) => (
                 <Space>
                     <Button icon={<EditOutlined />} onClick={() => openEdit(record)} />
-                    <Button icon={<DeleteOutlined />} danger onClick={() => handleDelete(record.paymentID, record.memberFullName, `${record.feeType} ($${record.amount})`)} />
+                    <Button icon={<DeleteOutlined />} danger onClick={() => handleDelete(record)} />
                 </Space>
             ),
-        },
+        }] : []),
     ];
 
     // Dynamic search config for fee types (Reference data)
@@ -150,7 +155,7 @@ export default function PaymentPage() {
                         </Title>
                     </div>
 
-                    <SearchFilterBar config={searchConfig as any} filters={filters} onChange={setFilters} onSearch={handleSearch} onAdd={openAdd} />
+                    <SearchFilterBar config={searchConfig as any} filters={filters} onChange={setFilters} onSearch={handleSearch} onAdd={canWrite ? openAdd : undefined} />
 
                     {globalMessages && <MessageBanner messages={globalMessages} />}
 

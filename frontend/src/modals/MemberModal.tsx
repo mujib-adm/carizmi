@@ -5,8 +5,8 @@ import { ReferenceCodeConstants } from "../constants/ReferenceCodeConstants";
 import { Member, MemberRequestDto } from "../constants/types";
 import { useApiMessages } from "../hook/ApiResponseHandler";
 import "../themes/css/member.css";
-import { AntdFormItem } from "./AntdFormItem";
-import { MessageBanner } from "./MessageBanner";
+import { AntdFormItem } from "../component/AntdFormItem";
+import { MessageBanner } from "../component/MessageBanner";
 
 type Props = {
   open: boolean;
@@ -58,7 +58,6 @@ export function MemberModal({ open, onCancel, onSubmit, initial, statusOptions }
       await onSubmit(payload);
       onCancel();
     } catch (e: any) {
-      console.error("Error submitting member form. MemberModal.submit: ", e);
       if (e.errorFields) {
         // Ant Design form validation error, do nothing
       } else {

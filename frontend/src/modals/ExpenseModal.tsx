@@ -3,8 +3,8 @@ import dayjs from 'dayjs';
 import { useEffect } from 'react';
 import { Expense } from '../constants/types';
 import { useApiMessages } from '../hook/ApiResponseHandler';
-import { AntdFormItem } from './AntdFormItem';
-import { MessageBanner } from './MessageBanner';
+import { AntdFormItem } from '../component/AntdFormItem';
+import { MessageBanner } from '../component/MessageBanner';
 
 interface ExpenseModalProps {
     open: boolean;
@@ -51,7 +51,6 @@ export default function ExpenseModal({ open, onCancel, onSubmit, initialValues, 
 
             await onSubmit(payload);
         } catch (e: any) {
-            console.error("Validation failed or submit error", e);
             if (e.errorFields) {
                 // Ant Design form validation error, do nothing
             } else {

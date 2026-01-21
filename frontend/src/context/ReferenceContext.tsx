@@ -3,6 +3,7 @@ import { getReferencesByName } from "../apiclient/referenceApi";
 import { STARTUP_REFERENCES } from "../constants/referenceConstants";
 import { ReferenceData } from "../constants/types";
 import { useAuth } from "./AuthContext";
+import { useNotification } from "./NotificationContext";
 
 type ReferenceContextType = {
     references: Record<string, ReferenceData[]>;
@@ -22,6 +23,7 @@ const ReferenceContext = createContext<ReferenceContextType>({
 
 export function ReferenceProvider({ children }: { children: React.ReactNode }) {
     const { token } = useAuth();
+    const notify = useNotification();
     const [references, setReferences] = useState<Record<string, ReferenceData[]>>({});
     const [isLoading, setIsLoading] = useState(true);
 
@@ -53,7 +55,10 @@ export function ReferenceProvider({ children }: { children: React.ReactNode }) {
 
             setReferences(newReferences);
         } catch (error) {
-            console.error("Failed to fetch references:", error);
+            notify.error({ 
+                message: "Reference Data Error", 
+                description: "Failed to load reference data. Dropdowns may be empty." 
+            });
         } finally {
             setIsLoading(false);
         }

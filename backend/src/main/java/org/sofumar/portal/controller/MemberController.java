@@ -35,21 +35,21 @@ public class MemberController {
 
     @PostMapping("/add")
     @Operation(summary = "Add a new member")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
+    @PreAuthorize("hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_ADMIN) or hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_MANAGER)")
     public ResponseEntity<GlobalResponse<Integer>> addMember(@RequestBody MemberDto requestDto) {
         return memberService.addMember(requestDto);
     }
 
     @PutMapping("/update")
     @Operation(summary = "Update an existing member")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
+    @PreAuthorize("hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_ADMIN) or hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_MANAGER)")
     public ResponseEntity<GlobalResponse<Void>> updateMember(@RequestBody MemberDto requestDto) {
         return memberService.updateMember(requestDto);
     }
 
     @DeleteMapping("delete/{memberID}")
     @Operation(summary = "Delete member by ID")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
+    @PreAuthorize("hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_ADMIN) or hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_MANAGER)")
     public ResponseEntity<GlobalResponse<Void>> deleteMember(@PathVariable Integer memberID) {
         return memberService.deleteMember(memberID);
     }

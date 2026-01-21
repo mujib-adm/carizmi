@@ -4,7 +4,7 @@ import type { ColumnsType } from "antd/es/table";
 import { useMemo, useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import { addMember, deleteMember, getMember, updateMember } from "../../apiclient/memberApi";
-import { MemberModal } from "../../component/MemberModal";
+import { MemberModal } from "../../modals/MemberModal";
 import { MessageBanner } from "../../component/MessageBanner";
 import SearchFilterBar from "../../component/SearchFilterBar";
 import Sidebar from "../../component/Sidebar";
@@ -15,6 +15,7 @@ import { useNotification } from "../../context/NotificationContext";
 import { useReference } from "../../context/ReferenceContext";
 import { useApiMessages } from "../../hook/ApiResponseHandler";
 import { usePaginatedMembers } from "../../hook/PaginatedMembers";
+import { useAuthorization } from "../../hook/useAuthorization";
 
 const { Title } = Typography;
 
@@ -32,6 +33,8 @@ export default function MemberPage() {
     const [modalOpenInd, setModalOpenInd] = useState(false);
     const [selectedRecord, setSelectedRecord] = useState<Member | null>(null);
 
+    const { canWrite } = useAuthorization();
+
     const { getReference, toDisplay } = useReference();
     const statusOptions = useMemo(
         () => getReference(MEMBER_STATUS).map(r => ({ value: r.code, label: r.display })),
@@ -43,7 +46,6 @@ export default function MemberPage() {
         try {
             await fetchMembers({ ...filters, page: 0, size: meta?.pageSize ?? 10 });
         } catch (e: any) {
-            console.error("Error searching members: -> ", e);
             handleError(e);
         }
     };
@@ -115,17 +117,17 @@ export default function MemberPage() {
         { title: "Phone", dataIndex: "phone", key: "phone", width: 120 },
         { title: "Email", dataIndex: "email", key: "email", width: 150 },
         { title: "Status", dataIndex: "status", key: "status", width: 120, render: (code: string) => toDisplay(MEMBER_STATUS, code) },
-        {
+        ...(canWrite ? [{
             title: 'Action',
             key: 'action',
-            render: (_, record) => (
+            render: (_: any, record: Member) => (
                 <Space>
                     <Button icon={<EyeOutlined />} onClick={() => navigate(`/members/${record.memberID}`)} />
                     <Button icon={<EditOutlined />} onClick={() => openEdit(record)} />
                     <Button icon={<DeleteOutlined />} danger onClick={() => handleDelete(record.memberID, `${record.firstName} ${record.lastName}`)} />
                 </Space>
             ),
-        },
+        }] : []),
     ];
 
     return (
@@ -139,7 +141,7 @@ export default function MemberPage() {
                         </Title>
                     </div>
 
-                    <SearchFilterBar config={memberSearchFiltersConfig as any} filters={filters} onChange={setFilters} onSearch={handleSearch} onAdd={openAdd} />
+                    <SearchFilterBar config={memberSearchFiltersConfig as any} filters={filters} onChange={setFilters} onSearch={handleSearch} onAdd={canWrite ? openAdd : undefined} />
 
                     {globalMessages && <MessageBanner messages={globalMessages} />}
 

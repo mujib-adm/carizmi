@@ -45,10 +45,6 @@ services:
       db:
         condition: service_healthy
     environment:
-      DB_URL: ${DB_URL}
-      DB_USER: ${DB_USER}
-      DB_PASS: ${DB_PASS}
-      JWT_SECRET: ${JWT_SECRET}
       SPRING_PROFILES_ACTIVE: dev
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
@@ -60,15 +56,16 @@ services:
   frontend:
     platform: linux/amd64
     container_name: sofumar-frontend
+    env_file: .env
     build:
       context: .
       dockerfile: frontend/Dockerfile
+      args:
+        - VITE_API_URL=${VITE_API_URL}
     depends_on:
       - backend
     ports:
       - "8081:80"
-    environment:
-      - VITE_API_URL=http://localhost:8080
 
 volumes:
   db_data:

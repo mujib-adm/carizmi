@@ -40,12 +40,24 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(@RequestHeader(name = "Authorization", required = false) String authHeader) {
+    public ResponseEntity<?> logout(@RequestHeader(name = "Authorization", required = false) String authHeader, @RequestBody(required = false) Map<String, String> body) {
+        String accessToken = null;
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
-            userService.logout(token);
+            accessToken = authHeader.substring(7);
         }
+        String refreshToken = (body != null) ? body.get("refreshToken") : null;
+        
+        userService.logout(accessToken, refreshToken);
         return ResponseEntity.ok(Map.of("message", "Successfully logged out"));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refreshToken(@RequestBody Map<String, String> body) {
+        String refreshToken = body.get("refreshToken");
+        if (refreshToken == null) {
+            return ResponseUtils.badRequest("Refresh token is required.");
+        }
+        return userService.refreshToken(refreshToken);
     }
 
     @GetMapping("/profile")

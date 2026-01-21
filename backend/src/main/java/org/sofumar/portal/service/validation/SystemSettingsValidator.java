@@ -1,8 +1,7 @@
 package org.sofumar.portal.service.validation;
 
-import io.micrometer.common.util.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.sofumar.portal.constants.FieldConstants;
-
 import org.sofumar.portal.data.vo.SystemSettingsVO;
 import org.sofumar.portal.framework.exception.ValidationException;
 import org.sofumar.portal.framework.util.LabelUtils;

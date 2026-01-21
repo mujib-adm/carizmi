@@ -58,6 +58,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws IOException, ServletException {
 
+        // allow CORS preflight requests to pass through immediately
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            chain.doFilter(request, response);
+            return;
+        }
+
         String path = request.getServletPath();
         // Skip excluded paths
         boolean isExcluded = EXCLUDED_PATHS.stream().anyMatch(p -> pathMatcher.match(p, path));

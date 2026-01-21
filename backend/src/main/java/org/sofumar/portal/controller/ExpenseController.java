@@ -33,21 +33,21 @@ public class ExpenseController {
 
     @PostMapping("/add")
     @Operation(summary = "Add a new expense")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
+    @PreAuthorize("hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_ADMIN) or hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_MANAGER)")
     public ResponseEntity<GlobalResponse<Integer>> addExpense(@RequestBody ExpenseDto requestDto) {
         return expenseService.addExpense(requestDto);
     }
 
     @PutMapping("/update")
     @Operation(summary = "Update an existing expense")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
+    @PreAuthorize("hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_ADMIN) or hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_MANAGER)")
     public ResponseEntity<GlobalResponse<Void>> updateExpense(@RequestBody ExpenseDto requestDto) {
         return expenseService.updateExpense(requestDto);
     }
 
     @DeleteMapping("/delete/{expenseID}")
     @Operation(summary = "Delete expense by ID")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
+    @PreAuthorize("hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_ADMIN) or hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_MANAGER)")
     public ResponseEntity<GlobalResponse<Void>> deleteExpense(@PathVariable Integer expenseID) {
         return expenseService.deleteExpense(expenseID);
     }

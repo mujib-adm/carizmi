@@ -1,5 +1,7 @@
 package org.sofumar.portal.service.businesslogic;
 
+import java.util.List;
+import org.sofumar.portal.data.dto.UserDto;
 import org.sofumar.portal.data.dto.UserProfileDto;
 import org.sofumar.portal.data.dto.request.PasswordUpdateRequestDto;
 import org.sofumar.portal.data.dto.request.UserRequestDto;
@@ -13,9 +15,18 @@ public interface UserService extends BusinessLogic<UserVO> {
 
     ResponseEntity<?> login(String username, String password);
 
-    void logout(String token);
+    void logout(String accessToken, String refreshToken);
+
+    ResponseEntity<?> refreshToken(String refreshToken);
 
     ResponseEntity<GlobalResponse<UserProfileDto>> getProfile(String username);
 
     ResponseEntity<GlobalResponse<Void>> updatePassword(String username, String token, PasswordUpdateRequestDto requestDto);
+
+    ResponseEntity<GlobalResponse<List<UserDto>>> getAllUsers();
+
+    ResponseEntity<GlobalResponse<Void>> updateUserRole(Integer userId, String newRole);
+
+    ResponseEntity<GlobalResponse<Void>> toggleUserStatus(Integer userId, boolean active);
+
 }

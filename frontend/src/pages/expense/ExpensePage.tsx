@@ -3,7 +3,7 @@ import { Button, Card, Modal, Space, Table, Typography } from 'antd';
 import { ColumnsType } from 'antd/es/table';
 import { useMemo, useState } from 'react';
 import { addExpense, deleteExpense, getExpense, updateExpense } from '../../apiclient/expenseApi';
-import ExpenseModal from '../../component/ExpenseModal';
+import ExpenseModal from '../../modals/ExpenseModal.tsx';
 import { MessageBanner } from '../../component/MessageBanner';
 import SearchFilterBar from '../../component/SearchFilterBar.jsx';
 import Sidebar from "../../component/Sidebar";
@@ -14,6 +14,7 @@ import { useNotification } from "../../context/NotificationContext";
 import { useReference } from "../../context/ReferenceContext";
 import { useApiMessages } from '../../hook/ApiResponseHandler';
 import { usePaginatedExpenses } from '../../hook/PaginatedExpenses';
+import { useAuthorization } from '../../hook/useAuthorization';
 
 const { Title } = Typography;
 
@@ -29,6 +30,8 @@ export default function ExpensePage() {
     // Modal State
     const [modalOpenInd, setModalOpenInd] = useState(false);
     const [selectedRecord, setSelectedRecord] = useState<any>(null);
+
+    const { canWrite } = useAuthorization();
 
     // Ref Data
     const { getReference, toDisplay } = useReference();
@@ -53,13 +56,16 @@ export default function ExpensePage() {
         setModalOpenInd(true);
     };
 
-    const handleDelete = async (id: number, description: string, amount: number) => {
+    const handleDelete = async (record: Expense) => {
+        const categoryDisplay = toDisplay(EXPENSE_CATEGORY, record.category) || record.category;
+
         Modal.confirm({
             title: 'Are you sure you want to delete expense record?',
             content: (
-                <div style={{ color: "red", display: 'grid', gridTemplateColumns: '100px auto', rowGap: '6px', lineHeight: '1.6' }} >
-                    <div>Amount:</div> <div>${amount.toFixed(2)}</div>
-                    <div>Description:</div> <div>{description}</div>
+                <div style={{ color: "red", display: 'grid', gridTemplateColumns: 'min-content auto', columnGap: '12px', rowGap: '6px', lineHeight: '1.6' }} >
+                    <div style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Category:</div> <div>{categoryDisplay}</div>
+                    <div style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Description:</div> <div>{record.description}</div>
+                    <div style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Amount:</div> <div>${record.amount.toFixed(2)}</div>
                 </div>
             ),
             okText: 'Delete',
@@ -67,7 +73,7 @@ export default function ExpensePage() {
             onOk: async () => {
                 try {
                     resetMessages();
-                    const resp = await deleteExpense(id);
+                    const resp = await deleteExpense(record.expenseID);
 
                     if (resp.globalMessages?.[0]?.type === MessageType.SUCCESS) {
                         notify.success({ message: "Deleted", description: "Expense deleted successfully." });
@@ -114,16 +120,16 @@ export default function ExpensePage() {
         { title: 'Description', dataIndex: 'description', key: 'description' },
         { title: 'Amount', dataIndex: 'amount', key: 'amount', render: (val: number) => `$${val?.toFixed(2) ?? '0.00'}` },
         { title: 'Date', dataIndex: 'dateOfExpense', key: 'dateOfExpense' },
-        {
+        ...(canWrite ? [{
             title: 'Action',
             key: 'action',
-            render: (_, record) => (
+            render: (_: any, record: Expense) => (
                 <Space>
                     <Button icon={<EditOutlined />} onClick={() => openEdit(record)} />
-                    <Button icon={<DeleteOutlined />} danger onClick={() => handleDelete(record.expenseID, record.description, record.amount)} />
+                    <Button icon={<DeleteOutlined />} danger onClick={() => handleDelete(record)} />
                 </Space>
             ),
-        },
+        }] : []),
     ];
 
     // Dynamic search config
@@ -147,7 +153,7 @@ export default function ExpensePage() {
                         </Title>
                     </div>
 
-                    <SearchFilterBar config={searchConfig as any} filters={filters} onChange={setFilters} onSearch={handleSearch} onAdd={openAdd} />
+                    <SearchFilterBar config={searchConfig as any} filters={filters} onChange={setFilters} onSearch={handleSearch} onAdd={canWrite ? openAdd : undefined} />
 
                     {globalMessages && <MessageBanner messages={globalMessages} />}
 

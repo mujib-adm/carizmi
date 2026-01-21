@@ -4,6 +4,10 @@ COPY frontend/package*.json ./
 RUN npm ci
 COPY frontend ./
 RUN chmod +x node_modules/.bin/* || true
+
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+
 RUN npm run build
 
 FROM nginx:1.27-alpine

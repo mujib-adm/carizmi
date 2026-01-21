@@ -33,21 +33,21 @@ public class PaymentController {
 
     @PostMapping("/add")
     @Operation(summary = "Add a new payment")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
+    @PreAuthorize("hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_ADMIN) or hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_MANAGER)")
     public ResponseEntity<GlobalResponse<Integer>> addPayment(@RequestBody PaymentDto requestDto) {
         return paymentService.addPayment(requestDto);
     }
 
     @PutMapping("/update")
     @Operation(summary = "Update an existing payment")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
+    @PreAuthorize("hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_ADMIN) or hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_MANAGER)")
     public ResponseEntity<GlobalResponse<Void>> updatePayment(@RequestBody PaymentDto requestDto) {
         return paymentService.updatePayment(requestDto);
     }
 
     @DeleteMapping("/delete/{paymentID}")
     @Operation(summary = "Delete payment by ID")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
+    @PreAuthorize("hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_ADMIN) or hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_MANAGER)")
     public ResponseEntity<GlobalResponse<Void>> deletePayment(@PathVariable Integer paymentID) {
         return paymentService.deletePayment(paymentID);
     }
