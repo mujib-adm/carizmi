@@ -1,7 +1,7 @@
 package org.sofumar.portal.data.transformer;
 
 import org.sofumar.portal.data.dto.request.UserRequestDto;
-import org.sofumar.portal.data.vo.UserVO;
+import org.sofumar.portal.core.vo.UserVO;
 import org.springframework.stereotype.Service;
 
 @Service

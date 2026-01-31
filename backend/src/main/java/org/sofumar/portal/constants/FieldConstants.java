@@ -46,9 +46,5 @@ public final class FieldConstants {
     public static final String REFERENCE_NAME = "referenceName";
     public static final String REFERENCE_CODE = "referenceCode";
     public static final String REFERENCE_DISPLAY = "referenceDisplay";
-    // Auditing fields
-    public static final String CREATED_BY = "createdBy";
-    public static final String LAST_MODIFIED_BY = "lastModifiedBy";
-    public static final String CREATE_DATE_TIME = "createdDateTime";
-    public static final String LAST_MODIFIED_DATE_TIME = "lastModifiedDateTime";
+
 }

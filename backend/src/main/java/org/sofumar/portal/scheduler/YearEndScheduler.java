@@ -3,7 +3,7 @@ package org.sofumar.portal.scheduler;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.sofumar.portal.service.businesslogic.BaselineService;
+import org.sofumar.portal.service.helper.BaselineService;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 

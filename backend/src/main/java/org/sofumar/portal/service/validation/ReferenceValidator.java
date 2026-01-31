@@ -3,27 +3,19 @@ package org.sofumar.portal.service.validation;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.sofumar.portal.constants.MessagesConstants;
-import org.sofumar.portal.data.vo.ReferenceVO;
 import org.sofumar.portal.framework.vo.ValueObject;
-import org.sofumar.portal.repo.ReferenceRepository;
-import org.sofumar.portal.repo.jpaspec.ReferenceSpecifications;
+import org.sofumar.portal.core.businesslogic.Reference;
 import org.springframework.stereotype.Service;
-
-import org.springframework.data.jpa.domain.Specification;
 
 @Service
 @RequiredArgsConstructor
 public class ReferenceValidator {
 
-    private final ReferenceRepository referenceRepository;
+    private final Reference reference;
 
     public void validate(ValueObject vo, String fieldName, String referenceName, String referenceCode) {
         if (StringUtils.isNotBlank(referenceCode)) {
-            Specification<ReferenceVO> spec = ReferenceSpecifications.hasReferenceName(referenceName)
-                    .and(ReferenceSpecifications.hasReferenceCode(referenceCode))
-                    .and(ReferenceSpecifications.isActive(true));
-
-            if (!referenceRepository.exists(spec)) {
+            if (!reference.isValidReference(referenceName, referenceCode)) {
                 vo.addFieldMessage(fieldName, MessagesConstants.INVALID_VALUE);
             }
         }

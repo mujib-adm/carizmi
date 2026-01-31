@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.sofumar.portal.data.dto.SystemSettingsDto;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
-import org.sofumar.portal.service.businesslogic.SystemSettingsService;
+import org.sofumar.portal.core.businesslogic.SystemSetting;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,19 +25,19 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SystemSettingsController {
 
-    private final SystemSettingsService settingsService;
+    private final SystemSetting systemSetting;
 
     @GetMapping("/get/{id}")
     @Operation(summary = "Get system setting by ID")
     public ResponseEntity<GlobalResponse<SystemSettingsDto>> getSystemSetting(@PathVariable Integer id) {
-        return settingsService.getSystemSetting(id);
+        return systemSetting.getSystemSetting(id);
     }
 
     @PutMapping("/update")
     @Operation(summary = "Update an existing system setting")
     @PreAuthorize("hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_ADMIN)")
     public ResponseEntity<GlobalResponse<Void>> updateSystemSetting(@RequestBody SystemSettingsDto dto) {
-        return settingsService.updateSystemSetting(dto);
+        return systemSetting.updateSystemSetting(dto);
     }
 
     @GetMapping("/search")
@@ -50,13 +50,13 @@ public class SystemSettingsController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String sortField,
             @RequestParam(required = false) String sortOrder) {
-        return settingsService.searchSystemSettings(settingType, settingKey, settingValue, page, size, sortField,
+        return systemSetting.searchSystemSettings(settingType, settingKey, settingValue, page, size, sortField,
                 sortOrder);
     }
 
     @GetMapping("/by-key/{key}")
     @Operation(summary = "Get settings by key (e.g. Fee, Payment)")
     public ResponseEntity<GlobalResponse<List<SystemSettingsDto>>> getSettingsByKey(@PathVariable String key) {
-        return settingsService.getSettingsByKey(key);
+        return systemSetting.getSettingsByKey(key);
     }
 }

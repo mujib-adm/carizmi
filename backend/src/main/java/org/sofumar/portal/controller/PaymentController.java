@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.sofumar.portal.data.dto.LatestPaymentDto;
 import org.sofumar.portal.data.dto.PaymentDto;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
-import org.sofumar.portal.service.businesslogic.PaymentService;
+import org.sofumar.portal.core.businesslogic.Payment;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -29,33 +29,33 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PaymentController {
 
-    private final PaymentService paymentService;
+    private final Payment payment;
 
     @PostMapping("/add")
     @Operation(summary = "Add a new payment")
     @PreAuthorize("hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_ADMIN) or hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_MANAGER)")
     public ResponseEntity<GlobalResponse<Integer>> addPayment(@RequestBody PaymentDto requestDto) {
-        return paymentService.addPayment(requestDto);
+        return payment.addPayment(requestDto);
     }
 
     @PutMapping("/update")
     @Operation(summary = "Update an existing payment")
     @PreAuthorize("hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_ADMIN) or hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_MANAGER)")
     public ResponseEntity<GlobalResponse<Void>> updatePayment(@RequestBody PaymentDto requestDto) {
-        return paymentService.updatePayment(requestDto);
+        return payment.updatePayment(requestDto);
     }
 
     @DeleteMapping("/delete/{paymentID}")
     @Operation(summary = "Delete payment by ID")
     @PreAuthorize("hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_ADMIN) or hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_MANAGER)")
     public ResponseEntity<GlobalResponse<Void>> deletePayment(@PathVariable Integer paymentID) {
-        return paymentService.deletePayment(paymentID);
+        return payment.deletePayment(paymentID);
     }
 
     @GetMapping("/get/{paymentID}")
     @Operation(summary = "Get payment by ID")
     public ResponseEntity<GlobalResponse<PaymentDto>> getPayment(@PathVariable Integer paymentID) {
-        return paymentService.getPayment(paymentID);
+        return payment.getPayment(paymentID);
     }
 
     @GetMapping("/search")
@@ -71,13 +71,13 @@ public class PaymentController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String sortField,
             @RequestParam(required = false) String sortOrder) {
-        return paymentService.searchPayments(memberID, feeType, year, quarter, dateFrom, dateTo, page, size, sortField,
+        return payment.searchPayments(memberID, feeType, year, quarter, dateFrom, dateTo, page, size, sortField,
                 sortOrder);
     }
 
     @GetMapping("/latest")
     @Operation(summary = "Get latest payments")
     public ResponseEntity<GlobalResponse<List<LatestPaymentDto>>> getLatest(@RequestParam(defaultValue = "5") int limit) {
-        return paymentService.getLatestPayments(limit);
+        return payment.getLatestPayments(limit);
     }
 }

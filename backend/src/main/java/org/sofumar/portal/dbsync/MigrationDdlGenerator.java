@@ -41,7 +41,7 @@ public class MigrationDdlGenerator {
     private static final String GENERATED_CHANGELOG_XML = "generated-changelog.xml";
     private static final String GENERATED_CHANGELOG_SQL = "V000001__DDL.sql";
 
-    static void main(String[] args) {
+    public static void main(String[] args) {
         System.setProperty("liquibase.suppressLiquibaseSql", "true");
 //        System.setProperty("spring.main.web-application-type", "none");
 
@@ -79,7 +79,7 @@ public class MigrationDdlGenerator {
             Database targetDatabase = DatabaseFactory.getInstance()
                     .findCorrectDatabaseImplementation(new JdbcConnection(conn));
             // Reference metadata from Hibernate/JPA
-            String entityPackage = System.getProperty("migration.entity.package", "org.sofumar.portal.data.vo");
+            String entityPackage = System.getProperty("migration.entity.package", "org.sofumar.portal.core.vo");
             String hibernateDialect = System.getProperty("migration.hibernate.dialect", "org.hibernate.dialect.MySQLDialect");
             String referenceUrl = "hibernate:spring:" + entityPackage + "?dialect=" + hibernateDialect;
 

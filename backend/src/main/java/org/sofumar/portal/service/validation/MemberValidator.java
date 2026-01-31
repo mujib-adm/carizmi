@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.sofumar.portal.constants.FieldConstants;
 import org.sofumar.portal.constants.MessagesConstants;
-import org.sofumar.portal.data.vo.MemberVO;
+import org.sofumar.portal.core.vo.MemberVO;
 import org.sofumar.portal.framework.exception.ValidationException;
 import org.sofumar.portal.framework.util.LabelUtils;
 import org.springframework.stereotype.Service;

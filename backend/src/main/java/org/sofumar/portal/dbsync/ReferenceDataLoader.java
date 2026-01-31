@@ -3,10 +3,13 @@ package org.sofumar.portal.dbsync;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.sofumar.portal.data.vo.ReferenceVO;
-import org.sofumar.portal.repo.ReferenceRepository;
+import org.sofumar.portal.constants.FieldConstants;
+import org.sofumar.portal.core.businesslogic.Reference;
+import org.sofumar.portal.core.vo.ReferenceVO;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
@@ -14,77 +17,97 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStream;
 import java.util.Map;
+import java.util.Optional;
 
 /**
- * Synchronizes the database reference table with the definitions in
- * reference-data.json on startup.
+ * Loads reference data from a JSON file on startup.
  */
-import org.sofumar.portal.repo.jpaspec.ReferenceSpecifications;
-import org.springframework.data.jpa.domain.Specification;
-
 @Component
 @RequiredArgsConstructor
 public class ReferenceDataLoader implements CommandLineRunner {
     private static final Logger logger = LoggerFactory.getLogger(ReferenceDataLoader.class);
+    private static final String REFERENCE_JSON_FILE = "data/reference-data.json";
+    private static final String CODE = "code";
+    private static final String DISPLAY = "display";
 
-    private final ReferenceRepository referenceRepository;
+    private final Reference reference;
+    private final ObjectMapper objectMapper;
 
     @Override
     @Transactional
     public void run(String... args) throws Exception {
         logger.info("Starting Reference Data Synchronization...");
 
-        ObjectMapper mapper = new ObjectMapper();
-        ClassPathResource resource = new ClassPathResource("reference-data.json");
+        ClassPathResource resource = new ClassPathResource(REFERENCE_JSON_FILE);
 
         if (!resource.exists()) {
-            logger.info("reference-data.json not found! Skipping sync.");
+            logger.warn("{} not found in classpath. Skipping sync.", REFERENCE_JSON_FILE);
             return;
         }
 
-        JsonNode rootNode;
         try (InputStream inputStream = resource.getInputStream()) {
-            rootNode = mapper.readTree(inputStream);
-        }
+            JsonNode rootNode = objectMapper.readTree(inputStream);
 
-        for (Map.Entry<String, JsonNode> field : rootNode.properties()) {
-            String referenceName = field.getKey();
-            JsonNode items = field.getValue();
+        for (Map.Entry<String, JsonNode> entry : rootNode.properties()) {
+            String referenceName = entry.getKey();
+            JsonNode items = entry.getValue();
 
-            if (items.isArray()) {
+                if (items.isArray()) {
                 for (JsonNode item : items) {
-                    syncReference(referenceName, item);
+                    sync(referenceName, item);
+                    }
                 }
             }
+            logger.info("Reference Data Synchronization Completed.");
+        } catch (Exception e) {
+            logger.error("Failed to load reference data", e);
         }
-        logger.info("Reference Data Synchronization Completed.");
     }
 
-    private void syncReference(String referenceName, JsonNode item) {
-        String code = item.get("code").asText();
-        String display = item.get("display").asText();
-        boolean active = !item.has("active") || item.get("active").asBoolean();
+    private void sync(String referenceName, JsonNode item) {
+        ReferenceVO newReferenceVO = new ReferenceVO();
+        newReferenceVO.setReferenceName(referenceName);
+        if (item.has(CODE)) newReferenceVO.setReferenceCode(item.get(CODE).asText());
+        if (item.has(DISPLAY)) newReferenceVO.setReferenceDisplay(item.get(DISPLAY).asText());
+        if (item.has(FieldConstants.ACTIVE)) newReferenceVO.setActive(item.get(FieldConstants.ACTIVE).asBoolean(true));
+        
+        sync(newReferenceVO);
+    }
 
-        Specification<ReferenceVO> spec = ReferenceSpecifications.hasReferenceName(referenceName).and(ReferenceSpecifications.hasReferenceCode(code));
-        ReferenceVO existing = referenceRepository.findOne(spec).orElse(null);
+    private void sync(ReferenceVO newReferenceVO) {
+        String name = newReferenceVO.getReferenceName();
+        String code = newReferenceVO.getReferenceCode();
+        
+        if (name == null || code == null) {
+            logger.warn("Skipping invalid reference: [{}] {}", name, code);
+            return;
+        }
 
-        if (existing != null) {
-            // Update if changed
-            if (!existing.getReferenceDisplay().equals(display) || existing.isActive() != active) {
-                existing.setReferenceDisplay(display);
-                existing.setActive(active);
-                referenceRepository.save(existing);
-                logger.info("Updated reference: {} - {}", referenceName, code);
+        Optional<ReferenceVO> existingReferenceVOOpt = reference.findByNameAndCode(name, code);
+
+        if (existingReferenceVOOpt.isPresent()) {
+            ReferenceVO existingReferenceVO = existingReferenceVOOpt.get();
+            boolean changed = false;
+
+            // Update display if it has changed
+            if (StringUtils.isNotBlank(newReferenceVO.getReferenceDisplay()) && !newReferenceVO.getReferenceDisplay().equals(existingReferenceVO.getReferenceDisplay())) {
+                existingReferenceVO.setReferenceDisplay(newReferenceVO.getReferenceDisplay());
+                changed = true;
+            }
+
+            // Update active status if it has changed
+            if (newReferenceVO.isActive() != existingReferenceVO.isActive()) {
+                existingReferenceVO.setActive(newReferenceVO.isActive());
+                changed = true;
+            }
+
+            if (changed) {
+                logger.info("Updating existing reference: [{}] {}", name, code);
+                reference.update(existingReferenceVO);
             }
         } else {
-            // Insert new
-            ReferenceVO newRef = new ReferenceVO();
-            newRef.setReferenceName(referenceName);
-            newRef.setReferenceCode(code);
-            newRef.setReferenceDisplay(display);
-            newRef.setActive(active);
-            referenceRepository.save(newRef);
-            logger.info("Created reference: {} - {}", referenceName, code);
+            logger.info("Creating new reference: [{}] {}", name, code);
+            reference.add(newReferenceVO);
         }
     }
 }

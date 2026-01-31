@@ -1,6 +1,7 @@
 FROM maven:3.9-eclipse-temurin-25 AS build
 WORKDIR /app
 COPY . .
+RUN mvn -q -e -pl framework -am install -DskipTests
 WORKDIR /app/backend
 RUN mvn -q -e -DskipTests dependency:go-offline
 COPY backend/src ./src

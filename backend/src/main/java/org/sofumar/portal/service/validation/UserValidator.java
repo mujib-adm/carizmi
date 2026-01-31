@@ -3,7 +3,7 @@ package org.sofumar.portal.service.validation;
 import org.apache.commons.lang3.StringUtils;
 import org.sofumar.portal.constants.FieldConstants;
 import org.sofumar.portal.constants.MessagesConstants;
-import org.sofumar.portal.data.vo.UserVO;
+import org.sofumar.portal.core.vo.UserVO;
 import org.sofumar.portal.framework.exception.ValidationException;
 import org.springframework.stereotype.Service;
 

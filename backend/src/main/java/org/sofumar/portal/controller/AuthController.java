@@ -8,7 +8,7 @@ import org.sofumar.portal.data.dto.request.UserRequestDto;
 import org.sofumar.portal.framework.data.msg.Message;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
 import org.sofumar.portal.framework.util.ResponseUtils;
-import org.sofumar.portal.service.businesslogic.UserService;
+import org.sofumar.portal.core.businesslogic.User;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -27,16 +27,16 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final UserService userService;
+    private final User user;
 
     @PostMapping("/register")
     public ResponseEntity<GlobalResponse<Void>> register(@RequestBody UserRequestDto requestDto) {
-        return userService.register(requestDto);
+        return user.register(requestDto);
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-        return userService.login(request.username(), request.password());
+        return user.login(request.username(), request.password());
     }
 
     @PostMapping("/logout")
@@ -47,7 +47,7 @@ public class AuthController {
         }
         String refreshToken = (body != null) ? body.get("refreshToken") : null;
         
-        userService.logout(accessToken, refreshToken);
+        user.logout(accessToken, refreshToken);
         return ResponseEntity.ok(Map.of("message", "Successfully logged out"));
     }
 
@@ -57,20 +57,20 @@ public class AuthController {
         if (refreshToken == null) {
             return ResponseUtils.badRequest("Refresh token is required.");
         }
-        return userService.refreshToken(refreshToken);
+        return user.refreshToken(refreshToken);
     }
 
     @GetMapping("/profile")
-    public ResponseEntity<GlobalResponse<UserProfileDto>> getCurrentUser(@AuthenticationPrincipal UserDetails user) {
-        if (user == null) {
+    public ResponseEntity<GlobalResponse<UserProfileDto>> getCurrentUser(@AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
             return ResponseUtils.withStatusAndData(HttpStatus.UNAUTHORIZED, Message.Type.ERROR, "Session expired or User not logged in.");
         }
-        return userService.getProfile(user.getUsername());
+        return user.getProfile(userDetails.getUsername());
     }
 
     @PostMapping("/password-update")
-    public ResponseEntity<GlobalResponse<Void>> updatePassword(@AuthenticationPrincipal UserDetails user, @RequestHeader(name = "Authorization") String authHeader, @RequestBody PasswordUpdateRequestDto requestDto) {
-        if (user == null) {
+    public ResponseEntity<GlobalResponse<Void>> updatePassword(@AuthenticationPrincipal UserDetails userDetails, @RequestHeader(name = "Authorization") String authHeader, @RequestBody PasswordUpdateRequestDto requestDto) {
+        if (userDetails == null) {
             return ResponseUtils.withStatus(HttpStatus.UNAUTHORIZED, Message.Type.ERROR, "Session expired or User not logged in.");
         }
         
@@ -79,6 +79,6 @@ public class AuthController {
             token = authHeader.substring(7);
         }
         
-        return userService.updatePassword(user.getUsername(), token, requestDto);
+        return user.updatePassword(userDetails.getUsername(), token, requestDto);
     }
 }

@@ -1,7 +1,7 @@
 package org.sofumar.portal.data.transformer;
 
 import org.sofumar.portal.data.dto.SystemSettingsDto;
-import org.sofumar.portal.data.vo.SystemSettingsVO;
+import org.sofumar.portal.core.vo.SystemSettingsVO;
 import org.springframework.stereotype.Service;
 
 @Service

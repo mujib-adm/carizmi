@@ -1,7 +1,7 @@
 package org.sofumar.portal.data.transformer;
 
 import org.sofumar.portal.data.dto.ExpenseDto;
-import org.sofumar.portal.data.vo.ExpenseVO;
+import org.sofumar.portal.core.vo.ExpenseVO;
 import org.springframework.stereotype.Service;
 
 @Service

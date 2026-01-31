@@ -3,7 +3,7 @@ package org.sofumar.portal.controller;
 import lombok.RequiredArgsConstructor;
 import org.sofumar.portal.data.dto.DashboardMetricsDto;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
-import org.sofumar.portal.service.businesslogic.DashboardService;
+import org.sofumar.portal.service.helper.DashboardService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

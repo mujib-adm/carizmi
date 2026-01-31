@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.sofumar.portal.data.dto.ReferenceDataDto;
 import org.sofumar.portal.data.dto.ReferenceDto;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
-import org.sofumar.portal.service.businesslogic.ReferenceService;
+import org.sofumar.portal.core.businesslogic.Reference;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,12 +22,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ReferenceController {
 
-    private final ReferenceService referenceService;
+    private final Reference reference;
 
     @GetMapping("/get/{referenceID}")
     @Operation(summary = "Get reference by ID")
     public ResponseEntity<GlobalResponse<ReferenceDto>> getReference(@PathVariable Integer referenceID) {
-        return referenceService.getReference(referenceID);
+        return reference.getReference(referenceID);
     }
 
     @GetMapping("/search")
@@ -40,7 +40,7 @@ public class ReferenceController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String sortField,
             @RequestParam(required = false) String sortOrder) {
-        return referenceService.searchReferences(referenceName, referenceCode, active, page, size, sortField,
+        return reference.searchReferences(referenceName, referenceCode, active, page, size, sortField,
                 sortOrder);
     }
 
@@ -48,6 +48,6 @@ public class ReferenceController {
     @Operation(summary = "Get list of references by name (e.g. feeType)")
     public ResponseEntity<GlobalResponse<List<ReferenceDataDto>>> getReferencesByName(
             @PathVariable String referenceName) {
-        return referenceService.getReferencesByName(referenceName);
+        return reference.getReferencesByName(referenceName);
     }
 }

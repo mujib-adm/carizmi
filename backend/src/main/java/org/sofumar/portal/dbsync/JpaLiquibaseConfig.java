@@ -14,7 +14,7 @@ import java.util.Properties;
 
 @Configuration
 @Profile("liquibase-diff")
-@EntityScan(basePackages = "org.sofumar.portal.data.vo")
+@EntityScan(basePackages = "org.sofumar.portal.core.vo")
 public class JpaLiquibaseConfig {
 
     @Bean
@@ -32,7 +32,7 @@ public class JpaLiquibaseConfig {
     public LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource dataSource) {
         LocalContainerEntityManagerFactoryBean emf = new LocalContainerEntityManagerFactoryBean();
         emf.setDataSource(dataSource);
-        emf.setPackagesToScan("org.sofumar.portal.data.vo"); // entities
+        emf.setPackagesToScan("org.sofumar.portal.core.vo"); // entities
         emf.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
 
         Properties props = new Properties();

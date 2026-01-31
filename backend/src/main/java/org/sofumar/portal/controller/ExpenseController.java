@@ -5,7 +5,7 @@ import java.util.List;
 
 import org.sofumar.portal.data.dto.ExpenseDto;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
-import org.sofumar.portal.service.businesslogic.ExpenseService;
+import org.sofumar.portal.core.businesslogic.Expense;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -29,33 +29,33 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ExpenseController {
 
-    private final ExpenseService expenseService;
+    private final Expense expense;
 
     @PostMapping("/add")
     @Operation(summary = "Add a new expense")
     @PreAuthorize("hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_ADMIN) or hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_MANAGER)")
     public ResponseEntity<GlobalResponse<Integer>> addExpense(@RequestBody ExpenseDto requestDto) {
-        return expenseService.addExpense(requestDto);
+        return expense.addExpense(requestDto);
     }
 
     @PutMapping("/update")
     @Operation(summary = "Update an existing expense")
     @PreAuthorize("hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_ADMIN) or hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_MANAGER)")
     public ResponseEntity<GlobalResponse<Void>> updateExpense(@RequestBody ExpenseDto requestDto) {
-        return expenseService.updateExpense(requestDto);
+        return expense.updateExpense(requestDto);
     }
 
     @DeleteMapping("/delete/{expenseID}")
     @Operation(summary = "Delete expense by ID")
     @PreAuthorize("hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_ADMIN) or hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_MANAGER)")
     public ResponseEntity<GlobalResponse<Void>> deleteExpense(@PathVariable Integer expenseID) {
-        return expenseService.deleteExpense(expenseID);
+        return expense.deleteExpense(expenseID);
     }
 
     @GetMapping("/get/{expenseID}")
     @Operation(summary = "Get expense by ID")
     public ResponseEntity<GlobalResponse<ExpenseDto>> getExpense(@PathVariable Integer expenseID) {
-        return expenseService.getExpense(expenseID);
+        return expense.getExpense(expenseID);
     }
 
     @GetMapping("/search")
@@ -68,6 +68,6 @@ public class ExpenseController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String sortField,
             @RequestParam(required = false) String sortOrder) {
-        return expenseService.searchExpenses(category, dateFrom, dateTo, page, size, sortField, sortOrder);
+        return expense.searchExpenses(category, dateFrom, dateTo, page, size, sortField, sortOrder);
     }
 }

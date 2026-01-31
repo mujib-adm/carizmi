@@ -3,36 +3,31 @@ package org.sofumar.portal.dbsync;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sofumar.portal.constants.RoleConstants;
-import org.sofumar.portal.data.vo.UserVO;
-import org.sofumar.portal.repo.UserRepository;
-import org.sofumar.portal.repo.jpaspec.UserSpecifications;
+import org.sofumar.portal.core.vo.UserVO;
+import org.sofumar.portal.core.businesslogic.User;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-
 import org.springframework.beans.factory.annotation.Value;
 
 import java.time.LocalDateTime;
+import lombok.RequiredArgsConstructor;
 
 @Component
+@RequiredArgsConstructor
 public class AdminUserLoader implements CommandLineRunner {
 
     private static final Logger logger = LoggerFactory.getLogger(AdminUserLoader.class);
 
-    private final UserRepository userRepository;
+    private final User user;
     private final PasswordEncoder passwordEncoder;
 
     @Value("${admin.default.password:}")
     private String defaultPassword;
 
-    public AdminUserLoader(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-    }
-
     @Override
     public void run(String... args) throws Exception {
-        if (userRepository.findOne(UserSpecifications.hasRole(RoleConstants.ROLE_ADMIN)).isEmpty()) {
+        if (!user.adminUserExists()) {
             UserVO admin = new UserVO();
             admin.setFirstName("System");
             admin.setLastName("Administrator");
@@ -56,7 +51,7 @@ public class AdminUserLoader implements CommandLineRunner {
             admin.setActive(true);
             admin.setPasswordUpdatedAt(LocalDateTime.now());
             
-            userRepository.save(admin);
+            user.add(admin);
         }
     }
 }

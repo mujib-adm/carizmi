@@ -1,8 +1,8 @@
 package org.sofumar.portal.data.transformer;
 
 import org.sofumar.portal.data.dto.PaymentDto;
-import org.sofumar.portal.data.vo.MemberVO;
-import org.sofumar.portal.data.vo.PaymentVO;
+import org.sofumar.portal.core.vo.MemberVO;
+import org.sofumar.portal.core.vo.PaymentVO;
 import org.springframework.stereotype.Service;
 
 @Service

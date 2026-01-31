@@ -7,7 +7,7 @@ import org.sofumar.portal.data.dto.MemberDto;
 import org.sofumar.portal.data.dto.MemberLookupDto;
 import org.sofumar.portal.data.dto.MemberSummaryDto;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
-import org.sofumar.portal.service.businesslogic.MemberService;
+import org.sofumar.portal.core.businesslogic.Member;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -31,33 +31,33 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class MemberController {
 
-    private final MemberService memberService;
+    private final Member member;
 
     @PostMapping("/add")
     @Operation(summary = "Add a new member")
     @PreAuthorize("hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_ADMIN) or hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_MANAGER)")
     public ResponseEntity<GlobalResponse<Integer>> addMember(@RequestBody MemberDto requestDto) {
-        return memberService.addMember(requestDto);
+        return member.addMember(requestDto);
     }
 
     @PutMapping("/update")
     @Operation(summary = "Update an existing member")
     @PreAuthorize("hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_ADMIN) or hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_MANAGER)")
     public ResponseEntity<GlobalResponse<Void>> updateMember(@RequestBody MemberDto requestDto) {
-        return memberService.updateMember(requestDto);
+        return member.updateMember(requestDto);
     }
 
     @DeleteMapping("delete/{memberID}")
     @Operation(summary = "Delete member by ID")
     @PreAuthorize("hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_ADMIN) or hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_MANAGER)")
     public ResponseEntity<GlobalResponse<Void>> deleteMember(@PathVariable Integer memberID) {
-        return memberService.deleteMember(memberID);
+        return member.deleteMember(memberID);
     }
 
     @GetMapping("get/{memberID}")
     @Operation(summary = "Get member by ID")
     public ResponseEntity<GlobalResponse<MemberDto>> getMember(@PathVariable Integer memberID) {
-        return memberService.getMember(memberID);
+        return member.getMember(memberID);
     }
 
     @GetMapping("/search")
@@ -77,19 +77,19 @@ public class MemberController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String sortField,
             @RequestParam(required = false) String sortOrder) {
-        return memberService.searchMembers(firstName, lastName, phone, email, status, city, state, zip, joinDateFrom, joinDateTo, page, size, sortField, sortOrder);
+        return member.searchMembers(firstName, lastName, phone, email, status, city, state, zip, joinDateFrom, joinDateTo, page, size, sortField, sortOrder);
     }
 
     @GetMapping("/lookup")
     @Operation(summary = "Lookup members by name or ID (fuzzy search)")
     public ResponseEntity<GlobalResponse<List<MemberLookupDto>>> lookupMembers(
             @RequestParam String query) {
-        return memberService.lookupMembers(query);
+        return member.lookupMembers(query);
     }
 
     @GetMapping("/{memberID}/summary")
     @Operation(summary = "Get financial summary for a member")
     public ResponseEntity<GlobalResponse<MemberSummaryDto>> getMemberSummary(@PathVariable Integer memberID) {
-        return memberService.getMemberSummary(memberID);
+        return member.getMemberSummary(memberID);
     }
 }
