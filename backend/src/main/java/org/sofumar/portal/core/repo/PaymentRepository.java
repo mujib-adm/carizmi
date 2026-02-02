@@ -5,7 +5,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import org.sofumar.portal.core.vo.PaymentVO;
-import org.sofumar.portal.data.dto.PaymentSummary;
+import org.sofumar.portal.data.dto.response.PaymentSummary;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;

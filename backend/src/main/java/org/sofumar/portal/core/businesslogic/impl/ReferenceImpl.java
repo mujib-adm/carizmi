@@ -3,8 +3,9 @@ package org.sofumar.portal.core.businesslogic.impl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sofumar.portal.constants.FieldConstants;
-import org.sofumar.portal.data.dto.ReferenceDataDto;
+import org.sofumar.portal.data.dto.response.ReferenceDataDto;
 import org.sofumar.portal.data.dto.ReferenceDto;
+import org.sofumar.portal.data.dto.request.ReferenceSearchRequestDto;
 import org.sofumar.portal.data.transformer.ReferenceDtoTransformer;
 import org.sofumar.portal.core.vo.ReferenceVO;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
@@ -16,7 +17,6 @@ import org.sofumar.portal.core.repo.jpaspec.ReferenceSpecifications;
 import org.sofumar.portal.core.businesslogic.Reference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
@@ -73,25 +73,14 @@ public non-sealed class ReferenceImpl extends ReferenceAbstractBL implements Ref
 
     @Override
     @Transactional(readOnly = true)
-    public ResponseEntity<GlobalResponse<List<ReferenceDto>>> searchReferences(
-            String referenceName, String referenceCode, Boolean active,
-            int page, int size, String sortField, String sortOrder) {
+    public ResponseEntity<GlobalResponse<List<ReferenceDto>>> searchReferences(ReferenceSearchRequestDto request) {
 
         List<Specification<ReferenceVO>> specs = new ArrayList<>();
-        if (referenceName != null)
-            specs.add(ReferenceSpecifications.hasReferenceName(referenceName));
-        if (referenceCode != null)
-            specs.add(ReferenceSpecifications.hasReferenceCode(referenceCode));
-        if (active != null)
-            specs.add(ReferenceSpecifications.isActive(active));
+        if (request.getReferenceName() != null)
+            specs.add(ReferenceSpecifications.hasReferenceName(request.getReferenceName()));
 
         Specification<ReferenceVO> spec = Specification.allOf(specs);
-        Sort sort = Sort.unsorted();
-        if (sortField != null && sortOrder != null) {
-            sort = Sort.by(Sort.Direction.fromString(sortOrder), sortField);
-        }
-        PageRequest pageRequest = PageRequest.of(page, size, sort);
-        Page<ReferenceVO> result = getRepo().findAll(spec, pageRequest);
+        Page<ReferenceVO> result = getRepo().findAll(spec, request.toPageable());
         PaginationMeta meta = PaginationMeta.of(result.getNumber(), result.getSize(), result.getTotalElements(),
                 result.getTotalPages());
 

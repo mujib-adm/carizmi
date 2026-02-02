@@ -3,8 +3,9 @@ package org.sofumar.portal.core.businesslogic.impl
 import org.sofumar.portal.constants.ReferenceCodeConstants
 import org.sofumar.portal.constants.FieldConstants
 import org.sofumar.portal.constants.TableConstants
-import org.sofumar.portal.data.dto.LatestPaymentDto
+import org.sofumar.portal.data.dto.response.LatestPaymentDto
 import org.sofumar.portal.data.dto.PaymentDto
+import org.sofumar.portal.data.dto.request.PaymentSearchRequestDto
 import org.sofumar.portal.data.transformer.PaymentDtoTransformer
 import org.sofumar.portal.data.transformer.PaymentVOTransformer
 import org.sofumar.portal.core.vo.MemberVO
@@ -29,7 +30,7 @@ import spock.lang.Unroll
 
 import java.time.LocalDate
 
-import org.sofumar.portal.data.dto.PaymentSummary
+import org.sofumar.portal.data.dto.response.PaymentSummary
 
 class PaymentSpec extends BaseSpecification {
 
@@ -373,8 +374,14 @@ class PaymentSpec extends BaseSpecification {
         Page<PaymentVO> mockPage = Mock(Page)
         JpaSpecification capturedSpec
 
+        PaymentSearchRequestDto request = new PaymentSearchRequestDto(memberID: memberID, feeType: feeType, year: year, quarter: quarter, dateFrom: dateFrom, dateTo: dateTo)
+        request.setPage(0)
+        request.setSize(10)
+        request.setSortField(FieldConstants.AMOUNT)
+        request.setSortOrder("DESC")
+
         when: "The target method executed"
-        paymentService.searchPayments(memberID, feeType, year, quarter, dateFrom, dateTo, 0, 10, "amount", "DESC")
+        paymentService.searchPayments(request)
 
         then: "The expected calls are made"
         1 * paymentRepo.findAll(_ as JpaSpecification, _ as PageRequest) >> { JpaSpecification spec, PageRequest page -> capturedSpec = spec; mockPage }

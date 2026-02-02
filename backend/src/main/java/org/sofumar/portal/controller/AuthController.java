@@ -1,7 +1,7 @@
 package org.sofumar.portal.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.sofumar.portal.data.dto.UserProfileDto;
+import org.sofumar.portal.data.dto.response.UserProfileDto;
 import org.sofumar.portal.data.dto.request.LoginRequest;
 import org.sofumar.portal.data.dto.request.PasswordUpdateRequestDto;
 import org.sofumar.portal.data.dto.request.UserRequestDto;

@@ -9,10 +9,11 @@ import java.time.temporal.ChronoUnit
 import org.sofumar.portal.constants.RoleConstants
 import org.sofumar.portal.core.repo.UserRepository
 import org.sofumar.portal.core.vo.UserVO
-import org.sofumar.portal.data.dto.UserProfileDto
+import org.sofumar.portal.data.dto.response.UserResponseDto
+import org.sofumar.portal.data.dto.response.UserProfileDto
 import org.sofumar.portal.data.dto.request.PasswordUpdateRequestDto
 import org.sofumar.portal.data.dto.request.UserRequestDto
-import org.sofumar.portal.data.transformer.UserDtoTransformer
+import org.sofumar.portal.data.transformer.UserResponseDtoTransformer
 import org.sofumar.portal.data.transformer.UserVOTransformer
 import org.sofumar.portal.framework.data.response.GlobalResponse
 import org.sofumar.portal.framework.exception.DuplicateRecordException
@@ -36,7 +37,7 @@ class UserSpec extends BaseSpecification {
 
     UserRepository userRepo = Mock()
     PasswordEncoder encoder = Mock()
-    UserDtoTransformer dtoTransformer = Mock()
+    UserResponseDtoTransformer dtoTransformer = Mock()
     UserVOTransformer voTransformer = Mock()
     UserValidator validator = Mock()
     TokenBlacklistService blacklistService = Mock()

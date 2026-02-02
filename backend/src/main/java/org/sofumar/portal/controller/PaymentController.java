@@ -3,11 +3,11 @@ package org.sofumar.portal.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.sofumar.portal.data.dto.LatestPaymentDto;
+import org.sofumar.portal.data.dto.response.LatestPaymentDto;
 import org.sofumar.portal.data.dto.PaymentDto;
+import org.sofumar.portal.data.dto.request.PaymentSearchRequestDto;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
 import org.sofumar.portal.core.businesslogic.Payment;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -58,21 +57,11 @@ public class PaymentController {
         return payment.getPayment(paymentID);
     }
 
-    @GetMapping("/search")
+    @PostMapping("/search")
     @Operation(summary = "Search payments")
     public ResponseEntity<GlobalResponse<List<PaymentDto>>> searchPayments(
-            @RequestParam(required = false) Integer memberID,
-            @RequestParam(required = false) String feeType,
-            @RequestParam(required = false) Integer year,
-            @RequestParam(required = false) Integer quarter,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String sortField,
-            @RequestParam(required = false) String sortOrder) {
-        return payment.searchPayments(memberID, feeType, year, quarter, dateFrom, dateTo, page, size, sortField,
-                sortOrder);
+            @RequestBody PaymentSearchRequestDto request) {
+        return payment.searchPayments(request);
     }
 
     @GetMapping("/latest")

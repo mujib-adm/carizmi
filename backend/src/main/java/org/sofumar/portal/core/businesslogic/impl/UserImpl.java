@@ -11,11 +11,11 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sofumar.portal.constants.RoleConstants;
-import org.sofumar.portal.data.dto.UserDto;
-import org.sofumar.portal.data.dto.UserProfileDto;
+import org.sofumar.portal.data.dto.response.UserResponseDto;
+import org.sofumar.portal.data.dto.response.UserProfileDto;
 import org.sofumar.portal.data.dto.request.PasswordUpdateRequestDto;
 import org.sofumar.portal.data.dto.request.UserRequestDto;
-import org.sofumar.portal.data.transformer.UserDtoTransformer;
+import org.sofumar.portal.data.transformer.UserResponseDtoTransformer;
 import org.sofumar.portal.data.transformer.UserVOTransformer;
 import org.sofumar.portal.core.vo.UserVO;
 import org.sofumar.portal.framework.data.msg.Message;
@@ -53,14 +53,14 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
     private int expMin;
 
     private final PasswordEncoder encoder;
-    private final UserDtoTransformer dtoTransformer;
+    private final UserResponseDtoTransformer dtoTransformer;
     private final UserVOTransformer voTransformer;
     private final UserValidator validator;
     private final TokenBlacklistService blacklistService;
     private final RefreshTokenService refreshTokenService;
 
     @Autowired
-    public UserImpl(final UserRepository userRepo, final PasswordEncoder encoder, UserDtoTransformer dtoTransformer, final UserVOTransformer voTransformer, final UserValidator validator, TokenBlacklistService blacklistService, RefreshTokenService refreshTokenService) {
+    public UserImpl(final UserRepository userRepo, final PasswordEncoder encoder, UserResponseDtoTransformer dtoTransformer, final UserVOTransformer voTransformer, final UserValidator validator, TokenBlacklistService blacklistService, RefreshTokenService refreshTokenService) {
         super(userRepo);
         this.encoder = encoder;
         this.dtoTransformer = dtoTransformer;
@@ -224,7 +224,7 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
     }
 
     @Override
-    public ResponseEntity<GlobalResponse<List<UserDto>>> getAllUsers() {
+    public ResponseEntity<GlobalResponse<List<UserResponseDto>>> getAllUsers() {
         List<UserVO> result = getRepo().findAll();
         return ResponseUtils.okWithData(dtoTransformer.transformList(result));
     }

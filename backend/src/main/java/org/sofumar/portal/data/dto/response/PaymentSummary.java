@@ -1,4 +1,4 @@
-package org.sofumar.portal.data.dto;
+package org.sofumar.portal.data.dto.response;
 
 import java.math.BigDecimal;
 

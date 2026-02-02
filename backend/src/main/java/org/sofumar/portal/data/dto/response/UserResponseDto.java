@@ -1,4 +1,4 @@
-package org.sofumar.portal.data.dto;
+package org.sofumar.portal.data.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,10 +11,12 @@ import lombok.Setter;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserProfileDto {
+public class UserResponseDto {
+    private Integer userID;
     private String username;
     private String email;
     private String firstName;
     private String lastName;
     private String role;
+    private boolean active;
 }

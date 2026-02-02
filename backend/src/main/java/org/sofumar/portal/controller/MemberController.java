@@ -1,14 +1,13 @@
 package org.sofumar.portal.controller;
 
-import java.time.LocalDate;
 import java.util.List;
 
 import org.sofumar.portal.data.dto.MemberDto;
-import org.sofumar.portal.data.dto.MemberLookupDto;
-import org.sofumar.portal.data.dto.MemberSummaryDto;
+import org.sofumar.portal.data.dto.response.MemberLookupDto;
+import org.sofumar.portal.data.dto.response.MemberSummaryDto;
+import org.sofumar.portal.data.dto.request.MemberSearchRequestDto;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
 import org.sofumar.portal.core.businesslogic.Member;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -60,24 +59,11 @@ public class MemberController {
         return member.getMember(memberID);
     }
 
-    @GetMapping("/search")
+    @PostMapping("/search")
     @Operation(summary = "Search members")
     public ResponseEntity<GlobalResponse<List<MemberDto>>> searchMembers(
-            @RequestParam(required = false) String firstName,
-            @RequestParam(required = false) String lastName,
-            @RequestParam(required = false) String phone,
-            @RequestParam(required = false) String email,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) String city,
-            @RequestParam(required = false) String state,
-            @RequestParam(required = false) String zip,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate joinDateFrom,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate joinDateTo,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String sortField,
-            @RequestParam(required = false) String sortOrder) {
-        return member.searchMembers(firstName, lastName, phone, email, status, city, state, zip, joinDateFrom, joinDateTo, page, size, sortField, sortOrder);
+            @RequestBody MemberSearchRequestDto request) {
+        return member.searchMembers(request);
     }
 
     @GetMapping("/lookup")

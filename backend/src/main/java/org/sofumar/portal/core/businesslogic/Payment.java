@@ -1,7 +1,8 @@
 package org.sofumar.portal.core.businesslogic;
 
-import org.sofumar.portal.data.dto.LatestPaymentDto;
+import org.sofumar.portal.data.dto.response.LatestPaymentDto;
 import org.sofumar.portal.data.dto.PaymentDto;
+import org.sofumar.portal.data.dto.request.PaymentSearchRequestDto;
 import org.sofumar.portal.core.vo.PaymentVO;
 import org.sofumar.portal.framework.bl.BusinessLogic;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
@@ -11,7 +12,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-import org.sofumar.portal.data.dto.PaymentSummary;
+import org.sofumar.portal.data.dto.response.PaymentSummary;
 import org.springframework.data.jpa.domain.Specification;
 
 public interface Payment extends BusinessLogic<PaymentVO> {
@@ -23,10 +24,7 @@ public interface Payment extends BusinessLogic<PaymentVO> {
 
     ResponseEntity<GlobalResponse<PaymentDto>> getPayment(Integer paymentID);
 
-    ResponseEntity<GlobalResponse<List<PaymentDto>>> searchPayments(
-            Integer memberID, String feeType, Integer year, Integer quarter,
-            LocalDate dateFrom, LocalDate dateTo,
-            int page, int size, String sortField, String sortOrder);
+    ResponseEntity<GlobalResponse<List<PaymentDto>>> searchPayments(PaymentSearchRequestDto request);
 
     ResponseEntity<GlobalResponse<List<LatestPaymentDto>>> getLatestPayments(int limit);
 

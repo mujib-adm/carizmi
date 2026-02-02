@@ -1,6 +1,6 @@
 package org.sofumar.portal.data.transformer;
 
-import org.sofumar.portal.data.dto.ReferenceDataDto;
+import org.sofumar.portal.data.dto.response.ReferenceDataDto;
 import org.sofumar.portal.data.dto.ReferenceDto;
 import org.sofumar.portal.core.vo.ReferenceVO;
 import org.springframework.stereotype.Service;

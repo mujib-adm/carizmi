@@ -23,7 +23,7 @@ export const getMember = async (memberID: number) => {
 };
 
 export const searchMembers = async (params: MemberSearchParams) => {
-  const res = await apiClient.get<GlobalResponse<Member[]>>(ApiEndpoints.MEMBERS.SEARCH, { params });
+  const res = await apiClient.post<GlobalResponse<Member[]>>(ApiEndpoints.MEMBERS.SEARCH, params);
   return res.data;
 };
 

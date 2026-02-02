@@ -1,6 +1,7 @@
 package org.sofumar.portal.core.businesslogic.impl
 
 import org.sofumar.portal.data.dto.ReferenceDto
+import org.sofumar.portal.data.dto.request.ReferenceSearchRequestDto
 import org.sofumar.portal.constants.FieldConstants
 import org.sofumar.portal.data.transformer.ReferenceDtoTransformer
 import org.sofumar.portal.core.vo.ReferenceVO
@@ -108,8 +109,14 @@ class ReferenceSpec extends BaseSpecification {
         Page<ReferenceVO> mockPage = Mock(Page)
         JpaSpecification capturedSpec
 
+        ReferenceSearchRequestDto request = new ReferenceSearchRequestDto(referenceName: name)
+        request.setPage(0)
+        request.setSize(10)
+        request.setSortField(FieldConstants.REFERENCE_CODE)
+        request.setSortOrder("ASC")
+
         when: "The target method executed"
-        referenceService.searchReferences(name, code, active, 0, 10, "code", "ASC")
+        referenceService.searchReferences(request)
 
         then: "The expected calls are made"
         1 * referenceRepo.findAll(_ as JpaSpecification, _ as PageRequest) >> { JpaSpecification spec, PageRequest page ->
@@ -123,7 +130,6 @@ class ReferenceSpec extends BaseSpecification {
         _ * mockPage.getSize() >> 10
         _ * mockPage.getTotalElements() >> 0
         _ * mockPage.getTotalPages() >> 0
-
         0 * _
 
         and: "The expected result"
@@ -138,12 +144,9 @@ class ReferenceSpec extends BaseSpecification {
         }
 
         where:
-        desc          | name   | code   | active || expectedFilters                                                                       | expectedValues
-        "All filters" | "Name" | "Code" | true   || [FieldConstants.REFERENCE_NAME, FieldConstants.REFERENCE_CODE, FieldConstants.ACTIVE] | ["Name", "Code", true]
-        "Name only"   | "Name" | null   | null   || [FieldConstants.REFERENCE_NAME]                                                       | ["Name"]
-        "Code only"   | null   | "Code" | null   || [FieldConstants.REFERENCE_CODE]                                                       | ["Code"]
-        "Active only" | null   | null   | true   || [FieldConstants.ACTIVE]                                                               | [true]
-        "No filters"  | null   | null   | null   || []                                                                                    | []
+        desc         | name   || expectedFilters                 | expectedValues
+        "Name only"  | "Name" || [FieldConstants.REFERENCE_NAME] | ["Name"]
+        "No filters" | null   || []                              | []
     }
 
     def "test - isValidReference - happy path"() {

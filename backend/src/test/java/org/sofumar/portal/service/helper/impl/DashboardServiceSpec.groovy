@@ -4,13 +4,13 @@ import org.mockito.MockedStatic
 import org.mockito.Mockito
 import org.sofumar.portal.constants.QuarterStatus
 import org.sofumar.portal.constants.ReferenceCodeConstants
-import org.sofumar.portal.data.dto.DashboardMetricsDto
+import org.sofumar.portal.data.dto.response.DashboardMetricsDto
 import org.sofumar.portal.core.vo.MemberVO
 import org.sofumar.portal.framework.data.response.GlobalResponse
 import org.sofumar.portal.core.businesslogic.Expense
 import org.sofumar.portal.core.businesslogic.Member
 import org.sofumar.portal.core.businesslogic.Payment
-import org.sofumar.portal.data.dto.PaymentSummary
+import org.sofumar.portal.data.dto.response.PaymentSummary
 import org.sofumar.portal.service.helper.BaselineService
 import org.sofumar.portal.testsupport.BaseSpecification
 import org.springframework.data.jpa.domain.Specification as JpaSpecification

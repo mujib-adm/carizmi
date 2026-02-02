@@ -5,8 +5,9 @@ import org.mockito.Mockito
 import org.sofumar.portal.constants.ReferenceCodeConstants
 import org.sofumar.portal.constants.FieldConstants
 import org.sofumar.portal.data.dto.MemberDto
-import org.sofumar.portal.data.dto.MemberLookupDto
-import org.sofumar.portal.data.dto.MemberSummaryDto
+import org.sofumar.portal.data.dto.response.MemberLookupDto
+import org.sofumar.portal.data.dto.response.MemberSummaryDto
+import org.sofumar.portal.data.dto.request.MemberSearchRequestDto
 import org.sofumar.portal.data.transformer.MemberDtoTransformer
 import org.sofumar.portal.data.transformer.MemberVOTransformer
 import org.sofumar.portal.core.vo.MemberVO
@@ -16,7 +17,7 @@ import org.sofumar.portal.framework.exception.RecordNotFoundException
 import org.sofumar.portal.framework.util.MySQLConstraintResolver
 import org.sofumar.portal.core.businesslogic.Payment
 import org.sofumar.portal.core.repo.MemberRepository
-import org.sofumar.portal.data.dto.PaymentSummary
+import org.sofumar.portal.data.dto.response.PaymentSummary
 import org.sofumar.portal.service.validation.MemberValidator
 import org.sofumar.portal.testsupport.BaseSpecification
 import org.springframework.dao.DataAccessException
@@ -241,12 +242,15 @@ class MemberSpec extends BaseSpecification {
     }
 
     @Unroll
-    def "test - searchMembers: Applying various filter combinations [f: #f, l: #l, p: #p, e: #e, s: #s, from: #from, to: #to]"() {
+    def "test - searchMembers: Applying various filter combinations [f: #f, l: #l, p: #p, s: #s]"() {
         given: "Search parameters and mock"
         Page<MemberVO> mockPage = Mock(Page)
+        MemberSearchRequestDto request = new MemberSearchRequestDto(firstName: f, lastName: l, phone: p, status: s)
+        request.setPage(0)
+        request.setSize(10)
 
         when: "The target method executed"
-        memberService.searchMembers(f, l, p, e, s, null, null, null, from, to, 0, 10, null, null)
+        memberService.searchMembers(request)
 
         then: "The expected calls are made"
         1 * memberRepo.findAll(_, _ as PageRequest) >> mockPage
@@ -263,9 +267,9 @@ class MemberSpec extends BaseSpecification {
         noExceptionThrown()
 
         where:
-        f    | l    | p     | e     | s     | from            | to
-        "J"  | "D"  | "123" | "a@b" | "ACT" | LocalDate.now() | LocalDate.now()
-        null | null | null  | null  | null  | null            | null
+        f    | l    | p     | s
+        "J"  | "D"  | "123" | "ACT"
+        null | null | null  | null
     }
 
     def "test - getMember: Success"() {

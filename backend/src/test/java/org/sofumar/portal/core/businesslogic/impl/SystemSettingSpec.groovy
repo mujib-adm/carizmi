@@ -3,6 +3,7 @@ package org.sofumar.portal.core.businesslogic.impl
 import org.sofumar.portal.constants.FieldConstants
 
 import org.sofumar.portal.data.dto.SystemSettingsDto
+import org.sofumar.portal.data.dto.request.SystemSettingsSearchRequestDto
 import org.sofumar.portal.data.transformer.SystemSettingsDtoTransformer
 import org.sofumar.portal.core.vo.SystemSettingsVO
 import org.sofumar.portal.framework.data.response.GlobalResponse
@@ -155,8 +156,14 @@ class SystemSettingSpec extends BaseSpecification {
         Page<SystemSettingsVO> mockPage = Mock(Page)
         JpaSpecification capturedSpec
 
+        SystemSettingsSearchRequestDto request = new SystemSettingsSearchRequestDto(settingType: type)
+        request.setPage(0)
+        request.setSize(10)
+        request.setSortField(FieldConstants.SETTING_KEY)
+        request.setSortOrder("DESC")
+
         when: "The target method executed"
-        systemSetting.searchSystemSettings(type, key, value, 0, 10, "settingKey", "DESC")
+        systemSetting.searchSystemSettings(request)
 
         then: "The expected calls are made"
         1 * settingsRepo.findAll(_ as JpaSpecification, _ as PageRequest) >> { JpaSpecification spec, PageRequest page ->
@@ -184,12 +191,9 @@ class SystemSettingSpec extends BaseSpecification {
         }
 
         where:
-        desc          | type   | key   | value || expectedFilters                                                                         | expectedValues
-        "All filters" | "Type" | "Key" | "Val" || [FieldConstants.SETTING_TYPE, FieldConstants.SETTING_KEY, FieldConstants.SETTING_VALUE] | ["type", "key", "val"]
-        "Type only"   | "Type" | null  | null  || [FieldConstants.SETTING_TYPE]                                                           | ["type"]
-        "Key only"    | null   | "Key" | null  || [FieldConstants.SETTING_KEY]                                                            | ["key"]
-        "Value only"  | null   | null  | "Val" || [FieldConstants.SETTING_VALUE]                                                          | ["val"]
-        "No filters"  | null   | null  | null  || []                                                                                      | []
+        desc         | type   || expectedFilters               | expectedValues
+        "Type only"  | "Type" || [FieldConstants.SETTING_TYPE] | ["type"]
+        "No filters" | null   || []                            | []
     }
 
     def "test - getSettingsByKey: Should return settings matching the key"() {

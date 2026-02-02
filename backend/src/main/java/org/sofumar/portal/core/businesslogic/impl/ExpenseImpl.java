@@ -1,9 +1,5 @@
 package org.sofumar.portal.core.businesslogic.impl;
 
-import static org.sofumar.portal.constants.MessagesConstants.RECORD_ADDED;
-import static org.sofumar.portal.constants.MessagesConstants.RECORD_DELETED;
-import static org.sofumar.portal.constants.MessagesConstants.RECORD_UPDATED;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -13,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sofumar.portal.core.businesslogic.Expense;
 import org.sofumar.portal.data.dto.ExpenseDto;
+import org.sofumar.portal.data.dto.request.ExpenseSearchRequestDto;
 import org.sofumar.portal.data.transformer.ExpenseDtoTransformer;
 import org.sofumar.portal.data.transformer.ExpenseVOTransformer;
 import org.sofumar.portal.core.vo.ExpenseVO;
@@ -25,12 +22,14 @@ import org.sofumar.portal.core.repo.jpaspec.ExpenseSpecifications;
 import org.sofumar.portal.service.validation.ExpenseValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import static org.sofumar.portal.constants.MessagesConstants.RECORD_ADDED;
+import static org.sofumar.portal.constants.MessagesConstants.RECORD_DELETED;
+import static org.sofumar.portal.constants.MessagesConstants.RECORD_UPDATED;
 
 @Service
 public non-sealed class ExpenseImpl extends ExpenseAbstractBL implements Expense {
@@ -97,23 +96,16 @@ public non-sealed class ExpenseImpl extends ExpenseAbstractBL implements Expense
 
     @Override
     @Transactional(readOnly = true)
-    public ResponseEntity<GlobalResponse<List<ExpenseDto>>> searchExpenses(
-            String category, LocalDate dateFrom, LocalDate dateTo,
-            int page, int size, String sortField, String sortOrder) {
+    public ResponseEntity<GlobalResponse<List<ExpenseDto>>> searchExpenses(ExpenseSearchRequestDto request) {
 
         List<Specification<ExpenseVO>> specs = new ArrayList<>();
-        if (category != null)
-            specs.add(ExpenseSpecifications.hasCategory(category));
-        if (dateFrom != null || dateTo != null)
-            specs.add(ExpenseSpecifications.dateOfExpenseBetween(dateFrom, dateTo));
+        if (request.getCategory() != null)
+            specs.add(ExpenseSpecifications.hasCategory(request.getCategory()));
+        if (request.getDateFrom() != null || request.getDateTo() != null)
+            specs.add(ExpenseSpecifications.dateOfExpenseBetween(request.getDateFrom(), request.getDateTo()));
 
         Specification<ExpenseVO> spec = Specification.allOf(specs);
-        Sort sort = Sort.unsorted();
-        if (sortField != null && sortOrder != null) {
-            sort = Sort.by(Sort.Direction.fromString(sortOrder), sortField);
-        }
-        PageRequest pageRequest = PageRequest.of(page, size, sort);
-        Page<ExpenseVO> result = getRepo().findAll(spec, pageRequest);
+        Page<ExpenseVO> result = getRepo().findAll(spec, request.toPageable());
         PaginationMeta meta = PaginationMeta.of(result.getNumber(), result.getSize(), result.getTotalElements(),
                 result.getTotalPages());
 

@@ -1,6 +1,8 @@
 package org.sofumar.portal.core.businesslogic.impl
 
+import org.sofumar.portal.constants.FieldConstants
 import org.sofumar.portal.data.dto.ExpenseDto
+import org.sofumar.portal.data.dto.request.ExpenseSearchRequestDto
 import org.sofumar.portal.data.transformer.ExpenseDtoTransformer
 import org.sofumar.portal.data.transformer.ExpenseVOTransformer
 import org.sofumar.portal.core.vo.ExpenseVO
@@ -233,8 +235,18 @@ class ExpenseSpec extends BaseSpecification {
         Page<ExpenseVO> mockPage = Mock(Page)
 
         when: "The target method executed"
-        expenseService.searchExpenses(null, null, null, 0, 10, null, null)
-        expenseService.searchExpenses("Office", LocalDate.now(), LocalDate.now(), 0, 10, "amount", "DESC")
+
+        ExpenseSearchRequestDto request1 = new ExpenseSearchRequestDto()
+        request1.setPage(0)
+        request1.setSize(10)
+        expenseService.searchExpenses(request1)
+
+        ExpenseSearchRequestDto request2 = new ExpenseSearchRequestDto(category: "Transportation", dateFrom: LocalDate.now(), dateTo: LocalDate.now())
+        request2.setPage(0)
+        request2.setSize(10)
+        request2.setSortField(FieldConstants.AMOUNT)
+        request2.setSortOrder("DESC")
+        expenseService.searchExpenses(request2)
 
         then: "The expected calls are made"
         2 * expenseRepo.findAll(_ as JpaSpecification, _ as PageRequest) >> mockPage

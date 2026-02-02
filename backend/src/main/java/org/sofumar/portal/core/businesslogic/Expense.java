@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import org.sofumar.portal.data.dto.ExpenseDto;
+import org.sofumar.portal.data.dto.request.ExpenseSearchRequestDto;
 import org.sofumar.portal.core.vo.ExpenseVO;
 import org.sofumar.portal.framework.bl.BusinessLogic;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
@@ -21,9 +22,7 @@ public interface Expense extends BusinessLogic<ExpenseVO> {
 
     ResponseEntity<GlobalResponse<ExpenseDto>> getExpense(Integer expenseID);
 
-    ResponseEntity<GlobalResponse<List<ExpenseDto>>> searchExpenses(
-            String category, LocalDate dateFrom, LocalDate dateTo,
-            int page, int size, String sortField, String sortOrder);
+    ResponseEntity<GlobalResponse<List<ExpenseDto>>> searchExpenses(ExpenseSearchRequestDto request);
 
     BigDecimal sumAmountByDateOfExpenseBetween(LocalDate start, LocalDate end);
 

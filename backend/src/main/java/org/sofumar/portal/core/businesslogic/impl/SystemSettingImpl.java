@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sofumar.portal.data.dto.SystemSettingsDto;
+import org.sofumar.portal.data.dto.request.SystemSettingsSearchRequestDto;
 import org.sofumar.portal.data.transformer.SystemSettingsDtoTransformer;
 import org.sofumar.portal.core.vo.SystemSettingsVO;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
@@ -16,8 +17,6 @@ import org.sofumar.portal.core.repo.jpaspec.SystemSettingsSpecifications;
 import org.sofumar.portal.service.validation.SystemSettingsValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -76,25 +75,14 @@ public non-sealed class SystemSettingImpl extends SystemSettingAbstractBL
     }
 
     @Override
-    public ResponseEntity<GlobalResponse<List<SystemSettingsDto>>> searchSystemSettings(String settingType,
-            String settingKey, String settingValue, int page, int size, String sortField, String sortOrder) {
+    public ResponseEntity<GlobalResponse<List<SystemSettingsDto>>> searchSystemSettings(SystemSettingsSearchRequestDto request) {
         List<Specification<SystemSettingsVO>> specList = new ArrayList<>();
-        if (StringUtils.isNotBlank(settingType))
-            specList.add(SystemSettingsSpecifications.hasSettingType(settingType));
-        if (StringUtils.isNotBlank(settingKey))
-            specList.add(SystemSettingsSpecifications.hasSettingKey(settingKey));
-        if (StringUtils.isNotBlank(settingValue))
-            specList.add(SystemSettingsSpecifications.hasSettingValue(settingValue));
+        if (StringUtils.isNotBlank(request.getSettingType()))
+            specList.add(SystemSettingsSpecifications.hasSettingType(request.getSettingType()));
 
         Specification<SystemSettingsVO> spec = Specification.allOf(specList);
 
-        Sort sort = Sort.unsorted();
-        if (sortField != null && sortOrder != null) {
-            sort = Sort.by(Sort.Direction.fromString(sortOrder), sortField);
-        }
-        PageRequest pageRequest = PageRequest.of(page, size, sort);
-
-        Page<SystemSettingsVO> pageResult = getRepo().findAll(spec, pageRequest);
+        Page<SystemSettingsVO> pageResult = getRepo().findAll(spec, request.toPageable());
         PaginationMeta meta = PaginationMeta.of(pageResult.getNumber(), pageResult.getSize(),
                 pageResult.getTotalElements(), pageResult.getTotalPages());
 

@@ -6,9 +6,10 @@ import org.sofumar.portal.constants.FieldConstants;
 import org.sofumar.portal.constants.MessagesConstants;
 import org.sofumar.portal.constants.ReferenceCodeConstants;
 import org.sofumar.portal.core.vo.PaymentVO;
-import org.sofumar.portal.data.dto.LatestPaymentDto;
+import org.sofumar.portal.data.dto.response.LatestPaymentDto;
 import org.sofumar.portal.data.dto.PaymentDto;
-import org.sofumar.portal.data.dto.PaymentSummary;
+import org.sofumar.portal.data.dto.request.PaymentSearchRequestDto;
+import org.sofumar.portal.data.dto.response.PaymentSummary;
 import org.sofumar.portal.data.transformer.PaymentDtoTransformer;
 import org.sofumar.portal.data.transformer.PaymentVOTransformer;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
@@ -127,30 +128,22 @@ public non-sealed class PaymentImpl extends PaymentAbstractBL implements Payment
 
     @Override
     @Transactional(readOnly = true)
-    public ResponseEntity<GlobalResponse<List<PaymentDto>>> searchPayments(
-            Integer memberID, String feeType, Integer year, Integer quarter,
-            LocalDate dateFrom, LocalDate dateTo,
-            int page, int size, String sortField, String sortOrder) {
+    public ResponseEntity<GlobalResponse<List<PaymentDto>>> searchPayments(PaymentSearchRequestDto request) {
 
         List<Specification<PaymentVO>> specs = new ArrayList<>();
-        if (memberID != null)
-            specs.add(PaymentSpecifications.hasMemberID(memberID));
-        if (feeType != null)
-            specs.add(PaymentSpecifications.hasFeeType(feeType));
-        if (year != null)
-            specs.add(PaymentSpecifications.hasYear(year));
-        if (quarter != null)
-            specs.add(PaymentSpecifications.hasQuarter(quarter));
-        if (dateFrom != null || dateTo != null)
-            specs.add(PaymentSpecifications.dateReceivedBetween(dateFrom, dateTo));
+        if (request.getMemberID() != null)
+            specs.add(PaymentSpecifications.hasMemberID(request.getMemberID()));
+        if (request.getFeeType() != null)
+            specs.add(PaymentSpecifications.hasFeeType(request.getFeeType()));
+        if (request.getYear() != null)
+            specs.add(PaymentSpecifications.hasYear(request.getYear()));
+        if (request.getQuarter() != null)
+            specs.add(PaymentSpecifications.hasQuarter(request.getQuarter()));
+        if (request.getDateFrom() != null || request.getDateTo() != null)
+            specs.add(PaymentSpecifications.dateReceivedBetween(request.getDateFrom(), request.getDateTo()));
 
         Specification<PaymentVO> spec = Specification.allOf(specs);
-        Sort sort = Sort.unsorted();
-        if (sortField != null && sortOrder != null) {
-            sort = Sort.by(Sort.Direction.fromString(sortOrder), sortField);
-        }
-        PageRequest pageRequest = PageRequest.of(page, size, sort);
-        Page<PaymentVO> result = getRepo().findAll(spec, pageRequest);
+        Page<PaymentVO> result = getRepo().findAll(spec, request.toPageable());
         PaginationMeta meta = PaginationMeta.of(result.getNumber(), result.getSize(), result.getTotalElements(),
                 result.getTotalPages());
 

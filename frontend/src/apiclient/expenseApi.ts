@@ -23,6 +23,6 @@ export const getExpense = async (expenseID: number) => {
 };
 
 export const searchExpenses = async (params: ExpenseSearchParams) => {
-  const res = await apiClient.get<GlobalResponse<Expense[]>>(ApiEndpoints.EXPENSES.SEARCH, { params });
+  const res = await apiClient.post<GlobalResponse<Expense[]>>(ApiEndpoints.EXPENSES.SEARCH, params);
   return res.data;
 };

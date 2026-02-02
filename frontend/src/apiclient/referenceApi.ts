@@ -3,7 +3,7 @@ import { GlobalResponse, Reference, ReferenceRequestDto, ReferenceSearchParams }
 import apiClient from "./ApiClient";
 
 export const searchReferences = async (params: ReferenceSearchParams) => {
-    const res = await apiClient.get<GlobalResponse<Reference[]>>(ApiEndpoints.REFERENCE.SEARCH, { params });
+    const res = await apiClient.post<GlobalResponse<Reference[]>>(ApiEndpoints.REFERENCE.SEARCH, params);
     return res.data;
 };
 

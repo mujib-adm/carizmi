@@ -1,4 +1,4 @@
-package org.sofumar.portal.data.dto;
+package org.sofumar.portal.data.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,8 +14,4 @@ public class MemberLookupDto {
     private String firstName;
     private String lastName;
     private String phone;
-
-    public String getFullName() {
-        return firstName + " " + lastName;
-    }
 }

@@ -15,6 +15,13 @@ export enum MessageType {
   CONFIRMATION = "CONFIRMATION"
 }
 
+export interface PaginationParams {
+  page?: number;       // 0-based page index
+  size?: number;       // page size
+  sortField?: string;  // optional sort field
+  sortOrder?: "asc" | "desc"; // optional sort order
+}
+
 // Generic API response structure
 export interface GlobalResponse<T = any, DataMap = Record<string, string>> {
   statusCode: number;             // e.g. 200, 401, 409
@@ -101,17 +108,12 @@ export type Member = {
 };
 export type MemberRequestDto = Omit<Member, "memberID"> & { memberID?: number };
 
-export type MemberSearchParams = {
+export interface MemberSearchParams extends PaginationParams {
   firstName?: string;
   lastName?: string;
   phone?: string;
   status?: string;
-  // pagination + sorting
-  page?: number;       // 0-based page index
-  size?: number;       // page size
-  sortField?: string;  // optional sort field
-  sortOrder?: "asc" | "desc"; // optional sort order
-};
+}
 
 export type MemberLookupResponse = {
   memberID: number;
@@ -141,7 +143,7 @@ export type Payment = {
 
 export type PaymentRequestDto = Omit<Payment, "paymentID"> & { paymentID?: number };
 
-export type PaymentSearchParams = {
+export interface PaymentSearchParams extends PaginationParams {
   memberID?: number;
   feeType?: string;
   year?: number;
@@ -149,12 +151,7 @@ export type PaymentSearchParams = {
   dateFrom?: string;
   dateTo?: string;
   dateRange?: string;
-  // pagination + sorting
-  page?: number;       // 0-based page index
-  size?: number;       // page size
-  sortField?: string;  // optional sort field
-  sortOrder?: "asc" | "desc"; // optional sort order
-};
+}
 
 // Expense types
 export type Expense = {
@@ -165,16 +162,11 @@ export type Expense = {
   amount: number;
 };
 
-export type ExpenseSearchParams = {
+export interface ExpenseSearchParams extends PaginationParams {
   category?: string;
   dateFrom?: string;
   dateTo?: string;
-  // pagination + sorting
-  page?: number;       // 0-based page index
-  size?: number;       // page size
-  sortField?: string;  // optional sort field
-  sortOrder?: "asc" | "desc"; // optional sort order
-};
+}
 
 // System Setting types
 export type SystemSetting = {
@@ -184,14 +176,9 @@ export type SystemSetting = {
   settingValue: string;
 };
 
-export type SystemSettingSearchParams = {
-  settingKey?: string;
-  // pagination + sorting
-  page?: number;       // 0-based page index
-  size?: number;       // page size
-  sortField?: string;  // optional sort field
-  sortOrder?: "asc" | "desc"; // optional sort order
-};
+export interface SystemSettingSearchParams extends PaginationParams {
+  settingType?: string;
+}
 
 // Reference types
 export type Reference = {
@@ -204,14 +191,9 @@ export type Reference = {
 
 export type ReferenceRequestDto = Omit<Reference, "referenceID"> & { referenceID?: number };
 
-export type ReferenceSearchParams = {
+export interface ReferenceSearchParams extends PaginationParams {
   referenceName?: string;
-  // pagination + sorting
-  page?: number;       // 0-based page index
-  size?: number;       // page size
-  sortField?: string;  // optional sort field
-  sortOrder?: "asc" | "desc"; // optional sort order
-};
+}
 
 export interface ReferenceData {
   code: string;

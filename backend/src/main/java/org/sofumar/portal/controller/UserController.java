@@ -2,7 +2,9 @@ package org.sofumar.portal.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.sofumar.portal.core.businesslogic.User;
-import org.sofumar.portal.data.dto.UserDto;
+import org.sofumar.portal.data.dto.response.UserResponseDto;
+import org.sofumar.portal.data.dto.request.UserRoleUpdateRequestDto;
+import org.sofumar.portal.data.dto.request.UserStatusUpdateRequestDto;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/users")
@@ -23,23 +24,21 @@ public class UserController {
     private final User user;
 
     @GetMapping
-    public ResponseEntity<GlobalResponse<List<UserDto>>> getAllUsers() {
+    public ResponseEntity<GlobalResponse<List<UserResponseDto>>> getAllUsers() {
         return user.getAllUsers();
     }
 
     @PutMapping("/{id}/role")
     public ResponseEntity<GlobalResponse<Void>> updateRole(
             @PathVariable Integer id,
-            @RequestBody Map<String, String> body) {
-        String newRole = body.get("role");
-        return user.updateUserRole(id, newRole);
+            @RequestBody UserRoleUpdateRequestDto request) {
+        return user.updateUserRole(id, request.getRole());
     }
 
     @PutMapping("/{id}/status")
     public ResponseEntity<GlobalResponse<Void>> toggleStatus(
             @PathVariable Integer id,
-            @RequestBody Map<String, Boolean> body) {
-        Boolean active = body.get("active");
-        return user.toggleUserStatus(id, active);
+            @RequestBody UserStatusUpdateRequestDto request) {
+        return user.toggleUserStatus(id, request.getActive());
     }
 }

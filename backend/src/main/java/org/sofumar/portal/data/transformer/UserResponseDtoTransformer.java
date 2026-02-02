@@ -1,17 +1,17 @@
 package org.sofumar.portal.data.transformer;
 
-import org.sofumar.portal.data.dto.UserDto;
+import org.sofumar.portal.data.dto.response.UserResponseDto;
 import org.sofumar.portal.core.vo.UserVO;
 import org.springframework.stereotype.Service;
 
 @Service
-public class UserDtoTransformer implements Transformer<UserVO, UserDto> {
+public class UserResponseDtoTransformer implements Transformer<UserVO, UserResponseDto> {
 
     @Override
-    public UserDto transform(UserVO vo) {
+    public UserResponseDto transform(UserVO vo) {
         if (vo == null)
             return null;
-        return UserDto.builder()
+        return UserResponseDto.builder()
                 .userID(vo.getUserID())
                 .username(vo.getUsername())
                 .email(vo.getEmail())

@@ -23,6 +23,6 @@ export const getPayment = async (paymentID: number) => {
 };
 
 export const searchPayments = async (params: PaymentSearchParams) => {
-  const res = await apiClient.get<GlobalResponse<Payment[]>>(ApiEndpoints.PAYMENTS.SEARCH, { params });
+  const res = await apiClient.post<GlobalResponse<Payment[]>>(ApiEndpoints.PAYMENTS.SEARCH, params);
   return res.data;
 };

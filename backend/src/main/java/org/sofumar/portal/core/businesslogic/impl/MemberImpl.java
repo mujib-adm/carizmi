@@ -6,9 +6,10 @@ import org.slf4j.LoggerFactory;
 import org.sofumar.portal.constants.FieldConstants;
 import org.sofumar.portal.constants.ReferenceCodeConstants;
 import org.sofumar.portal.data.dto.MemberDto;
-import org.sofumar.portal.data.dto.MemberLookupDto;
-import org.sofumar.portal.data.dto.MemberSummaryDto;
-import org.sofumar.portal.data.dto.PaymentSummary;
+import org.sofumar.portal.data.dto.response.MemberLookupDto;
+import org.sofumar.portal.data.dto.response.MemberSummaryDto;
+import org.sofumar.portal.data.dto.response.PaymentSummary;
+import org.sofumar.portal.data.dto.request.MemberSearchRequestDto;
 import org.sofumar.portal.data.transformer.MemberDtoTransformer;
 import org.sofumar.portal.data.transformer.MemberVOTransformer;
 import org.sofumar.portal.core.vo.MemberVO;
@@ -113,36 +114,20 @@ public non-sealed class MemberImpl extends MemberAbstractBL implements Member {
     }
 
     @Override
-    public ResponseEntity<GlobalResponse<List<MemberDto>>> searchMembers(String firstName, String lastName, String phone, String email,
-                                                                         String status, String city, String state, String zip,
-                                                                         LocalDate joinDateFrom, LocalDate joinDateTo, int page, int size, String sortField, String sortOrder) {
-        logger.info("Searching members with criteria - firstName: {}, lastName: {}, status: {}, city: {}, state: {}",
-                firstName, lastName, status, city, state);
-
+    public ResponseEntity<GlobalResponse<List<MemberDto>>> searchMembers(MemberSearchRequestDto request) {
         List<Specification<MemberVO>> specList = new ArrayList<>();
-        if (StringUtils.isNotBlank(firstName))
-            specList.add(MemberSpecifications.hasFirstName(firstName));
-        if (StringUtils.isNotBlank(lastName))
-            specList.add(MemberSpecifications.hasLastName(lastName));
-        if (StringUtils.isNotBlank(phone))
-            specList.add(MemberSpecifications.hasPhone(phone));
-        if (StringUtils.isNotBlank(email))
-            specList.add(MemberSpecifications.hasEmail(email));
-        if (StringUtils.isNotBlank(status))
-            specList.add(MemberSpecifications.hasState(status));
-
-        if (joinDateFrom != null && joinDateTo != null)
-            specList.add(MemberSpecifications.joinDateBetween(joinDateFrom, joinDateTo));
+        if (StringUtils.isNotBlank(request.getFirstName()))
+            specList.add(MemberSpecifications.hasFirstName(request.getFirstName()));
+        if (StringUtils.isNotBlank(request.getLastName()))
+            specList.add(MemberSpecifications.hasLastName(request.getLastName()));
+        if (StringUtils.isNotBlank(request.getPhone()))
+            specList.add(MemberSpecifications.hasPhone(request.getPhone()));
+        if (StringUtils.isNotBlank(request.getStatus()))
+            specList.add(MemberSpecifications.hasState(request.getStatus()));
 
         Specification<MemberVO> spec = Specification.allOf(specList);
-
-        Sort sort = Sort.unsorted();
-        if (sortField != null && sortOrder != null) {
-            sort = Sort.by(Sort.Direction.fromString(sortOrder), sortField);
-        }
-        PageRequest pageRequest = PageRequest.of(page, size, sort);
-
-        Page<MemberVO> members = getRepo().findAll(spec, pageRequest);
+        
+        Page<MemberVO> members = getRepo().findAll(spec, request.toPageable());
         PaginationMeta meta = PaginationMeta.of(members.getNumber(), members.getSize(), members.getTotalElements(), members.getTotalPages());
         logger.info("Found {} members matching search criteria", members.getTotalElements());
 

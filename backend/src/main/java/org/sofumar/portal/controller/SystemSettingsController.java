@@ -3,16 +3,18 @@ package org.sofumar.portal.controller;
 import java.util.List;
 
 import org.sofumar.portal.data.dto.SystemSettingsDto;
+import org.sofumar.portal.data.dto.request.SystemSettingsSearchRequestDto;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
 import org.sofumar.portal.core.businesslogic.SystemSetting;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+
 import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -40,18 +42,11 @@ public class SystemSettingsController {
         return systemSetting.updateSystemSetting(dto);
     }
 
-    @GetMapping("/search")
+    @PostMapping("/search")
     @Operation(summary = "Search system settings")
     public ResponseEntity<GlobalResponse<List<SystemSettingsDto>>> searchSystemSettings(
-            @RequestParam(required = false) String settingType,
-            @RequestParam(required = false) String settingKey,
-            @RequestParam(required = false) String settingValue,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String sortField,
-            @RequestParam(required = false) String sortOrder) {
-        return systemSetting.searchSystemSettings(settingType, settingKey, settingValue, page, size, sortField,
-                sortOrder);
+            @RequestBody SystemSettingsSearchRequestDto request) {
+        return systemSetting.searchSystemSettings(request);
     }
 
     @GetMapping("/by-key/{key}")
