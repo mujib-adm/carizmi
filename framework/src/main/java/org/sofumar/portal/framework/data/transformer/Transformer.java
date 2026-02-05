@@ -1,4 +1,4 @@
-package org.sofumar.portal.data.transformer;
+package org.sofumar.portal.framework.data.transformer;
 
 import java.util.List;
 import java.util.Objects;

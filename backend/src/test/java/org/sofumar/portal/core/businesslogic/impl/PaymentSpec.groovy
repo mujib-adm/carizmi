@@ -43,7 +43,7 @@ class PaymentSpec extends BaseSpecification {
     @Subject
     PaymentImpl paymentService = new PaymentImpl(paymentRepo, voTransformer, dtoTransformer, validator)
 
-    def setup() {
+    void setup() {
         ReflectionTestUtils.setField(paymentService, "constraintResolver", constraintResolver)
     }
 
@@ -370,11 +370,13 @@ class PaymentSpec extends BaseSpecification {
 
     @Unroll
     def "test - searchPayments: Checking filters #desc"() {
-        given: "Search params"
+        given: "Search params using dynamic current year"
+        int currentYear = LocalDate.now().year
+        Integer yearValue = hasYearVal ? currentYear : null
         Page<PaymentVO> mockPage = Mock(Page)
         JpaSpecification capturedSpec
 
-        PaymentSearchRequestDto request = new PaymentSearchRequestDto(memberID: memberID, feeType: feeType, year: year, quarter: quarter, dateFrom: dateFrom, dateTo: dateTo)
+        PaymentSearchRequestDto request = new PaymentSearchRequestDto(memberID: memberID, feeType: feeType, year: yearValue, quarter: quarter, dateFrom: dateFrom, dateTo: dateTo)
         request.setPage(0)
         request.setSize(10)
         request.setSortField(FieldConstants.AMOUNT)
@@ -400,23 +402,24 @@ class PaymentSpec extends BaseSpecification {
         noExceptionThrown()
         capturedSpec != null
         Map<String, List> inspection = inspectSpecification(capturedSpec)
-        if (expectedFilters) {
-            inspection.filters.containsAll(expectedFilters)
-            inspection.values.containsAll(expectedValues)
+        if (hasFilters) {
+            inspection.filters.containsAll([TableConstants.MEMBER_TABLE, FieldConstants.MEMBER_ID, FieldConstants.FEE_TYPE, FieldConstants.YEAR, FieldConstants.QUARTER, FieldConstants.DATE_RECEIVED])
+            inspection.values.containsAll([memberID, feeType, currentYear, quarter, dateFrom, dateTo])
         } else {
             inspection.filters.isEmpty()
         }
 
         where:
-        desc          | memberID | feeType | year | quarter | dateFrom        | dateTo          || expectedFilters                                                                                                                                             | expectedValues
-        "All filters" | 1        | "FEE"   | 2025 | 1       | LocalDate.now() | LocalDate.now() || [TableConstants.MEMBER_TABLE, FieldConstants.MEMBER_ID, FieldConstants.FEE_TYPE, FieldConstants.YEAR, FieldConstants.QUARTER, FieldConstants.DATE_RECEIVED] | [1, "FEE", 2025, 1, LocalDate.now(), LocalDate.now()]
-        "No filters"  | null     | null    | null | null    | null            | null            || []                                                                                                                                                          | []
+        desc          | memberID | feeType | hasYearVal | quarter | dateFrom        | dateTo          || hasFilters
+        "All filters" | 1        | "FEE"   | true       | 1       | LocalDate.now() | LocalDate.now() || true
+        "No filters"  | null     | null    | false      | null    | null            | null            || false
     }
 
     def "test - findPaymentsForMemberQuarter: Should delegate to repo with criteria"() {
         given: "Criteria parameters"
         Integer memberID = 1
-        Integer year = 2025
+        int currentYear = LocalDate.now().year
+        Integer year = currentYear
         Integer quarter = 1
         String feeType = "FEE"
         PaymentVO vo = new PaymentVO()
@@ -455,9 +458,10 @@ class PaymentSpec extends BaseSpecification {
     }
 
     def "test - findPaymentSummaries: Should return list"() {
-        given: "Criteria"
+        given: "Criteria using dynamic year"
         String feeType = "FEE"
-        Integer year = 2025
+        int currentYear = LocalDate.now().year
+        Integer year = currentYear
         List<PaymentSummary> summaries = []
 
         when: "The target method executed"
@@ -491,8 +495,9 @@ class PaymentSpec extends BaseSpecification {
     }
 
     def "test - sumAmountByYearAndQuarter: Should return sum"() {
-        given: "Year and Quarter"
-        Integer year = 2025
+        given: "Year and Quarter using dynamic year"
+        int currentYear = LocalDate.now().year
+        Integer year = currentYear
         Integer quarter = 2
         BigDecimal expectedSum = new BigDecimal("200.00")
 
@@ -526,9 +531,10 @@ class PaymentSpec extends BaseSpecification {
     }
 
     def "test - sumAmountByMemberIDAndYearAndQuarter: Should return sum"() {
-        given: "Parameters"
+        given: "Parameters using dynamic year"
         Integer memberID = 100
-        Integer year = 2025
+        int currentYear = LocalDate.now().year
+        Integer year = currentYear
         Integer quarter = 3
         BigDecimal expectedSum = new BigDecimal("400.00")
 

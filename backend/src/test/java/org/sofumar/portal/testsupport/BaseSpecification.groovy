@@ -12,10 +12,10 @@ import org.springframework.data.jpa.domain.Specification as JpaSpecification
 class BaseSpecification extends Specification {
 
     Map<String, List> inspectSpecification(JpaSpecification jpaSpec) {
-        def cb = Mock(CriteriaBuilder)
-        def root = Mock(Root)
-        def path = Mock(Path)
-        def expression = Mock(Expression)
+        def cb = Stub(CriteriaBuilder)
+        def root = Stub(Root)
+        def path = Stub(Path)
+        def expression = Stub(Expression)
 
         def fields = []
         def values = []
@@ -36,14 +36,23 @@ class BaseSpecification extends Specification {
         // Capture values from like() calls
         cb.like(path, _) >> { expr, val -> values << val; null }
         cb.like(expression, _) >> { expr, val -> values << val; null }
+
+        // Capture values from comparison calls
+        cb.greaterThanOrEqualTo(path, _) >> { expr, val -> values << val; null }
+        cb.lessThanOrEqualTo(path, _) >> { expr, val -> values << val; null }
+        
+        // Handle toString conversion
+        cb.toString(path) >> expression
         
         // Handle common aggregations
         cb.and(_ as Predicate[]) >> null
+        cb.and(_ as Predicate, _ as Predicate) >> null
         cb.or(_ as Predicate[]) >> null
+        cb.or(_ as Predicate, _ as Predicate) >> null
         cb.between(path, _, _) >> { expr, val1, val2 -> values << val1; values << val2; null }
 
         // Execute capture
-        jpaSpec.toPredicate(root, Mock(CriteriaQuery), cb)
+        jpaSpec.toPredicate(root, Stub(CriteriaQuery), cb)
 
         return [filters: fields, values: values]
     }

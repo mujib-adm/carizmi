@@ -35,7 +35,7 @@ class ExpenseSpec extends BaseSpecification {
     @Subject
     ExpenseImpl expenseService = new ExpenseImpl(expenseRepo, voTransformer, dtoTransformer, validator)
 
-    def setup() {
+    void setup() {
         ReflectionTestUtils.setField(expenseService, "constraintResolver", constraintResolver)
     }
 

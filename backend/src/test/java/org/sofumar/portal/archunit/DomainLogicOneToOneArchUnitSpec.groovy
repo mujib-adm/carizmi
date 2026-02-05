@@ -21,7 +21,7 @@ class DomainLogicOneToOneArchUnitSpec extends Specification {
     @Shared
     JavaClasses importedClasses
 
-    def setupSpec() {
+    void setupSpec() {
         importedClasses = new ClassFileImporter().importPackages("org.sofumar.portal")
     }
 
@@ -45,7 +45,7 @@ class DomainLogicOneToOneArchUnitSpec extends Specification {
             javaClass.annotations.each { annotation ->
                 if (annotation.rawType.name == DomainLogicFor.class.name) {
                     // In ArchUnit, the 'value' property of an annotation is accessed this way
-                    def voClass = annotation.getProperties().get("value").toString()
+                    String voClass = annotation.getProperties().get("value").toString()
                     // Strip class suffix if present (e.g., "class org.sofumar.portal.core.vo.MemberVO")
                     voClass = voClass.replace("class ", "")
                     mapping.computeIfAbsent(voClass, { k -> [] }).add(javaClass.name)

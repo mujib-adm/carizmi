@@ -2,6 +2,7 @@ package org.sofumar.portal.data.transformer;
 
 import org.sofumar.portal.data.dto.MemberDto;
 import org.sofumar.portal.core.vo.MemberVO;
+import org.sofumar.portal.framework.data.transformer.Transformer;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -9,6 +10,7 @@ public class MemberVOTransformer implements Transformer<MemberDto, MemberVO> {
 
     @Override
     public MemberVO transform(MemberDto dto) {
+        if (dto == null) return null;
         MemberVO memberVO = new MemberVO();
         memberVO.setFirstName(dto.getFirstName());
         memberVO.setLastName(dto.getLastName());
@@ -25,6 +27,7 @@ public class MemberVOTransformer implements Transformer<MemberDto, MemberVO> {
     }
 
     public MemberVO transformForUpdate(MemberDto dto, MemberVO existingMember) {
+        if (dto == null || existingMember == null) return existingMember;
         existingMember.setFirstName(dto.getFirstName());
         existingMember.setLastName(dto.getLastName());
         existingMember.setPhone(dto.getPhone());

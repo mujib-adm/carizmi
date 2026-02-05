@@ -2,6 +2,7 @@ package org.sofumar.portal.data.transformer;
 
 import org.sofumar.portal.data.dto.ExpenseDto;
 import org.sofumar.portal.core.vo.ExpenseVO;
+import org.sofumar.portal.framework.data.transformer.Transformer;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -21,7 +22,7 @@ public class ExpenseVOTransformer implements Transformer<ExpenseDto, ExpenseVO> 
     }
 
     public ExpenseVO transformForUpdate(ExpenseDto dto, ExpenseVO existing) {
-        if (dto == null)
+        if (dto == null || existing == null)
             return existing;
         existing.setDateOfExpense(dto.getDateOfExpense());
         existing.setCategory(dto.getCategory());

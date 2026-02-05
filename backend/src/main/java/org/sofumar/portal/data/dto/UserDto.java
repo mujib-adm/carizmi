@@ -1,4 +1,4 @@
-package org.sofumar.portal.data.dto.request;
+package org.sofumar.portal.data.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -12,7 +12,7 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class UserRequestDto {
+public class UserDto {
 
     @NotBlank
     @Size(min = 1, max = 100)

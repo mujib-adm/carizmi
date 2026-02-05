@@ -3,6 +3,7 @@ package org.sofumar.portal.data.transformer;
 import org.sofumar.portal.data.dto.PaymentDto;
 import org.sofumar.portal.core.vo.MemberVO;
 import org.sofumar.portal.core.vo.PaymentVO;
+import org.sofumar.portal.framework.data.transformer.Transformer;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -10,6 +11,7 @@ public class PaymentVOTransformer implements Transformer<PaymentDto, PaymentVO> 
 
     @Override
     public PaymentVO transform(PaymentDto dto) {
+        if (dto == null) return null;
         PaymentVO vo = new PaymentVO();
         vo.setFeeType(dto.getFeeType());
         vo.setAmount(dto.getAmount());
@@ -27,6 +29,7 @@ public class PaymentVOTransformer implements Transformer<PaymentDto, PaymentVO> 
     }
 
     public PaymentVO transformForUpdate(PaymentDto dto, PaymentVO existing) {
+        if (dto == null || existing == null) return existing;
         existing.setFeeType(dto.getFeeType());
         existing.setAmount(dto.getAmount());
         existing.setDateReceived(dto.getDateReceived());

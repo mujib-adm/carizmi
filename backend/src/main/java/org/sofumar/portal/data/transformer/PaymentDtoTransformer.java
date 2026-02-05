@@ -2,16 +2,15 @@ package org.sofumar.portal.data.transformer;
 
 import org.sofumar.portal.data.dto.PaymentDto;
 import org.sofumar.portal.core.vo.PaymentVO;
+import org.sofumar.portal.framework.data.transformer.Transformer;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class PaymentDtoTransformer implements Transformer<PaymentVO, PaymentDto> {
 
     @Override
     public PaymentDto transform(PaymentVO vo) {
+        if (vo == null) return null;
         return PaymentDto.builder()
                 .paymentID(vo.getPaymentID())
                 .memberID(vo.getMember() != null ? vo.getMember().getMemberID() : null)
@@ -25,7 +24,4 @@ public class PaymentDtoTransformer implements Transformer<PaymentVO, PaymentDto>
                 .build();
     }
 
-    public List<PaymentDto> transformList(List<PaymentVO> list) {
-        return list.stream().map(this::transform).collect(Collectors.toList());
-    }
 }

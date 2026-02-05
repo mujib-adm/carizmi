@@ -2,22 +2,22 @@ package org.sofumar.portal.core.businesslogic.impl
 
 import org.mockito.MockedStatic
 import org.mockito.Mockito
-import org.sofumar.portal.constants.ReferenceCodeConstants
 import org.sofumar.portal.constants.FieldConstants
+import org.sofumar.portal.constants.ReferenceCodeConstants
+import org.sofumar.portal.core.businesslogic.Payment
+import org.sofumar.portal.core.repo.MemberRepository
+import org.sofumar.portal.core.vo.MemberVO
 import org.sofumar.portal.data.dto.MemberDto
+import org.sofumar.portal.data.dto.request.MemberSearchRequestDto
 import org.sofumar.portal.data.dto.response.MemberLookupDto
 import org.sofumar.portal.data.dto.response.MemberSummaryDto
-import org.sofumar.portal.data.dto.request.MemberSearchRequestDto
+import org.sofumar.portal.data.dto.response.PaymentSummary
 import org.sofumar.portal.data.transformer.MemberDtoTransformer
 import org.sofumar.portal.data.transformer.MemberVOTransformer
-import org.sofumar.portal.core.vo.MemberVO
 import org.sofumar.portal.framework.data.response.GlobalResponse
 import org.sofumar.portal.framework.exception.DuplicateRecordException
 import org.sofumar.portal.framework.exception.RecordNotFoundException
 import org.sofumar.portal.framework.util.MySQLConstraintResolver
-import org.sofumar.portal.core.businesslogic.Payment
-import org.sofumar.portal.core.repo.MemberRepository
-import org.sofumar.portal.data.dto.response.PaymentSummary
 import org.sofumar.portal.service.validation.MemberValidator
 import org.sofumar.portal.testsupport.BaseSpecification
 import org.springframework.dao.DataAccessException
@@ -34,6 +34,8 @@ import java.time.LocalDate
 
 class MemberSpec extends BaseSpecification {
 
+    static final BigDecimal QUARTERLY_FEE = 60
+
     MemberRepository memberRepo = Mock()
     Payment payment = Mock()
     MemberVOTransformer voTransformer = Mock()
@@ -44,7 +46,7 @@ class MemberSpec extends BaseSpecification {
     @Subject
     MemberImpl memberService = new MemberImpl(memberRepo, payment, voTransformer, dtoTransformer, validator)
 
-    def setup() {
+    void setup() {
         ReflectionTestUtils.setField(memberService, "constraintResolver", constraintResolver)
     }
 
@@ -333,9 +335,19 @@ class MemberSpec extends BaseSpecification {
     }
 
     @Unroll
-    def "test - getMemberSummary: Should calculate correct totals across time contexts [id: #id, found: #found, join: #join, paidTotal: #paidTotal, paidCurrent: #paidCurrent, paidPast: #paidPast]"() {
-        given: "A mocked date and member data"
-        LocalDate fixedNow = LocalDate.of(2026, 5, 15) // Q2
+    def "test - getMemberSummary: Should calculate correct totals across time contexts [id: #id, found: #found, joinType: #joinType, paidTotal: #paidTotal, paidCurrent: #paidCurrent, paidPast: #paidPast]"() {
+        given: "A mocked date and member data using dynamic current year"
+        int currentYear = LocalDate.now().year
+        LocalDate fixedNow = LocalDate.of(currentYear, 5, 15) // Q2
+        LocalDate joinYearStart = LocalDate.of(currentYear, 1, 1)
+        LocalDate joinYearQ2Start = LocalDate.of(currentYear, 4, 1)
+        LocalDate joinYearNext = LocalDate.of(currentYear + 1, 1, 1)
+
+        LocalDate join = null
+        if (joinType == 'START') join = joinYearStart
+        else if (joinType == 'Q2') join = joinYearQ2Start
+        else if (joinType == 'NEXT') join = joinYearNext
+
         MockedStatic<LocalDate> localDateMock = Mockito.mockStatic(LocalDate, Mockito.CALLS_REAL_METHODS)
         localDateMock.when(LocalDate::now).thenReturn(fixedNow)
 
@@ -349,12 +361,11 @@ class MemberSpec extends BaseSpecification {
         then: "The expected calls are made"
         1 * memberRepo.findById(id) >> (found ? Optional.of(member) : Optional.empty())
         if (found) {
-            int year = LocalDate.now().year
             1 * payment.sumAmountByMemberID(id) >> paidTotal
-            1 * payment.sumAmountByMemberIDAndYearAndQuarter(id, year, 2) >> paidCurrent
+            1 * payment.sumAmountByMemberIDAndYearAndQuarter(id, currentYear, 2) >> paidCurrent
             1 * payment.findMemberPaymentSummaries(id, ReferenceCodeConstants.FEE_TYPE.MEMBERSHIP_FEE) >> (paidPast != null ? [psQ1] : [])
             // Implicit calls - use wildcards to handle varying scenarios strictly
-            _ * psQ1.getYear() >> year
+            _ * psQ1.getYear() >> currentYear
             _ * psQ1.getQuarter() >> 1
             _ * psQ1.getTotalPaid() >> paidPast
         }
@@ -362,13 +373,12 @@ class MemberSpec extends BaseSpecification {
 
         and: "The expected result"
         if (found) {
-            int year = LocalDate.now().year
             response.body.responseData.totalPaid == (paidTotal ?: 0)
-            response.body.responseData.outstanding == Math.max(0, 60 - (paidCurrent ?: 0))
-            if (join == null || join.year > year) {
+            response.body.responseData.outstanding == (BigDecimal) Math.max(0, QUARTERLY_FEE - (paidCurrent ?: 0) as double)
+            if (join == null || join.year > currentYear) {
                 response.body.responseData.overdue == 0
-            } else if (join == LocalDate.of(year, 1, 1)) {
-                response.body.responseData.overdue == Math.max(0, 60 - (paidPast ?: 0))
+            } else if (join == joinYearStart) {
+                response.body.responseData.overdue == (BigDecimal) Math.max(0, QUARTERLY_FEE - (paidPast ?: 0) as double)
             }
         } else {
             response.body.responseData.totalPaid == 0
@@ -379,12 +389,13 @@ class MemberSpec extends BaseSpecification {
         localDateMock.close()
 
         where:
-        id | found | join                                         | paidTotal | paidCurrent | paidPast
-        1  | true  | LocalDate.of(LocalDate.now().year, 1, 1)     | 90.00     | 30.00       | 60.00
-        2  | true  | LocalDate.of(LocalDate.now().year, 4, 1)     | 0         | null        | null
-        3  | true  | null                                         | 100.00    | 20.00       | null
-        4  | false | null                                         | null      | null        | null
-        5  | true  | LocalDate.of(LocalDate.now().year + 1, 1, 1) | 0         | 0           | null
+        id | found | joinType | paidTotal | paidCurrent | paidPast
+        1  | true  | 'START'  | 90.00     | 30.00       | 60.00
+        2  | true  | 'Q2'     | 0         | null        | null
+        3  | true  | 'NULL'   | 100.00    | 20.00       | null
+        4  | false | 'NULL'   | null      | null        | null
+        5  | true  | 'NEXT'   | 0         | 0           | null
+        6  | true  | 'START'  | 50.00     | 10.00       | 40.00
     }
 
     @Unroll

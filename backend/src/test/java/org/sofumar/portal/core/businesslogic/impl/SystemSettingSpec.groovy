@@ -33,7 +33,7 @@ class SystemSettingSpec extends BaseSpecification {
     @Subject
     SystemSettingImpl systemSetting = new SystemSettingImpl(settingsRepo, dtoTransformer, validator)
 
-    def setup() {
+    void setup() {
         ReflectionTestUtils.setField(systemSetting, "constraintResolver", constraintResolver)
     }
 

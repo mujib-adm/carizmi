@@ -14,7 +14,7 @@ import org.sofumar.portal.constants.RoleConstants;
 import org.sofumar.portal.data.dto.response.UserResponseDto;
 import org.sofumar.portal.data.dto.response.UserProfileDto;
 import org.sofumar.portal.data.dto.request.PasswordUpdateRequestDto;
-import org.sofumar.portal.data.dto.request.UserRequestDto;
+import org.sofumar.portal.data.dto.UserDto;
 import org.sofumar.portal.data.transformer.UserResponseDtoTransformer;
 import org.sofumar.portal.data.transformer.UserVOTransformer;
 import org.sofumar.portal.core.vo.UserVO;
@@ -82,7 +82,7 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
 
     @Override
     @Transactional
-    public ResponseEntity<GlobalResponse<Void>> register(UserRequestDto requestDto) {
+    public ResponseEntity<GlobalResponse<Void>> register(UserDto requestDto) {
         UserVO userVO = voTransformer.transform(requestDto);
         userVO.setRole(RoleConstants.ROLE_ANONYMOUS);
         userVO.setActive(true);

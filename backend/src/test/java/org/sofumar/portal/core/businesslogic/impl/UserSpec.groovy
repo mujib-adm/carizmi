@@ -1,18 +1,16 @@
 package org.sofumar.portal.core.businesslogic.impl
 
-import org.sofumar.portal.constants.FieldConstants
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.SignatureAlgorithm
 import io.jsonwebtoken.security.Keys
-import java.time.Instant
-import java.time.temporal.ChronoUnit
+import org.sofumar.portal.constants.FieldConstants
 import org.sofumar.portal.constants.RoleConstants
 import org.sofumar.portal.core.repo.UserRepository
 import org.sofumar.portal.core.vo.UserVO
-import org.sofumar.portal.data.dto.response.UserResponseDto
-import org.sofumar.portal.data.dto.response.UserProfileDto
+import org.sofumar.portal.data.dto.UserDto
 import org.sofumar.portal.data.dto.request.PasswordUpdateRequestDto
-import org.sofumar.portal.data.dto.request.UserRequestDto
+import org.sofumar.portal.data.dto.response.UserProfileDto
+import org.sofumar.portal.data.dto.response.UserResponseDto
 import org.sofumar.portal.data.transformer.UserResponseDtoTransformer
 import org.sofumar.portal.data.transformer.UserVOTransformer
 import org.sofumar.portal.framework.data.response.GlobalResponse
@@ -33,6 +31,9 @@ import org.springframework.test.util.ReflectionTestUtils
 import spock.lang.Subject
 import spock.lang.Unroll
 
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+
 class UserSpec extends BaseSpecification {
 
     UserRepository userRepo = Mock()
@@ -47,7 +48,7 @@ class UserSpec extends BaseSpecification {
     @Subject
     UserImpl userService = new UserImpl(userRepo, encoder, dtoTransformer, voTransformer, validator, blacklistService, refreshTokenService)
 
-    def setup() {
+    void setup() {
         userService.secret = Base64.getEncoder().encodeToString("super-secret-key-that-is-long-enough-32-chars".getBytes())
         userService.expMin = 60
         ReflectionTestUtils.setField(userService, "constraintResolver", constraintResolver)
@@ -57,7 +58,7 @@ class UserSpec extends BaseSpecification {
         given: "A registration request and capture variables"
         String username = "user"
         String password = "p"
-        UserRequestDto request = new UserRequestDto(username: username, password: password)
+        UserDto request = new UserDto(username: username, password: password)
         UserVO vo = new UserVO(username: username, password: password)
         UserVO savedVo = null
 
@@ -79,7 +80,7 @@ class UserSpec extends BaseSpecification {
 
     def "test - register: Duplicate Handling"() {
         given: "A duplicate registration scenario"
-        UserRequestDto request = new UserRequestDto(username: "u")
+        UserDto request = new UserDto(username: "u")
         UserVO vo = new UserVO(username: "u")
 
         when: "The target method executed"
@@ -99,7 +100,7 @@ class UserSpec extends BaseSpecification {
 
     def "test - register: General DB Error"() {
         given: "A DB error scenario during registration"
-        UserRequestDto request = new UserRequestDto(username: "u")
+        UserDto request = new UserDto(username: "u")
         UserVO vo = new UserVO(username: "u")
 
         when: "The target method executed"
@@ -475,17 +476,32 @@ class UserSpec extends BaseSpecification {
     }
 
     def "test - getAllUsers: Should return all users"() {
-        given: "A list request"
+        given: "A list of users"
+        String username1 = "user1"
+        String username2 = "user2"
+        UserVO user1 = new UserVO(username: username1, role: RoleConstants.ROLE_ADMIN)
+        UserVO user2 = new UserVO(username: username2, role: RoleConstants.ROLE_MEMBER)
+        List<UserVO> userList = [user1, user2]
+
+        UserResponseDto dto1 = UserResponseDto.builder().username(username1).role(RoleConstants.ROLE_ADMIN).build()
+        UserResponseDto dto2 = UserResponseDto.builder().username(username2).role(RoleConstants.ROLE_MEMBER).build()
+        List<UserResponseDto> dtoList = [dto1, dto2]
+
+        ResponseEntity<GlobalResponse<List<UserResponseDto>>> response
 
         when: "The target method executed"
-        userService.getAllUsers()
+        response = userService.getAllUsers()
 
         then: "The expected calls are made"
-        1 * userRepo.findAll() >> []
-        1 * dtoTransformer.transformList(_) >> []
+        1 * userRepo.findAll() >> userList
+        1 * dtoTransformer.transformList(userList) >> dtoList
         0 * _
 
         and: "The expected result"
+        response.statusCode == HttpStatus.OK
+        response.body.responseData.size() == 2
+        response.body.responseData[0].username == username1
+        response.body.responseData[1].username == username2
         noExceptionThrown()
     }
 
@@ -495,7 +511,7 @@ class UserSpec extends BaseSpecification {
         JpaSpecification capturedSpec
 
         when: "The target method executed"
-        def result = userService.adminUserExists()
+        boolean result = userService.adminUserExists()
 
         then: "The expected calls are made"
         1 * userRepo.exists(_ as JpaSpecification) >> { JpaSpecification spec -> capturedSpec = spec; exists }
