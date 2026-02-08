@@ -17,7 +17,7 @@ class SystemSettingsValidatorSpec extends BaseSpecification {
         String type = "GENERAL"
         String key = "FEE"
         String value = "100"
-        SystemSettingsVO vo = new SystemSettingsVO(settingType: type, settingKey: key, settingValue: value)
+        SystemSettingsVO vo = new SystemSettingsVO(settingName: type, settingKey: key, settingValue: value)
 
         when: "The target method executed"
         systemSettingsValidator.validate(vo)
@@ -34,7 +34,7 @@ class SystemSettingsValidatorSpec extends BaseSpecification {
     def "test - validate: Handling field validations [field: #field, value: #value]"() {
         given: "A SystemSettingsVO with a specific field variation"
         SystemSettingsVO vo = new SystemSettingsVO(
-                settingType: field == FieldConstants.SETTING_TYPE ? value : "GENERAL",
+                settingName: field == FieldConstants.SETTING_NAME ? value : "GENERAL",
                 settingKey: field == FieldConstants.SETTING_KEY ? value : "FEE",
                 settingValue: field == FieldConstants.SETTING_VALUE ? value : "100"
         )
@@ -56,8 +56,8 @@ class SystemSettingsValidatorSpec extends BaseSpecification {
 
         where:
         field                        | value
-        FieldConstants.SETTING_TYPE  | null
-        FieldConstants.SETTING_TYPE  | ""
+        FieldConstants.SETTING_NAME | null
+        FieldConstants.SETTING_NAME | ""
         FieldConstants.SETTING_KEY   | null
         FieldConstants.SETTING_KEY   | ""
         FieldConstants.SETTING_VALUE | null
@@ -67,7 +67,7 @@ class SystemSettingsValidatorSpec extends BaseSpecification {
     def "test - validateForUpdate: Should validate systemSettingsID and call validate"() {
         given: "A SystemSettingsVO for update"
         Integer settingID = 1
-        SystemSettingsVO vo = new SystemSettingsVO(systemSettingsID: settingID, settingType: "GENERAL", settingKey: "FEE", settingValue: "100")
+        SystemSettingsVO vo = new SystemSettingsVO(systemSettingsID: settingID, settingName: "GENERAL", settingKey: "FEE", settingValue: "100")
 
         when: "The target method executed"
         systemSettingsValidator.validateForUpdate(vo)
@@ -82,7 +82,7 @@ class SystemSettingsValidatorSpec extends BaseSpecification {
 
     def "test - validateForUpdate: Should catch missing systemSettingsID"() {
         given: "A SystemSettingsVO for update without ID"
-        SystemSettingsVO vo = new SystemSettingsVO(settingType: "GENERAL", settingKey: "FEE", settingValue: "100")
+        SystemSettingsVO vo = new SystemSettingsVO(settingName: "GENERAL", settingKey: "FEE", settingValue: "100")
 
         when: "The target method executed"
         systemSettingsValidator.validateForUpdate(vo)

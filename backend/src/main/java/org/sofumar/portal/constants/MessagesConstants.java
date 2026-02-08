@@ -20,6 +20,7 @@ public final class MessagesConstants {
     public static final ErrMessage ALREADY_EXISTS = new ErrMessage("ERR0003", "{0} already exists.");
     public static final ErrMessage INVALID_USERNAME = new ErrMessage("ERR0004", "Invalid Username. Must start with a letter and be 4 characters long minimum, containing only letters, digits, and underscores.");
     public static final ErrMessage INVALID_PASSWORD = new ErrMessage("ERR0005", "Weak password. Must include lowercase, uppercase, and digit/special character.");
-    public static final ErrMessage ERR_PAYMENT_ALREADY_EXISTS = new ErrMessage("ERR0006", "Payment for {0}-Q{1} already exists.");
+    public static final ErrMessage INVALID_ROLE = new ErrMessage("ERR0006", "The assigned role is invalid.");
+    public static final ErrMessage ERR_PAYMENT_ALREADY_EXISTS = new ErrMessage("ERR0007", "Payment for {0}-Q{1} already exists.");
 
 }

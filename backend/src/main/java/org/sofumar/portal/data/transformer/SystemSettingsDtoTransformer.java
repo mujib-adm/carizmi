@@ -13,7 +13,7 @@ public class SystemSettingsDtoTransformer implements Transformer<SystemSettingsV
         if (vo == null) return null;
         SystemSettingsDto dto = new SystemSettingsDto();
         dto.setSystemSettingsID(vo.getSystemSettingsID());
-        dto.setSettingType(vo.getSettingType());
+        dto.setSettingName(vo.getSettingName());
         dto.setSettingKey(vo.getSettingKey());
         dto.setSettingValue(vo.getSettingValue());
         dto.setEffectiveDate(vo.getEffectiveDate());

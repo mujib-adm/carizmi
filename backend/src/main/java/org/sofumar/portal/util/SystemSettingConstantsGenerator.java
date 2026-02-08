@@ -1,25 +1,26 @@
 package org.sofumar.portal.util;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 /**
- * Utility to generate ReferenceCodeConstants.java from reference-data.json.
+ * Utility to generate SystemSettingConstants.java from systemsettings-data.json.
  * Run this main method to regenerate constants when the JSON definition
  * changes.
  */
-public class ReferenceCodeGenerator {
-    private static final Logger logger = LoggerFactory.getLogger(ReferenceCodeGenerator.class);
+public class SystemSettingConstantsGenerator {
+    private static final Logger logger = LoggerFactory.getLogger(SystemSettingConstantsGenerator.class);
 
-    private static final String RESOURCE_PATH = "src/main/resources/reference-data.json";
-    private static final String OUTPUT_PATH = "src/main/java/org/sofumar/portal/constants/ReferenceCodeConstants.java";
+    private static final String RESOURCE_PATH = "src/main/resources/data/systemsettings-data.json";
+    private static final String OUTPUT_PATH = "src/main/java/org/sofumar/portal/constants/SystemSettingConstants.java";
     private static final String PACKAGE_NAME = "org.sofumar.portal.constants";
 
     public static void main(String[] args) {
@@ -33,10 +34,9 @@ public class ReferenceCodeGenerator {
     public static void generate() throws IOException {
         File jsonFile = new File(RESOURCE_PATH);
         if (!jsonFile.exists()) {
-            // Try looking in absolute path if running from IDE context might vary
             jsonFile = new File("backend/" + RESOURCE_PATH);
             if (!jsonFile.exists()) {
-                logger.error("Could not find reference-data.json at " + RESOURCE_PATH + " or backend/" + RESOURCE_PATH);
+                logger.error("Could not find systemsettings-data.json at " + RESOURCE_PATH + " or backend/" + RESOURCE_PATH);
                 return;
             }
         }
@@ -45,31 +45,27 @@ public class ReferenceCodeGenerator {
         JsonNode rootNode = mapper.readTree(jsonFile);
 
         StringBuilder sb = new StringBuilder();
-        sb.append("package " + PACKAGE_NAME + ";\n\n");
+        sb.append("package ").append(PACKAGE_NAME).append(";\n\n");
         sb.append("/**\n");
-        sb.append(" * Auto-generated constants from reference-data.json.\n");
-        sb.append(" * DO NOT MODIFY MANUALLY. Run ReferenceCodeGenerator to regenerate.\n");
+        sb.append(" * Auto-generated constants from systemsettings-data.json.\n");
+        sb.append(" * DO NOT MODIFY MANUALLY. Run SystemSettingConstantsGenerator to regenerate.\n");
         sb.append(" */\n");
-        sb.append("public final class ReferenceCodeConstants {\n\n");
+        sb.append("public final class SystemSettingConstants {\n\n");
 
         for (Map.Entry<String, JsonNode> field : rootNode.properties()) {
-            String referenceName = field.getKey();
+            String settingName = field.getKey();
             JsonNode values = field.getValue();
 
-            // Convert camelCase referenceName to UPPER_UNDERSCORE for class name
-            String className = camelToSnake(referenceName).toUpperCase();
+            String className = camelToSnake(settingName).toUpperCase();
 
             sb.append("    public static final class ").append(className).append(" {\n");
-
-            // Add the Reference Name constant
-            sb.append("        public static final String NAME = \"").append(referenceName).append("\";\n");
+            sb.append("        public static final String TYPE = \"").append(settingName).append("\";\n");
 
             if (values.isArray()) {
                 for (JsonNode item : values) {
-                    if (item.has("constant") && item.has("code")) {
-                        String constantName = item.get("constant").asText();
-                        String codeValue = item.get("code").asText();
-                        sb.append("        public static final String ").append(constantName).append(" = \"").append(codeValue).append("\";\n");
+                    if (item.has("key")) {
+                        String keyValue = item.get("key").asText();
+                        sb.append("        public static final String ").append(keyValue).append(" = \"").append(keyValue).append("\";\n");
                     }
                 }
             }
@@ -78,10 +74,8 @@ public class ReferenceCodeGenerator {
 
         sb.append("}\n");
 
-        // Write to file
         File outputFile = new File(OUTPUT_PATH);
         if (!outputFile.getParentFile().exists()) {
-            // Try assuming we are in root, so prefix with backend/
             outputFile = new File("backend/" + OUTPUT_PATH);
         }
 

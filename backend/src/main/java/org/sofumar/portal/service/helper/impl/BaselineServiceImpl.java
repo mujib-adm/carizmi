@@ -100,7 +100,7 @@ public class BaselineServiceImpl implements BaselineService {
         SystemSettingsVO vo = systemSetting.findBySettingKey(key)
                 .orElse(new SystemSettingsVO());
 
-        vo.setSettingType(BaselineConstants.TYPE_BASELINE);
+        vo.setSettingName(BaselineConstants.NAME_BASELINE);
         vo.setSettingKey(key);
         vo.setSettingValue(amount.toString());
         vo.setActive(true);

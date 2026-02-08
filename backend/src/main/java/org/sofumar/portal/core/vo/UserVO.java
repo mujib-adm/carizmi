@@ -2,6 +2,8 @@ package org.sofumar.portal.core.vo;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -13,6 +15,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.sofumar.portal.constants.Role;
 import org.sofumar.portal.constants.FieldConstants;
 import org.sofumar.portal.constants.TableConstants;
 import org.sofumar.portal.framework.vo.ValueObject;
@@ -57,8 +60,9 @@ public class UserVO extends ValueObject {
     @Column(name = FieldConstants.PASSWORD_UPDATED_AT)
     private LocalDateTime passwordUpdatedAt;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = FieldConstants.ROLE, nullable = false)
-    private String role; // ADMIN, MANAGER, MEMBER, ANONYMOUS
+    private Role role;
 
     @Column(name = FieldConstants.ACTIVE)
     private boolean active = true;

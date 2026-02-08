@@ -68,9 +68,9 @@ export function SystemSettingsModal({ open, onCancel, onSubmit, initial }: Props
     >
       <Form form={form} layout="vertical" className="member-form" requiredMark={false}>
         <AntdFormItem 
-          name="settingType" 
-          label="Type" 
-          placeholder="Type" 
+          name="settingName" 
+          label="Name"
+          placeholder="Name"
           disabled 
         />
         

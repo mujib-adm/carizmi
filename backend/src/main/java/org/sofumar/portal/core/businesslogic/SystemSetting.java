@@ -22,5 +22,5 @@ public interface SystemSetting extends BusinessLogic<SystemSettingsVO> {
 
     Optional<SystemSettingsVO> findBySettingKey(String key);
 
-    Optional<SystemSettingsVO> findByTypeAndKey(String settingType, String key);
+    Optional<SystemSettingsVO> findByNameAndKey(String settingName, String key);
 }

@@ -1,8 +1,8 @@
 export const referenceSearchFiltersConfig = [
     {
         name: "referenceName",
-        label: "Name",
+        label: "Reference Name",
         type: "input", // free text input
-        placeholder: "Reference name"
+        placeholder: "Reference Name"
     }
 ];

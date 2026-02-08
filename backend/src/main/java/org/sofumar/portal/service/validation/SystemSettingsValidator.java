@@ -13,7 +13,7 @@ import static org.sofumar.portal.constants.MessagesConstants.REQUIRED_FIELD;
 public class SystemSettingsValidator {
 
     public void validate(SystemSettingsVO vo) throws ValidationException {
-        validateSettingType(vo);
+        validateSettingName(vo);
         validateSettingKey(vo);
         validateSettingValue(vo);
 
@@ -30,10 +30,10 @@ public class SystemSettingsValidator {
         validate(vo);
     }
 
-    private void validateSettingType(SystemSettingsVO vo) {
-        if (StringUtils.isBlank(vo.getSettingType())) {
-            vo.addFieldMessage(FieldConstants.SETTING_TYPE,
-                    REQUIRED_FIELD.addMessageArgs(LabelUtils.toLabel(FieldConstants.SETTING_TYPE)));
+    private void validateSettingName(SystemSettingsVO vo) {
+        if (StringUtils.isBlank(vo.getSettingName())) {
+            vo.addFieldMessage(FieldConstants.SETTING_NAME,
+                    REQUIRED_FIELD.addMessageArgs(LabelUtils.toLabel(FieldConstants.SETTING_NAME)));
         }
     }
 

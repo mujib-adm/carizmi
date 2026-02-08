@@ -13,7 +13,7 @@ class SystemSettingsVOTransformerSpec extends BaseSpecification {
     def "test - transform: Should transform SystemSettingsDto to SystemSettingsVO"() {
         given: "TestData setup"
         SystemSettingsDto dto = new SystemSettingsDto(
-                settingType: "UI",
+                settingName: "UI",
                 settingKey: "THEME",
                 settingValue: "DARK",
                 effectiveDate: LocalDate.now(),
@@ -28,7 +28,7 @@ class SystemSettingsVOTransformerSpec extends BaseSpecification {
 
         and: "The expected result"
         result != null
-        result.settingType == dto.settingType
+        result.settingName == dto.settingName
         result.settingKey == dto.settingKey
         result.settingValue == dto.settingValue
         result.effectiveDate == dto.effectiveDate
@@ -52,7 +52,7 @@ class SystemSettingsVOTransformerSpec extends BaseSpecification {
         given: "TestData setup"
         SystemSettingsVO existing = new SystemSettingsVO(systemSettingsID: 1, settingValue: "OLD")
         SystemSettingsDto dto = new SystemSettingsDto(
-                settingType: "NEW_TYPE",
+                settingName: "NEW_TYPE",
                 settingKey: "NEW_KEY",
                 settingValue: "NEW_VAL",
                 effectiveDate: LocalDate.of(2025, 12, 31),
@@ -68,7 +68,7 @@ class SystemSettingsVOTransformerSpec extends BaseSpecification {
         and: "The expected result"
         result != null
         result == existing
-        result.settingType == dto.settingType
+        result.settingName == dto.settingName
         result.settingKey == dto.settingKey
         result.settingValue == dto.settingValue
         result.effectiveDate == dto.effectiveDate

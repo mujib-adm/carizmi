@@ -14,7 +14,7 @@ class SystemSettingsDtoTransformerSpec extends BaseSpecification {
         given: "TestData setup"
         SystemSettingsVO vo = new SystemSettingsVO(
                 systemSettingsID: 1,
-                settingType: "CONFIG",
+                settingName: "CONFIG",
                 settingKey: "MAX_LOGIN_ATTEMPTS",
                 settingValue: "5",
                 effectiveDate: LocalDate.of(2025, 1, 1),
@@ -30,7 +30,7 @@ class SystemSettingsDtoTransformerSpec extends BaseSpecification {
         and: "The expected result"
         result != null
         result.systemSettingsID == vo.systemSettingsID
-        result.settingType == vo.settingType
+        result.settingName == vo.settingName
         result.settingKey == vo.settingKey
         result.settingValue == vo.settingValue
         result.effectiveDate == vo.effectiveDate

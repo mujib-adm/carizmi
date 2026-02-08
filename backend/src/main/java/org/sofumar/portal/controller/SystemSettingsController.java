@@ -37,7 +37,7 @@ public class SystemSettingsController {
 
     @PutMapping("/update")
     @Operation(summary = "Update an existing system setting")
-    @PreAuthorize("hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_ADMIN)")
+    @PreAuthorize("hasRole(T(org.sofumar.portal.constants.Role).ADMIN.name())")
     public ResponseEntity<GlobalResponse<Void>> updateSystemSetting(@RequestBody SystemSettingsDto dto) {
         return systemSetting.updateSystemSetting(dto);
     }

@@ -35,21 +35,21 @@ class SystemSettingsSpecificationsSpec extends BaseSpecification {
     }
 
     @Unroll
-    def "test - hasSettingType: Should filter by setting type [settingType: #settingType]"() {
-        given: "A setting type"
-        String type = settingType
+    def "test - hasSettingName: Should filter by setting name [settingName: #settingName]"() {
+        given: "A setting name"
+        String name = settingName
 
         when: "The specification is created and inspected"
-        JpaSpecification<SystemSettingsVO> spec = SystemSettingsSpecifications.hasSettingType(type)
+        JpaSpecification<SystemSettingsVO> spec = SystemSettingsSpecifications.hasSettingName(name)
         Map<String, List> inspection = inspectSpecification(spec)
 
         then: "Strict interaction check"
         0 * _
 
         and: "The expected filters and values are captured"
-        if (type) {
-            inspection.filters.contains(FieldConstants.SETTING_TYPE)
-            inspection.values.contains("%" + type.toLowerCase() + "%")
+        if (name) {
+            inspection.filters.contains(FieldConstants.SETTING_NAME)
+            inspection.values.contains("%" + name.toLowerCase() + "%")
         } else {
             inspection.filters.isEmpty()
             inspection.values.isEmpty()
@@ -57,7 +57,7 @@ class SystemSettingsSpecificationsSpec extends BaseSpecification {
         noExceptionThrown()
 
         where:
-        settingType << ["FEE", null]
+        settingName << ["FEE", null]
     }
 
     @Unroll
@@ -153,7 +153,7 @@ class SystemSettingsSpecificationsSpec extends BaseSpecification {
         and: "The expected filters and values are captured"
         if (testQuery && !testQuery.trim().isEmpty()) {
             String pattern = "%" + testQuery.trim().toLowerCase() + "%"
-            inspection.filters.containsAll([FieldConstants.SETTING_TYPE, FieldConstants.SETTING_KEY, FieldConstants.SETTING_VALUE])
+            inspection.filters.containsAll([FieldConstants.SETTING_NAME, FieldConstants.SETTING_KEY, FieldConstants.SETTING_VALUE])
             inspection.values.containsAll([pattern, pattern, pattern])
         } else {
             inspection.filters.isEmpty()
@@ -192,21 +192,21 @@ class SystemSettingsSpecificationsSpec extends BaseSpecification {
     }
 
     @Unroll
-    def "test - withSettingType: Should filter strictly by setting type [settingType: #settingType]"() {
-        given: "A setting type"
-        String type = settingType
+    def "test - withSettingName: Should filter strictly by setting name [settingName: #settingName]"() {
+        given: "A setting name"
+        String name = settingName
 
         when: "The specification is created and inspected"
-        JpaSpecification<SystemSettingsVO> spec = SystemSettingsSpecifications.withSettingType(type)
+        JpaSpecification<SystemSettingsVO> spec = SystemSettingsSpecifications.withSettingName(name)
         Map<String, List> inspection = inspectSpecification(spec)
 
         then: "Strict interaction check"
         0 * _
 
         and: "The expected filters and values are captured"
-        if (type) {
-            inspection.filters.contains(FieldConstants.SETTING_TYPE)
-            inspection.values.contains(type.toLowerCase())
+        if (name) {
+            inspection.filters.contains(FieldConstants.SETTING_NAME)
+            inspection.values.contains(name.toLowerCase())
         } else {
             inspection.filters.isEmpty()
             inspection.values.isEmpty()
@@ -214,6 +214,6 @@ class SystemSettingsSpecificationsSpec extends BaseSpecification {
         noExceptionThrown()
 
         where:
-        settingType << ["TYPE", null]
+        settingName << ["NAME", null]
     }
 }

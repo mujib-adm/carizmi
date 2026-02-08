@@ -4,7 +4,8 @@ import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.SignatureAlgorithm
 import io.jsonwebtoken.security.Keys
 import org.sofumar.portal.constants.FieldConstants
-import org.sofumar.portal.constants.RoleConstants
+import org.sofumar.portal.constants.MessagesConstants
+import org.sofumar.portal.constants.Role
 import org.sofumar.portal.core.repo.UserRepository
 import org.sofumar.portal.core.vo.UserVO
 import org.sofumar.portal.data.dto.UserDto
@@ -73,7 +74,7 @@ class UserSpec extends BaseSpecification {
         0 * _
 
         and: "The expected result"
-        savedVo.role == RoleConstants.ROLE_ANONYMOUS
+        savedVo.role == Role.ANONYMOUS
         savedVo.active
         noExceptionThrown()
     }
@@ -138,7 +139,7 @@ class UserSpec extends BaseSpecification {
         }
         if (exists) {
             1 * encoder.matches("pass", "enc") >> passes
-            if (passes && active && role != RoleConstants.ROLE_ANONYMOUS) {
+            if (passes && active && role != Role.ANONYMOUS) {
                 1 * refreshTokenService.createRefreshToken("user") >> "refresh"
             }
         }
@@ -153,12 +154,12 @@ class UserSpec extends BaseSpecification {
         inspection.values.containsAll([username])
 
         where:
-        exists | passes | active | role                         | expectedStatus
-        false  | _      | _      | _                            | HttpStatus.UNAUTHORIZED
-        true   | false  | _      | _                            | HttpStatus.UNAUTHORIZED
-        true   | true   | false  | _                            | HttpStatus.UNAUTHORIZED
-        true   | true   | true   | RoleConstants.ROLE_ANONYMOUS | HttpStatus.OK
-        true   | true   | true   | RoleConstants.ROLE_ADMIN     | HttpStatus.OK
+        exists | passes | active | role           | expectedStatus
+        false  | _      | _      | Role.ANONYMOUS | HttpStatus.UNAUTHORIZED
+        true   | false  | _      | Role.ANONYMOUS | HttpStatus.UNAUTHORIZED
+        true   | true   | false  | Role.ANONYMOUS | HttpStatus.UNAUTHORIZED
+        true   | true   | true   | Role.ANONYMOUS | HttpStatus.OK
+        true   | true   | true   | Role.ADMIN     | HttpStatus.OK
     }
 
     @Unroll
@@ -227,7 +228,7 @@ class UserSpec extends BaseSpecification {
         1 * refreshTokenService.rotateRefreshToken(oldToken) >> { if (isValid) return newToken; else throw new IllegalArgumentException() }
         if (isValid) {
             1 * refreshTokenService.validateRefreshToken(newToken) >> Optional.of(username)
-            1 * userRepo.findOne(_) >> Optional.of(new UserVO(username: username, active: userActive, role: RoleConstants.ROLE_ADMIN, firstName: "F"))
+            1 * userRepo.findOne(_) >> Optional.of(new UserVO(username: username, active: userActive, role: Role.ADMIN, firstName: "F"))
             if (!userActive) {
                 1 * refreshTokenService.deleteRefreshToken(newToken)
             }
@@ -265,7 +266,7 @@ class UserSpec extends BaseSpecification {
     def "test - getProfile: Success"() {
         given: "A valid user"
         String username = "user"
-        String role = RoleConstants.ROLE_ADMIN
+        Role role = Role.ADMIN
         String firstName = "First"
         String lastName = "Last"
         String email = "user@example.com"
@@ -282,7 +283,7 @@ class UserSpec extends BaseSpecification {
         and: "The expected result"
         response.statusCode == HttpStatus.OK
         response.body.responseData.username == username
-        response.body.responseData.role == role
+        response.body.responseData.role == role.name()
         response.body.responseData.firstName == firstName
         noExceptionThrown()
     }
@@ -354,57 +355,122 @@ class UserSpec extends BaseSpecification {
     }
 
     @Unroll
-    def "test - admin guards: Protecting last admin [op: #op, onlyOne: #onlyOne, expectedStatus: #expectedStatus]"() {
-        given: "An admin user and operational setup"
-        Integer adminId = 1
-        String targetRole = RoleConstants.ROLE_MEMBER
-        UserVO admin = new UserVO(userID: adminId, role: RoleConstants.ROLE_ADMIN, active: true)
+    def "test - updateUserRole: Invalid role validation New Role: #newRole"() {
+        given: "A user and an invalid role"
+        Integer userId = 1
+        UserVO user = new UserVO(userID: userId, role: Role.MEMBER)
         ResponseEntity<GlobalResponse<Void>> response
-        JpaSpecification capturedSpec
 
         when: "The target method executed"
-        response = (op == "role") ?
-                userService.updateUserRole(adminId, targetRole) :
-                userService.toggleUserStatus(adminId, false)
+        response = userService.updateUserRole(userId, newRole)
 
         then: "The expected calls are made"
-        1 * userRepo.findById(adminId) >> Optional.of(admin)
-        1 * userRepo.count(_ as JpaSpecification) >> { JpaSpecification spec ->
+        1 * userRepo.findById(userId) >> Optional.of(user)
+        1 * validator.isInvalidRole(newRole) >> true
+        0 * _
+
+        and: "The expected result"
+        response.statusCode == HttpStatus.BAD_REQUEST
+        response.body.globalMessages[0].message.contains(MessagesConstants.INVALID_ROLE.getMessageString())
+        noExceptionThrown()
+
+        where:
+        newRole << ["", "   ", "INVALID_ROLE", null]
+    }
+
+    @Unroll
+    def "test - updateUserRole: Protecting last active admin [role: #currentRole -> #targetRole, active: #active, onlyOne: #onlyOne, expectedStatus: #expectedStatus]"() {
+        given: "A user setup"
+        Integer userId = 1
+        UserVO user = new UserVO(userID: userId, role: currentRole, active: active)
+        ResponseEntity<GlobalResponse<Void>> response
+        JpaSpecification capturedSpec
+        int countCalls = (currentRole == Role.ADMIN && active && targetRole != Role.ADMIN.name()) ? 1 : 0
+        int saveCalls = (expectedStatus == HttpStatus.OK) ? 1 : 0
+
+        when: "The target method executed"
+        response = userService.updateUserRole(userId, targetRole)
+
+        then: "The expected calls are made"
+        1 * userRepo.findById(userId) >> Optional.of(user)
+        1 * validator.isInvalidRole(targetRole) >> false
+        countCalls * userRepo.count(_ as JpaSpecification) >> { JpaSpecification spec ->
             capturedSpec = spec
             return (onlyOne ? 1 : 2)
         }
-        if (!onlyOne) {
-            1 * userRepo.save(_) >> admin
-        }
+        saveCalls * userRepo.save(user) >> user
         0 * _
 
         and: "The expected result"
         response.statusCode == expectedStatus
+        if (expectedStatus == HttpStatus.BAD_REQUEST) {
+            assert response.body.globalMessages.any { it.message.contains("Cannot update role for the last active") }
+        }
+        if (countCalls > 0) {
+            capturedSpec != null
+            Map<String, List> inspection = inspectSpecification(capturedSpec)
+            inspection.filters.containsAll([FieldConstants.ROLE, FieldConstants.ACTIVE])
+            inspection.values.containsAll([Role.ADMIN, true])
+        }
         noExceptionThrown()
-        capturedSpec != null
-        Map<String, List> inspection = inspectSpecification(capturedSpec)
-        inspection.filters.containsAll([FieldConstants.ROLE, FieldConstants.ACTIVE])
-        inspection.values.containsAll([RoleConstants.ROLE_ADMIN, true])
 
         where:
-        op       | onlyOne | expectedStatus
-        "role"   | true    | HttpStatus.BAD_REQUEST
-        "role"   | false   | HttpStatus.OK
-        "status" | true    | HttpStatus.BAD_REQUEST
-        "status" | false   | HttpStatus.OK
+        currentRole | active | onlyOne | targetRole         | expectedStatus
+        Role.ADMIN  | true   | true    | Role.MEMBER.name() | HttpStatus.BAD_REQUEST   // Blocked: Last active admin
+        Role.ADMIN  | true   | false   | Role.MEMBER.name() | HttpStatus.OK            // Allowed: Not the last one
+        Role.ADMIN  | false  | true    | Role.MEMBER.name() | HttpStatus.OK            // Allowed: User is not active anyway
+        Role.ADMIN  | true   | true    | Role.ADMIN.name()  | HttpStatus.OK            // Allowed: Role didn't actually change
+        Role.MEMBER | true   | true    | Role.ADMIN.name()  | HttpStatus.OK            // Allowed: Upgrading to admin
+    }
+
+    @Unroll
+    def "test - toggleUserStatus: Protecting last active admin [role: #role, active: #active -> #targetActive, onlyOne: #onlyOne, expectedStatus: #expectedStatus]"() {
+        given: "A user setup"
+        Integer userId = 1
+        UserVO user = new UserVO(userID: userId, role: role, active: active)
+        ResponseEntity<GlobalResponse<Void>> response
+        int countCalls = (role == Role.ADMIN && !targetActive) ? 1 : 0
+        int saveCalls = (expectedStatus == HttpStatus.OK) ? 1 : 0
+
+        when: "The target method executed"
+        response = userService.toggleUserStatus(userId, targetActive)
+
+        then: "The expected calls are made"
+        1 * userRepo.findById(userId) >> Optional.of(user)
+
+        countCalls * userRepo.count(_ as JpaSpecification) >> { onlyOne ? 1 : 2 }
+
+        saveCalls * userRepo.save(user) >> user
+        0 * _
+
+        and: "The expected result"
+        response.statusCode == expectedStatus
+        if (expectedStatus == HttpStatus.BAD_REQUEST) {
+            assert response.body.globalMessages.any { it.message.contains("Cannot deactivate the last active ADMIN") }
+        }
+        noExceptionThrown()
+
+        where:
+        role        | active | targetActive | onlyOne | expectedStatus
+        Role.ADMIN  | true   | false        | true    | HttpStatus.BAD_REQUEST   // Blocked: Last active admin
+        Role.ADMIN  | true   | false        | false   | HttpStatus.OK            // Allowed: Not the last one
+        Role.ADMIN  | false  | true         | true    | HttpStatus.OK            // Allowed: Activating an admin
+        Role.MEMBER | true   | false        | true    | HttpStatus.OK            // Allowed: Not an admin
     }
 
     def "test - updateUserRole: DB Error"() {
         given: "A DB error scenario"
         Integer id = 1
-        UserVO user = new UserVO(userID: id, role: RoleConstants.ROLE_ADMIN, active: true)
+        String newRole = Role.MEMBER.name()
+        UserVO user = new UserVO(userID: id, role: Role.ADMIN, active: true)
         JpaSpecification capturedSpec
 
         when: "The target method executed"
-        userService.updateUserRole(id, RoleConstants.ROLE_MEMBER)
+        userService.updateUserRole(id, newRole)
 
         then: "The expected calls are made"
         1 * userRepo.findById(id) >> Optional.of(user)
+        1 * validator.isInvalidRole(newRole) >> false
         1 * userRepo.count(_ as JpaSpecification) >> { JpaSpecification spec -> capturedSpec = spec; 2 }
         1 * userRepo.save(_) >> { throw new DataAccessException("error", new RuntimeException("root")) {} }
         0 * _
@@ -415,13 +481,13 @@ class UserSpec extends BaseSpecification {
         capturedSpec != null
         Map<String, List> inspection = inspectSpecification(capturedSpec)
         inspection.filters.containsAll([FieldConstants.ROLE, FieldConstants.ACTIVE])
-        inspection.values.containsAll([RoleConstants.ROLE_ADMIN, true])
+        inspection.values.containsAll([Role.ADMIN, true])
     }
 
     def "test - toggleUserStatus: DB Error"() {
         given: "A DB error scenario"
         Integer id = 1
-        UserVO user = new UserVO(userID: id, role: RoleConstants.ROLE_ADMIN, active: true)
+        UserVO user = new UserVO(userID: id, role: Role.ADMIN, active: true)
         JpaSpecification capturedSpec
 
         when: "The target method executed"
@@ -479,12 +545,12 @@ class UserSpec extends BaseSpecification {
         given: "A list of users"
         String username1 = "user1"
         String username2 = "user2"
-        UserVO user1 = new UserVO(username: username1, role: RoleConstants.ROLE_ADMIN)
-        UserVO user2 = new UserVO(username: username2, role: RoleConstants.ROLE_MEMBER)
+        UserVO user1 = new UserVO(username: username1, role: Role.ADMIN)
+        UserVO user2 = new UserVO(username: username2, role: Role.MEMBER)
         List<UserVO> userList = [user1, user2]
 
-        UserResponseDto dto1 = UserResponseDto.builder().username(username1).role(RoleConstants.ROLE_ADMIN).build()
-        UserResponseDto dto2 = UserResponseDto.builder().username(username2).role(RoleConstants.ROLE_MEMBER).build()
+        UserResponseDto dto1 = UserResponseDto.builder().username(username1).role(Role.ADMIN.name()).build()
+        UserResponseDto dto2 = UserResponseDto.builder().username(username2).role(Role.MEMBER.name()).build()
         List<UserResponseDto> dtoList = [dto1, dto2]
 
         ResponseEntity<GlobalResponse<List<UserResponseDto>>> response
@@ -522,7 +588,7 @@ class UserSpec extends BaseSpecification {
         capturedSpec != null
         Map<String, List> inspection = inspectSpecification(capturedSpec)
         inspection.filters.containsAll([FieldConstants.ROLE])
-        inspection.values.containsAll([RoleConstants.ROLE_ADMIN])
+        inspection.values.containsAll([Role.ADMIN])
 
         where:
         exists << [true, false]

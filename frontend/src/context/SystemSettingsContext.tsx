@@ -6,8 +6,8 @@ import { useNotification } from "./NotificationContext";
 
 type SystemSettingsContextType = {
     settings: SystemSetting[];
-    getSettingValue: (type: string, key: string) => string | undefined;
-    getNumericSetting: (type: string, key: string) => number;
+    getSettingValue: (name: string, key: string) => string | undefined;
+    getNumericSetting: (name: string, key: string) => number;
     isLoading: boolean;
     refreshSettings: () => Promise<void>;
 };
@@ -52,13 +52,13 @@ export function SystemSettingsProvider({ children }: { children: React.ReactNode
         }
     }, [token]);
 
-    const getSettingValue = (type: string, key: string) => {
-        const setting = settings.find(s => s.settingType === type && s.settingKey === key);
+    const getSettingValue = (name: string, key: string) => {
+        const setting = settings.find(s => s.settingName === name && s.settingKey === key);
         return setting?.settingValue;
     };
 
-    const getNumericSetting = (type: string, key: string) => {
-        const val = getSettingValue(type, key);
+    const getNumericSetting = (name: string, key: string) => {
+        const val = getSettingValue(name, key);
         if (!val) return 0;
         const num = parseFloat(val);
         return isNaN(num) ? 0 : num;

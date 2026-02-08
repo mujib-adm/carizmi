@@ -1,14 +1,13 @@
 package org.sofumar.portal.service.validation;
 
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.sofumar.portal.constants.FieldConstants;
-import org.sofumar.portal.constants.ReferenceCodeConstants;
+import org.sofumar.portal.constants.ReferenceConstants;
 import org.sofumar.portal.core.vo.ExpenseVO;
 import org.sofumar.portal.framework.exception.ValidationException;
 import org.sofumar.portal.framework.util.LabelUtils;
 import org.springframework.stereotype.Service;
-
-import lombok.RequiredArgsConstructor;
 
 import static org.sofumar.portal.constants.MessagesConstants.REQUIRED_FIELD;
 
@@ -46,7 +45,7 @@ public class ExpenseValidator {
         if (StringUtils.isBlank(vo.getCategory())) {
             vo.addFieldMessage(FieldConstants.CATEGORY, REQUIRED_FIELD.addMessageArgs(LabelUtils.toLabel(FieldConstants.CATEGORY)));
         } else {
-            referenceValidator.validate(vo, FieldConstants.CATEGORY, ReferenceCodeConstants.EXPENSE_CATEGORY.NAME, vo.getCategory());
+            referenceValidator.validate(vo, FieldConstants.CATEGORY, ReferenceConstants.EXPENSE_CATEGORY.NAME, vo.getCategory());
         }
     }
 

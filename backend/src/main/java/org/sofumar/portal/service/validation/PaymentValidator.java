@@ -3,14 +3,13 @@ package org.sofumar.portal.service.validation;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.sofumar.portal.constants.FieldConstants;
+import org.sofumar.portal.constants.ReferenceConstants;
 import org.sofumar.portal.core.vo.PaymentVO;
 import org.sofumar.portal.framework.exception.ValidationException;
 import org.sofumar.portal.framework.util.LabelUtils;
 import org.springframework.stereotype.Service;
 
 import static org.sofumar.portal.constants.MessagesConstants.REQUIRED_FIELD;
-
-import org.sofumar.portal.constants.ReferenceCodeConstants;
 
 @Service
 @RequiredArgsConstructor
@@ -48,7 +47,7 @@ public class PaymentValidator {
         if (StringUtils.isBlank(vo.getFeeType())) {
             vo.addFieldMessage(FieldConstants.FEE_TYPE, REQUIRED_FIELD.addMessageArgs(LabelUtils.toLabel(FieldConstants.FEE_TYPE)));
         } else {
-            referenceValidator.validate(vo, FieldConstants.FEE_TYPE, ReferenceCodeConstants.FEE_TYPE.NAME, vo.getFeeType());
+            referenceValidator.validate(vo, FieldConstants.FEE_TYPE, ReferenceConstants.FEE_TYPE.NAME, vo.getFeeType());
         }
     }
 
@@ -69,13 +68,13 @@ public class PaymentValidator {
             vo.addFieldMessage(FieldConstants.METHOD_OF_PAYMENT, REQUIRED_FIELD.addMessageArgs(LabelUtils.toLabel(FieldConstants.METHOD_OF_PAYMENT)));
         } else {
             referenceValidator.validate(vo, FieldConstants.METHOD_OF_PAYMENT,
-                    ReferenceCodeConstants.PAYMENT_METHOD.NAME,
+                    ReferenceConstants.PAYMENT_METHOD.NAME,
                     vo.getMethodOfPayment());
         }
     }
 
     private void validatePeriodLogic(PaymentVO vo) {
-        if (ReferenceCodeConstants.FEE_TYPE.MEMBERSHIP_FEE.equals(vo.getFeeType())) {
+        if (ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE.equals(vo.getFeeType())) {
             if (vo.getYear() == null) {
                 vo.addFieldMessage(FieldConstants.YEAR, REQUIRED_FIELD.addMessageArgs(LabelUtils.toLabel(FieldConstants.YEAR)));
             }

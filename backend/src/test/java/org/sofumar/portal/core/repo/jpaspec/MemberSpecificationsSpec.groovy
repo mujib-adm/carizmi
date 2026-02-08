@@ -1,7 +1,7 @@
 package org.sofumar.portal.core.repo.jpaspec
 
 import org.sofumar.portal.constants.FieldConstants
-import org.sofumar.portal.constants.ReferenceCodeConstants
+import org.sofumar.portal.constants.ReferenceConstants
 import org.sofumar.portal.core.vo.MemberVO
 import org.sofumar.portal.testsupport.BaseSpecification
 import org.springframework.data.jpa.domain.Specification as JpaSpecification
@@ -34,7 +34,7 @@ class MemberSpecificationsSpec extends BaseSpecification {
         noExceptionThrown()
 
         where:
-        status << [ReferenceCodeConstants.MEMBER_STATUS.ACTIVE, null]
+        status << [ReferenceConstants.MEMBER_STATUS.ACTIVE, null]
     }
 
     @Unroll
@@ -300,7 +300,7 @@ class MemberSpecificationsSpec extends BaseSpecification {
         and: "The expected filters and values are captured"
         if (testQuery && !testQuery.trim().isEmpty()) {
             inspection.filters.contains(FieldConstants.STATUS)
-            inspection.values.contains(ReferenceCodeConstants.MEMBER_STATUS.ACTIVE)
+            inspection.values.contains(ReferenceConstants.MEMBER_STATUS.ACTIVE)
             inspection.filters.containsAll(expectedFilters)
             inspection.values.containsAll(expectedValues)
         } else {

@@ -2,10 +2,10 @@ package org.sofumar.portal.core.repo.jpaspec;
 
 import jakarta.persistence.criteria.Predicate;
 import org.sofumar.portal.constants.FieldConstants;
-import org.sofumar.portal.constants.ReferenceCodeConstants;
+import org.sofumar.portal.constants.ReferenceConstants;
 import org.sofumar.portal.core.vo.MemberVO;
-import org.springframework.lang.NonNull;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.lang.NonNull;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -86,7 +86,7 @@ public class MemberSpecifications {
 
             String term = query.trim().toLowerCase();
             // 1. Define the Global Filter (Active Only)
-            Predicate isActive = cb.equal(root.get(FieldConstants.STATUS), ReferenceCodeConstants.MEMBER_STATUS.ACTIVE);
+            Predicate isActive = cb.equal(root.get(FieldConstants.STATUS), ReferenceConstants.MEMBER_STATUS.ACTIVE);
             List<Predicate> searchPredicates = new ArrayList<>();
             // 2. Numeric Optimization: Exact ID match if numeric
             if (term.matches("\\d+")) {

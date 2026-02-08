@@ -7,7 +7,7 @@ import SearchFilterBar from '../../component/SearchFilterBar.jsx';
 import Sidebar from "../../component/Sidebar";
 import "../../component/Sidebar.css";
 import { SystemSettingsModal } from '../../modals/SystemSettingsModal.js';
-import { FEE_TYPE } from '../../constants/referenceConstants';
+import { ReferenceCodeConstants } from "../../constants/ReferenceCodeConstants";
 import { systemSettingsSearchFiltersConfig } from '../../constants/systemSettingsSearchFiltersConfig';
 import { SystemSetting, SystemSettingSearchParams } from '../../constants/types';
 import { useReference } from "../../context/ReferenceContext";
@@ -64,23 +64,14 @@ export default function SystemSettingsPage() {
     const { toDisplay } = useReference();
 
     const columns = [
-        { title: 'ID', dataIndex: 'systemSettingsID', key: 'systemSettingsID', width: 80 },
-        { 
-            title: 'Type', 
-            dataIndex: 'settingType', 
-            key: 'settingType', 
-            sorter: true,
+        { title: 'Setting Name', dataIndex: 'settingName', key: 'settingName', sorter: true,
             render: (text: string) => formatCode(text) 
         },
-        { 
-            title: 'Key', 
-            dataIndex: 'settingKey', 
-            key: 'settingKey', 
-            sorter: true,
+        { title: 'Key', dataIndex: 'settingKey', key: 'settingKey', sorter: true,
             render: (text: string, record: SystemSetting) => {
                 // If it's a FEE setting, try to use the feeType reference display
-                if (record.settingType === 'FEE') {
-                    const display = toDisplay(FEE_TYPE, text);
+                if (record.settingName === 'FEE') {
+                    const display = toDisplay(ReferenceCodeConstants.FEE_TYPE.NAME, text);
                     // toDisplay returns code if not found, check if it's different or just format
                     return display !== text ? display : formatCode(text);
                 }

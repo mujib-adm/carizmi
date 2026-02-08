@@ -90,31 +90,5 @@
             "constant": "OTHER",
             "active": true
         }
-    ],
-    "role": [
-        {
-            "code": "01",
-            "display": "ADMIN",
-            "constant": "ADMIN",
-            "active": true
-        },
-        {
-            "code": "02",
-            "display": "MANAGER",
-            "constant": "MANAGER",
-            "active": true
-        },
-        {
-            "code": "03",
-            "display": "MEMBER",
-            "constant": "MEMBER",
-            "active": true
-        },
-        {
-            "code": "04",
-            "display": "ANONYMOUS",
-            "constant": "ANONYMOUS",
-            "active": true
-        }
     ]
 }

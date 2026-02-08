@@ -2,7 +2,7 @@ package org.sofumar.portal.dbsync;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.sofumar.portal.constants.RoleConstants;
+import org.sofumar.portal.constants.Role;
 import org.sofumar.portal.core.vo.UserVO;
 import org.sofumar.portal.core.businesslogic.User;
 import org.springframework.boot.CommandLineRunner;
@@ -47,7 +47,7 @@ public class AdminUserLoader implements CommandLineRunner {
             }
 
             admin.setPassword(passwordEncoder.encode(passwordToUse));
-            admin.setRole(RoleConstants.ROLE_ADMIN);
+            admin.setRole(Role.ADMIN);
             admin.setActive(true);
             admin.setPasswordUpdatedAt(LocalDateTime.now());
             

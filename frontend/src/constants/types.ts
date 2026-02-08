@@ -1,11 +1,4 @@
 // enums
-export enum Role {
-  ROLE_ADMIN = "ADMIN",
-  ROLE_MANAGER = "MANAGER",
-  ROLE_MEMBER = "MEMBER",
-  ROLE_ANONYMOUS = "ANONYMOUS"
-}
-
 export enum MessageType {
   ERROR = "ERROR",
   WARNING = "WARNING",
@@ -15,7 +8,7 @@ export enum MessageType {
   CONFIRMATION = "CONFIRMATION"
 }
 
-export interface PaginationParams {
+export interface Pagination {
   page?: number;       // 0-based page index
   size?: number;       // page size
   sortField?: string;  // optional sort field
@@ -108,7 +101,7 @@ export type Member = {
 };
 export type MemberRequestDto = Omit<Member, "memberID"> & { memberID?: number };
 
-export interface MemberSearchParams extends PaginationParams {
+export interface MemberSearchParams extends Pagination {
   firstName?: string;
   lastName?: string;
   phone?: string;
@@ -143,7 +136,7 @@ export type Payment = {
 
 export type PaymentRequestDto = Omit<Payment, "paymentID"> & { paymentID?: number };
 
-export interface PaymentSearchParams extends PaginationParams {
+export interface PaymentSearchParams extends Pagination {
   memberID?: number;
   feeType?: string;
   year?: number;
@@ -162,7 +155,7 @@ export type Expense = {
   amount: number;
 };
 
-export interface ExpenseSearchParams extends PaginationParams {
+export interface ExpenseSearchParams extends Pagination {
   category?: string;
   dateFrom?: string;
   dateTo?: string;
@@ -171,13 +164,13 @@ export interface ExpenseSearchParams extends PaginationParams {
 // System Setting types
 export type SystemSetting = {
   systemSettingsID: number;
-  settingType: string;
+  settingName: string;
   settingKey: string;
   settingValue: string;
 };
 
-export interface SystemSettingSearchParams extends PaginationParams {
-  settingType?: string;
+export interface SystemSettingSearchParams extends Pagination {
+  settingName?: string;
 }
 
 // Reference types
@@ -191,7 +184,7 @@ export type Reference = {
 
 export type ReferenceRequestDto = Omit<Reference, "referenceID"> & { referenceID?: number };
 
-export interface ReferenceSearchParams extends PaginationParams {
+export interface ReferenceSearchParams extends Pagination {
   referenceName?: string;
 }
 

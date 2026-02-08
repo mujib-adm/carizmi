@@ -21,4 +21,19 @@ export const ReferenceCodeConstants = {
         CHECK: "03",
         DIRECT_DEPOSIT: "04",
     },
+    EXPENSE_CATEGORY: {
+        NAME: "expenseCategory",
+        COMMUNITY_PICNIC: "01",
+        OFFICE_SUPPLIES: "02",
+        TRANSPORTATION: "03",
+        EVENT: "04",
+        OTHER: "05",
+    }
 };
+
+export const STARTUP_REFERENCES = [
+    ReferenceCodeConstants.MEMBER_STATUS.NAME,
+    ReferenceCodeConstants.FEE_TYPE.NAME,
+    ReferenceCodeConstants.PAYMENT_METHOD.NAME,
+    ReferenceCodeConstants.EXPENSE_CATEGORY.NAME,
+];

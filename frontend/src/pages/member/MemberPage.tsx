@@ -9,7 +9,7 @@ import { MessageBanner } from "../../component/MessageBanner";
 import SearchFilterBar from "../../component/SearchFilterBar";
 import Sidebar from "../../component/Sidebar";
 import { memberSearchFiltersConfig } from "../../constants/memberSearchFiltersConfig";
-import { MEMBER_STATUS } from "../../constants/referenceConstants";
+import { ReferenceCodeConstants } from "../../constants/ReferenceCodeConstants";
 import { Member, MemberRequestDto, MemberSearchParams, MessageType } from "../../constants/types";
 import { useNotification } from "../../context/NotificationContext";
 import { useReference } from "../../context/ReferenceContext";
@@ -37,7 +37,7 @@ export default function MemberPage() {
 
     const { getReference, toDisplay } = useReference();
     const statusOptions = useMemo(
-        () => getReference(MEMBER_STATUS).map(r => ({ value: r.code, label: r.display })),
+        () => getReference(ReferenceCodeConstants.MEMBER_STATUS.NAME).map(r => ({ value: r.code, label: r.display })),
         [getReference]
     );
 
@@ -116,7 +116,7 @@ export default function MemberPage() {
         { title: "Last Name", dataIndex: "lastName", key: "lastName", sorter: true },
         { title: "Phone", dataIndex: "phone", key: "phone", width: 120 },
         { title: "Email", dataIndex: "email", key: "email", width: 150 },
-        { title: "Status", dataIndex: "status", key: "status", width: 120, render: (code: string) => toDisplay(MEMBER_STATUS, code) },
+        { title: "Status", dataIndex: "status", key: "status", width: 120, render: (code: string) => toDisplay(ReferenceCodeConstants.MEMBER_STATUS.NAME, code) },
         ...(canWrite ? [{
             title: 'Action',
             key: 'action',

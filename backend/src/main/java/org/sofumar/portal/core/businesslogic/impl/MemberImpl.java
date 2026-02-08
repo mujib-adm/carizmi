@@ -4,24 +4,24 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sofumar.portal.constants.FieldConstants;
-import org.sofumar.portal.constants.ReferenceCodeConstants;
+import org.sofumar.portal.constants.ReferenceConstants;
+import org.sofumar.portal.core.businesslogic.Member;
+import org.sofumar.portal.core.businesslogic.Payment;
+import org.sofumar.portal.core.repo.MemberRepository;
+import org.sofumar.portal.core.repo.jpaspec.MemberSpecifications;
+import org.sofumar.portal.core.vo.MemberVO;
 import org.sofumar.portal.data.dto.MemberDto;
+import org.sofumar.portal.data.dto.request.MemberSearchRequestDto;
 import org.sofumar.portal.data.dto.response.MemberLookupDto;
 import org.sofumar.portal.data.dto.response.MemberSummaryDto;
 import org.sofumar.portal.data.dto.response.PaymentSummary;
-import org.sofumar.portal.data.dto.request.MemberSearchRequestDto;
 import org.sofumar.portal.data.transformer.MemberDtoTransformer;
 import org.sofumar.portal.data.transformer.MemberVOTransformer;
-import org.sofumar.portal.core.vo.MemberVO;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
 import org.sofumar.portal.framework.data.response.PaginationMeta;
 import org.sofumar.portal.framework.exception.RecordNotFoundException;
 import org.sofumar.portal.framework.util.LabelUtils;
 import org.sofumar.portal.framework.util.ResponseUtils;
-import org.sofumar.portal.core.repo.MemberRepository;
-import org.sofumar.portal.core.repo.jpaspec.MemberSpecifications;
-import org.sofumar.portal.core.businesslogic.Member;
-import org.sofumar.portal.core.businesslogic.Payment;
 import org.sofumar.portal.service.validation.MemberValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -29,6 +29,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -126,18 +127,13 @@ public non-sealed class MemberImpl extends MemberAbstractBL implements Member {
             specList.add(MemberSpecifications.hasState(request.getStatus()));
 
         Specification<MemberVO> spec = Specification.allOf(specList);
-        
         Page<MemberVO> members = getRepo().findAll(spec, request.toPageable());
         PaginationMeta meta = PaginationMeta.of(members.getNumber(), members.getSize(), members.getTotalElements(), members.getTotalPages());
-        logger.info("Found {} members matching search criteria", members.getTotalElements());
-
         return ResponseUtils.okWithDataPageable(dtoTransformer.transformList(members.toList()), meta);
     }
 
     @Override
     public ResponseEntity<GlobalResponse<MemberDto>> getMember(Integer memberID) {
-        logger.info("Fetching member with ID: {}", memberID);
-
         if (memberID == null) {
             return ResponseUtils.badRequestWithData(REQUIRED_FIELD.addMessageArgs(LabelUtils.toLabel(FieldConstants.MEMBER_ID)).getMessageString());
         }
@@ -167,7 +163,7 @@ public non-sealed class MemberImpl extends MemberAbstractBL implements Member {
     }
 
     @Override
-    public ResponseEntity<GlobalResponse<MemberSummaryDto>> getMemberSummary(Integer memberID) {
+    public ResponseEntity<GlobalResponse<MemberSummaryDto>> getMemberSummary(@NonNull Integer memberID) {
 
         Optional<MemberVO> memberOpt = getRepo().findById(memberID);
         if (memberOpt.isEmpty()) {
@@ -196,7 +192,7 @@ public non-sealed class MemberImpl extends MemberAbstractBL implements Member {
         if (outstanding.compareTo(BigDecimal.ZERO) < 0) outstanding = BigDecimal.ZERO;
 
         // 3. Overdue (Past Quarters since Join Date)
-        List<PaymentSummary> summaries = payment.findMemberPaymentSummaries(memberID, ReferenceCodeConstants.FEE_TYPE.MEMBERSHIP_FEE);
+        List<PaymentSummary> summaries = payment.findMemberPaymentSummaries(memberID, ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE);
         Map<String, BigDecimal> paymentMap = new HashMap<>(); // key: "YYYY-Q"
         for (PaymentSummary s : summaries) {
             String key = s.getYear() + "-" + s.getQuarter();
@@ -236,11 +232,11 @@ public non-sealed class MemberImpl extends MemberAbstractBL implements Member {
 
     @Override
     public long countActiveMembers() {
-        return getRepo().count(MemberSpecifications.hasStatus(ReferenceCodeConstants.MEMBER_STATUS.ACTIVE));
+        return getRepo().count(MemberSpecifications.hasStatus(ReferenceConstants.MEMBER_STATUS.ACTIVE));
     }
 
     @Override
     public List<MemberVO> findAllActiveMembers() {
-        return getRepo().findAll(MemberSpecifications.hasStatus(ReferenceCodeConstants.MEMBER_STATUS.ACTIVE));
+        return getRepo().findAll(MemberSpecifications.hasStatus(ReferenceConstants.MEMBER_STATUS.ACTIVE));
     }
 }

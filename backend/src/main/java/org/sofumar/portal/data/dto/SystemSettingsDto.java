@@ -13,7 +13,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 public class SystemSettingsDto {
     private Integer systemSettingsID;
-    private String settingType;
+    private String settingName;
     private String settingKey;
     private String settingValue;
     private LocalDate effectiveDate;

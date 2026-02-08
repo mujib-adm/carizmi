@@ -13,7 +13,15 @@ import liquibase.diff.output.DiffOutputControl;
 import liquibase.diff.output.changelog.DiffToChangeLog;
 import liquibase.exception.DatabaseException;
 import liquibase.exception.LiquibaseException;
-import liquibase.resource.ClassLoaderResourceAccessor;
+import liquibase.structure.DatabaseObject;
+import liquibase.structure.core.Table;
+import liquibase.structure.core.Column;
+import liquibase.structure.core.Index;
+import liquibase.structure.core.PrimaryKey;
+import liquibase.structure.core.ForeignKey;
+import liquibase.structure.core.UniqueConstraint;
+import liquibase.resource.DirectoryResourceAccessor;
+import liquibase.resource.ResourceAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.WebApplicationType;
@@ -33,13 +41,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class MigrationDdlGenerator {
     private static final Logger log = LoggerFactory.getLogger(MigrationDdlGenerator.class);
     private static final String GENERATED_CHANGELOG_XML = "generated-changelog.xml";
-    private static final String GENERATED_CHANGELOG_SQL = "V000001__DDL.sql";
 
     public static void main(String[] args) {
         System.setProperty("liquibase.suppressLiquibaseSql", "true");
@@ -58,7 +66,9 @@ public class MigrationDdlGenerator {
         }
 
         File changelogXmlOutFile = new File(migrationDir, GENERATED_CHANGELOG_XML);
-        File sqlOutFile = new File(migrationDir, GENERATED_CHANGELOG_SQL);
+        String nextFileName = getNextMigrationFileName(migrationDir);
+        File sqlOutFile = new File(migrationDir, nextFileName);
+        log.info("Generating next migration file: {}", nextFileName);
 
         ConfigurableApplicationContext context = new SpringApplicationBuilder()
                 .web(WebApplicationType.NONE)
@@ -70,7 +80,7 @@ public class MigrationDdlGenerator {
         boolean changelogCreated = generatedChangelogXml(dataSource, changelogXmlOutFile);
 
         if (changelogCreated) {
-            generateDDL(dataSource, sqlOutFile);
+            generateDDL(dataSource, sqlOutFile, resourcesPath);
         }
     }
 
@@ -100,6 +110,10 @@ public class MigrationDdlGenerator {
                 CompareControl compareControl = new CompareControl();
                 diffResult = DiffGeneratorFactory.getInstance()
                         .compare(referenceDatabase, targetDatabase, compareControl);
+
+                // Deep Filter: Filter out non-domain tables AND all their associated objects (Columns, PKs, etc.)
+                filterNonDomainObjects(diffResult.getUnexpectedObjects());
+                filterNonDomainObjects(diffResult.getMissingObjects());
             } catch (LiquibaseException e) {
                 log.error("Liquibase diff failed:", e);
                 throw e;
@@ -119,7 +133,37 @@ public class MigrationDdlGenerator {
         }
     }
 
-    private static void generateDDL(DataSource dataSource, File sqlOutFile) {
+    private static void filterNonDomainObjects(Collection<? extends DatabaseObject> objects) {
+        objects.removeIf(MigrationDdlGenerator::isExcludedObject);
+    }
+
+    private static boolean isExcludedObject(DatabaseObject obj) {
+        String tableName = null;
+
+        if (obj instanceof Table) {
+            tableName = obj.getName();
+        } else if (obj instanceof Column) {
+            tableName = ((Column) obj).getRelation().getName();
+        } else if (obj instanceof Index) {
+            tableName = ((Index) obj).getRelation().getName();
+        } else if (obj instanceof PrimaryKey) {
+            tableName = ((PrimaryKey) obj).getTable().getName();
+        } else if (obj instanceof ForeignKey) {
+            tableName = ((ForeignKey) obj).getForeignKeyTable().getName();
+        } else if (obj instanceof UniqueConstraint) {
+            tableName = ((UniqueConstraint) obj).getRelation().getName();
+        }
+
+        if (tableName != null) {
+            String lowerTable = tableName.toLowerCase();
+            return lowerTable.startsWith("flyway_") 
+                    || lowerTable.equals("databasechangelog") 
+                    || lowerTable.equals("databasechangeloglock");
+        }
+        return false;
+    }
+
+    private static void generateDDL(DataSource dataSource, File sqlOutFile, Path resourcesPath) {
         String changelogFile = "db/migration/" + GENERATED_CHANGELOG_XML;
 
         try (Connection conn = dataSource.getConnection()) {
@@ -127,11 +171,12 @@ public class MigrationDdlGenerator {
                     .findCorrectDatabaseImplementation(new JdbcConnection(conn));
 
             // convert changelog XML to SQL and write to .sql file
-            Liquibase liquibase = new Liquibase(changelogFile, new ClassLoaderResourceAccessor(), targetDatabase);
-            try (Writer writer = new FileWriter(sqlOutFile.getAbsolutePath())) {
+            try (ResourceAccessor resourceAccessor = new DirectoryResourceAccessor(resourcesPath);
+                 Liquibase liquibase = new Liquibase(changelogFile, resourceAccessor, targetDatabase);
+                 Writer writer = new FileWriter(sqlOutFile.getAbsolutePath())) {
                 liquibase.updateSql(new Contexts(), new LabelExpression(), writer);
                 System.out.println("SQL generated successfully to: " + sqlOutFile);
-            } catch (LiquibaseException | IOException e) {
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
 
@@ -149,6 +194,29 @@ public class MigrationDdlGenerator {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static String getNextMigrationFileName(File migrationDir) {
+        int maxVersion = 1; // Default to 1 so the next is 2
+        File[] files = migrationDir.listFiles((dir, name) -> name.startsWith("V") && name.endsWith(".sql"));
+        if (files != null) {
+            for (File file : files) {
+                String name = file.getName();
+                try {
+                    int underscoreIndex = name.indexOf("__");
+                    if (underscoreIndex > 1) {
+                        String versionStr = name.substring(1, underscoreIndex);
+                        int version = Integer.parseInt(versionStr);
+                        if (version > maxVersion) {
+                            maxVersion = version;
+                        }
+                    }
+                } catch (NumberFormatException e) {
+                    // skip files that don't follow the pattern V<number>__
+                }
+            }
+        }
+        return String.format("V%05d__DDL.sql", maxVersion + 1);
     }
 
     private static Path getResourcesPath() {

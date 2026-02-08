@@ -7,6 +7,7 @@ import org.sofumar.portal.core.vo.PaymentVO;
 import org.sofumar.portal.framework.bl.BusinessLogic;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -20,9 +21,9 @@ public interface Payment extends BusinessLogic<PaymentVO> {
 
     ResponseEntity<GlobalResponse<Void>> updatePayment(PaymentDto requestDto);
 
-    ResponseEntity<GlobalResponse<Void>> deletePayment(Integer paymentID);
+    ResponseEntity<GlobalResponse<Void>> deletePayment(@NonNull Integer paymentID);
 
-    ResponseEntity<GlobalResponse<PaymentDto>> getPayment(Integer paymentID);
+    ResponseEntity<GlobalResponse<PaymentDto>> getPayment(@NonNull Integer paymentID);
 
     ResponseEntity<GlobalResponse<List<PaymentDto>>> searchPayments(PaymentSearchRequestDto request);
 
@@ -32,17 +33,17 @@ public interface Payment extends BusinessLogic<PaymentVO> {
 
     BigDecimal sumAmountByDateReceivedBetween(LocalDate start, LocalDate end);
 
-    BigDecimal sumAmountByYearAndQuarter(Integer year, Integer quarter);
+    BigDecimal sumAmountByYearAndQuarter(@NonNull Integer year, @NonNull Integer quarter);
 
-    BigDecimal sumAmountByMemberID(Integer memberID);
+    BigDecimal sumAmountByMemberID(@NonNull Integer memberID);
 
-    BigDecimal sumAmountByMemberIDAndYearAndQuarter(Integer memberID, Integer year, Integer quarter);
+    BigDecimal sumAmountByMemberIDAndYearAndQuarter(@NonNull Integer memberID, @NonNull Integer year, @NonNull Integer quarter);
 
-    List<PaymentSummary> findMemberPaymentSummaries(Integer memberID, String feeType);
+    List<PaymentSummary> findMemberPaymentSummaries(@NonNull Integer memberID, String feeType);
 
-    List<PaymentSummary> findPaymentSummaries(String feeType, Integer year);
+    List<PaymentSummary> findPaymentSummaries(String feeType, @NonNull Integer year);
 
     List<PaymentVO> findPaymentsByCriteria(Specification<PaymentVO> spec);
 
-    List<PaymentVO> findPaymentsForMemberQuarter(Integer memberID, Integer year, Integer quarter, String feeType);
+    List<PaymentVO> findPaymentsForMemberQuarter(@NonNull Integer memberID, @NonNull Integer year, @NonNull Integer quarter, String feeType);
 }

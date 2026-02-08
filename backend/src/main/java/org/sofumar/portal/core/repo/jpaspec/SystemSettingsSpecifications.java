@@ -13,9 +13,9 @@ public class SystemSettingsSpecifications {
     }
 
     @NonNull
-    public static Specification<SystemSettingsVO> hasSettingType(String settingType) {
-        return (root, query, cb) -> settingType == null ? null
-                : cb.like(cb.lower(root.get(FieldConstants.SETTING_TYPE)), "%" + settingType.toLowerCase() + "%");
+    public static Specification<SystemSettingsVO> hasSettingName(String settingName) {
+        return (root, query, cb) -> settingName == null ? null
+                : cb.like(cb.lower(root.get(FieldConstants.SETTING_NAME)), "%" + settingName.toLowerCase() + "%");
     }
 
     @NonNull
@@ -43,7 +43,7 @@ public class SystemSettingsSpecifications {
             }
             String likePattern = "%" + query.trim().toLowerCase() + "%";
             return cb.or(
-                    cb.like(cb.lower(root.get(FieldConstants.SETTING_TYPE)), likePattern),
+                    cb.like(cb.lower(root.get(FieldConstants.SETTING_NAME)), likePattern),
                     cb.like(cb.lower(root.get(FieldConstants.SETTING_KEY)), likePattern),
                     cb.like(cb.lower(root.get(FieldConstants.SETTING_VALUE)), likePattern));
         };
@@ -56,8 +56,8 @@ public class SystemSettingsSpecifications {
     }
 
     @NonNull
-    public static Specification<SystemSettingsVO> withSettingType(String settingType) {
-        return (root, query, cb) -> settingType == null ? null
-                : cb.equal(cb.lower(root.get(FieldConstants.SETTING_TYPE)), settingType.toLowerCase());
+    public static Specification<SystemSettingsVO> withSettingName(String settingName) {
+        return (root, query, cb) -> settingName == null ? null
+                : cb.equal(cb.lower(root.get(FieldConstants.SETTING_NAME)), settingName.toLowerCase());
     }
 }

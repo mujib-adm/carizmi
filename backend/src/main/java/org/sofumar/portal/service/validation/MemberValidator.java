@@ -4,14 +4,13 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.sofumar.portal.constants.FieldConstants;
 import org.sofumar.portal.constants.MessagesConstants;
+import org.sofumar.portal.constants.ReferenceConstants;
 import org.sofumar.portal.core.vo.MemberVO;
 import org.sofumar.portal.framework.exception.ValidationException;
 import org.sofumar.portal.framework.util.LabelUtils;
 import org.springframework.stereotype.Service;
 
 import static org.sofumar.portal.constants.MessagesConstants.REQUIRED_FIELD;
-
-import org.sofumar.portal.constants.ReferenceCodeConstants;
 
 @Service
 @RequiredArgsConstructor
@@ -78,7 +77,7 @@ public class MemberValidator {
             vo.addFieldMessage(FieldConstants.STATUS,
                     REQUIRED_FIELD.addMessageArgs(LabelUtils.toLabel(FieldConstants.STATUS)));
         } else {
-            referenceValidator.validate(vo, FieldConstants.STATUS, ReferenceCodeConstants.MEMBER_STATUS.NAME,
+            referenceValidator.validate(vo, FieldConstants.STATUS, ReferenceConstants.MEMBER_STATUS.NAME,
                     vo.getStatus());
         }
     }

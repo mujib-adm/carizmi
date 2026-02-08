@@ -39,7 +39,7 @@ public final class FieldConstants {
     public static final String QUARTER = "quarter";
     public static final String CATEGORY = "category";
     public static final String DESCRIPTION = "description";
-    public static final String SETTING_TYPE = "settingType";
+    public static final String SETTING_NAME = "settingName";
     public static final String SETTING_KEY = "settingKey";
     public static final String SETTING_VALUE = "settingValue";
     // Reference

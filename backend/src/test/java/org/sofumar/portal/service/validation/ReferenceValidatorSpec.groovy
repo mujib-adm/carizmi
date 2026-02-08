@@ -2,7 +2,7 @@ package org.sofumar.portal.service.validation
 
 import org.sofumar.portal.constants.FieldConstants
 import org.sofumar.portal.constants.MessagesConstants
-import org.sofumar.portal.constants.ReferenceCodeConstants
+import org.sofumar.portal.constants.ReferenceConstants
 import org.sofumar.portal.core.businesslogic.Reference
 import org.sofumar.portal.framework.vo.ValueObject
 import org.sofumar.portal.testsupport.BaseSpecification
@@ -24,7 +24,7 @@ class ReferenceValidatorSpec extends BaseSpecification {
             String getTableName() { "DUMMY" }
         }
         String fieldName = FieldConstants.FEE_TYPE
-        String referenceName = ReferenceCodeConstants.FEE_TYPE.NAME
+        String referenceName = ReferenceConstants.FEE_TYPE.NAME
 
         when: "The target method executed"
         referenceValidator.validate(vo, fieldName, referenceName, code)
@@ -46,11 +46,11 @@ class ReferenceValidatorSpec extends BaseSpecification {
         noExceptionThrown()
 
         where:
-        code                                             | isValid
-        ReferenceCodeConstants.FEE_TYPE.MEMBERSHIP_FEE   | true
-        ReferenceCodeConstants.FEE_TYPE.REGISTRATION_FEE | true
-        "INVALID"                                        | false
-        ""                                               | false
-        null                                             | false
+        code                                         | isValid
+        ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE   | true
+        ReferenceConstants.FEE_TYPE.REGISTRATION_FEE | true
+        "INVALID"                                    | false
+        ""                                           | false
+        null                                         | false
     }
 }

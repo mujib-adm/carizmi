@@ -24,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -80,7 +81,7 @@ public non-sealed class ExpenseImpl extends ExpenseAbstractBL implements Expense
 
     @Override
     @Transactional
-    public ResponseEntity<GlobalResponse<Void>> deleteExpense(Integer expenseID) {
+    public ResponseEntity<GlobalResponse<Void>> deleteExpense(@NonNull Integer expenseID) {
         ExpenseVO existing = getRepo().findById(expenseID)
                 .orElseThrow(() -> new RecordNotFoundException("Expense not found: " + expenseID));
         delete(existing);
@@ -88,7 +89,7 @@ public non-sealed class ExpenseImpl extends ExpenseAbstractBL implements Expense
     }
 
     @Override
-    public ResponseEntity<GlobalResponse<ExpenseDto>> getExpense(Integer expenseID) {
+    public ResponseEntity<GlobalResponse<ExpenseDto>> getExpense(@NonNull Integer expenseID) {
         ExpenseVO existing = getRepo().findById(expenseID)
                 .orElseThrow(() -> new RecordNotFoundException("Expense not found: " + expenseID));
         return ResponseUtils.okWithData(dtoTransformer.transform(existing));

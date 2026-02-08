@@ -34,7 +34,7 @@ export default function ReferencePage() {
     };
 
     const columns: ColumnsType<Reference> = [
-        { title: "Name", dataIndex: "referenceName", key: "referenceName" },
+        { title: "Reference Name", dataIndex: "referenceName", key: "referenceName" },
         { title: "Code", dataIndex: "referenceCode", key: "referenceCode" },
         { title: "Display", dataIndex: "referenceDisplay", key: "referenceDisplay" },
         {

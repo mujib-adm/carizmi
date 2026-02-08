@@ -12,7 +12,7 @@ public class SystemSettingsVOTransformer implements Transformer<SystemSettingsDt
     public SystemSettingsVO transform(SystemSettingsDto dto) {
         if (dto == null) return null;
         SystemSettingsVO vo = new SystemSettingsVO();
-        vo.setSettingType(dto.getSettingType());
+        vo.setSettingName(dto.getSettingName());
         vo.setSettingKey(dto.getSettingKey());
         vo.setSettingValue(dto.getSettingValue());
         vo.setEffectiveDate(dto.getEffectiveDate());
@@ -22,7 +22,7 @@ public class SystemSettingsVOTransformer implements Transformer<SystemSettingsDt
 
     public SystemSettingsVO transformForUpdate(SystemSettingsDto dto, SystemSettingsVO existingVO) {
         if (dto == null || existingVO == null) return existingVO;
-        existingVO.setSettingType(dto.getSettingType());
+        existingVO.setSettingName(dto.getSettingName());
         existingVO.setSettingKey(dto.getSettingKey());
         existingVO.setSettingValue(dto.getSettingValue());
         existingVO.setEffectiveDate(dto.getEffectiveDate());

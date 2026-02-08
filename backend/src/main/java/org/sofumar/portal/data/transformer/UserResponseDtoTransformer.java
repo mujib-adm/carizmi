@@ -18,7 +18,7 @@ public class UserResponseDtoTransformer implements Transformer<UserVO, UserRespo
                 .email(vo.getEmail())
                 .firstName(vo.getFirstName())
                 .lastName(vo.getLastName())
-                .role(vo.getRole())
+                .role(vo.getRole() != null ? vo.getRole().name() : null)
                 .active(vo.isActive())
                 .build();
     }

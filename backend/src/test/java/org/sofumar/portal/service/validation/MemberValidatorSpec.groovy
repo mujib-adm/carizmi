@@ -1,7 +1,7 @@
 package org.sofumar.portal.service.validation
 
 import org.sofumar.portal.constants.FieldConstants
-import org.sofumar.portal.constants.ReferenceCodeConstants
+import org.sofumar.portal.constants.ReferenceConstants
 import org.sofumar.portal.core.vo.MemberVO
 import org.sofumar.portal.framework.exception.ValidationException
 import org.sofumar.portal.testsupport.BaseSpecification
@@ -21,13 +21,13 @@ class MemberValidatorSpec extends BaseSpecification {
         String lastName = "Doe"
         String phone = "123-456-7890"
         String email = "john.doe@example.com"
-        String status = ReferenceCodeConstants.MEMBER_STATUS.ACTIVE
+        String status = ReferenceConstants.MEMBER_STATUS.ACTIVE
         String state = "MN"
         String zip = "12345"
         MemberVO vo = new MemberVO(firstName: firstName, lastName: lastName, phone: phone, email: email, status: status, state: state, zip: zip)
 
         String fieldName = FieldConstants.STATUS
-        String referenceName = ReferenceCodeConstants.MEMBER_STATUS.NAME
+        String referenceName = ReferenceConstants.MEMBER_STATUS.NAME
 
         when: "The target method executed"
         memberValidator.validate(vo)
@@ -44,7 +44,7 @@ class MemberValidatorSpec extends BaseSpecification {
     @Unroll
     def "test - validate: Handling basic field validations [field: #field, value: #value]"() {
         given: "A MemberVO with a specific field variation"
-        String defaultStatus = ReferenceCodeConstants.MEMBER_STATUS.ACTIVE
+        String defaultStatus = ReferenceConstants.MEMBER_STATUS.ACTIVE
         MemberVO vo = new MemberVO(
                 firstName: field == FieldConstants.FIRST_NAME ? value : "John",
                 lastName: field == FieldConstants.LAST_NAME ? value : "Doe",
@@ -54,7 +54,7 @@ class MemberValidatorSpec extends BaseSpecification {
         )
 
         String fieldName = FieldConstants.STATUS
-        String referenceName = ReferenceCodeConstants.MEMBER_STATUS.NAME
+        String referenceName = ReferenceConstants.MEMBER_STATUS.NAME
 
         when: "The target method executed"
         try {
@@ -92,14 +92,14 @@ class MemberValidatorSpec extends BaseSpecification {
     @Unroll
     def "test - validate: Handling regex validations [field: #field, value: #value, isValid: #isValid]"() {
         given: "A MemberVO with regex-validated field"
-        String defaultStatus = ReferenceCodeConstants.MEMBER_STATUS.ACTIVE
+        String defaultStatus = ReferenceConstants.MEMBER_STATUS.ACTIVE
         MemberVO vo = new MemberVO(
                 firstName: "John", lastName: "Doe", status: defaultStatus, state: "MN", phone: "123-456-7890"
         )
         vo."$field" = value
 
         String fieldName = FieldConstants.STATUS
-        String referenceName = ReferenceCodeConstants.MEMBER_STATUS.NAME
+        String referenceName = ReferenceConstants.MEMBER_STATUS.NAME
 
         when: "The target method executed"
         try {
@@ -137,11 +137,11 @@ class MemberValidatorSpec extends BaseSpecification {
     def "test - validateForUpdate: Should validate memberID and call validate"() {
         given: "A MemberVO for update"
         Integer memberID = 1
-        String status = ReferenceCodeConstants.MEMBER_STATUS.ACTIVE
+        String status = ReferenceConstants.MEMBER_STATUS.ACTIVE
         MemberVO vo = new MemberVO(memberID: memberID, firstName: "John", lastName: "Doe", phone: "123-456-7890", status: status, state: "MN")
 
         String fieldName = FieldConstants.STATUS
-        String referenceName = ReferenceCodeConstants.MEMBER_STATUS.NAME
+        String referenceName = ReferenceConstants.MEMBER_STATUS.NAME
 
         when: "The target method executed"
         memberValidator.validateForUpdate(vo)
@@ -157,11 +157,11 @@ class MemberValidatorSpec extends BaseSpecification {
 
     def "test - validateForUpdate: Should catch missing memberID"() {
         given: "A MemberVO for update without ID"
-        String status = ReferenceCodeConstants.MEMBER_STATUS.ACTIVE
+        String status = ReferenceConstants.MEMBER_STATUS.ACTIVE
         MemberVO vo = new MemberVO(firstName: "John", lastName: "Doe", phone: "123-456-7890", status: status, state: "MN")
 
         String fieldName = FieldConstants.STATUS
-        String referenceName = ReferenceCodeConstants.MEMBER_STATUS.NAME
+        String referenceName = ReferenceConstants.MEMBER_STATUS.NAME
 
         when: "The target method executed"
         memberValidator.validateForUpdate(vo)

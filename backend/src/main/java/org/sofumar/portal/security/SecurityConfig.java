@@ -1,6 +1,6 @@
 package org.sofumar.portal.security;
 
-import org.sofumar.portal.constants.RoleConstants;
+import org.sofumar.portal.constants.Role;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -49,17 +49,17 @@ public class SecurityConfig {
                         // role based
 
                         // ADMIN only
-                        .requestMatchers("/users/**").hasRole(RoleConstants.ROLE_ADMIN)
+                        .requestMatchers("/users/**").hasRole(Role.ADMIN.name())
                         // Write operations - ADMIN only
-                        .requestMatchers(HttpMethod.PUT, "/settings/**").hasRole(RoleConstants.ROLE_ADMIN)
+                        .requestMatchers(HttpMethod.PUT, "/settings/**").hasRole(Role.ADMIN.name())
 
                         // Write operations - ADMIN and MANAGER only
-                        .requestMatchers(HttpMethod.POST, "/members/**", "/payments/**", "/expenses/**").hasAnyRole(RoleConstants.ROLE_ADMIN, RoleConstants.ROLE_MANAGER)
-                        .requestMatchers(HttpMethod.PUT, "/members/**", "/payments/**", "/expenses/**").hasAnyRole(RoleConstants.ROLE_ADMIN, RoleConstants.ROLE_MANAGER)
-                        .requestMatchers(HttpMethod.DELETE, "/members/**", "/expenses/**").hasAnyRole(RoleConstants.ROLE_ADMIN, RoleConstants.ROLE_MANAGER)
+                        .requestMatchers(HttpMethod.POST, "/members/**", "/payments/**", "/expenses/**").hasAnyRole(Role.ADMIN.name(), Role.MANAGER.name())
+                        .requestMatchers(HttpMethod.PUT, "/members/**", "/payments/**", "/expenses/**").hasAnyRole(Role.ADMIN.name(), Role.MANAGER.name())
+                        .requestMatchers(HttpMethod.DELETE, "/members/**", "/expenses/**").hasAnyRole(Role.ADMIN.name(), Role.MANAGER.name())
 
                         // Read operations - all authenticated roles
-                        .requestMatchers(HttpMethod.GET, "/members/**", "/payments/**", "/expenses/**", "/dashboard/**", "/references/**", "/settings/**").hasAnyRole(RoleConstants.ROLE_ADMIN, RoleConstants.ROLE_MANAGER, RoleConstants.ROLE_MEMBER)
+                        .requestMatchers(HttpMethod.GET, "/members/**", "/payments/**", "/expenses/**", "/dashboard/**", "/references/**", "/settings/**").hasAnyRole(Role.ADMIN.name(), Role.MANAGER.name(), Role.MEMBER.name())
                         .anyRequest().authenticated()
                 )
                 // ensure JWT filter does not block preflight; JwtAuthFilter should skip OPTIONS

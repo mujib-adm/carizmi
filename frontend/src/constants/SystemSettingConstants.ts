@@ -1,8 +1,8 @@
 /**
- * System Settings Code Constants
- * These should match the backend SystemSettingsCodeConstants.java
+ * System Setting Constants
+ * These should match the backend SystemSettingConstants.java
  */
-export const SystemSettingsCodeConstants = {
+export const SystemSettingConstants = {
     BASELINE_REVENUE: {
         TYPE: "BASELINE_REVENUE",
         YEARLY_BASELINE_2026: "YEARLY_BASELINE_2026",

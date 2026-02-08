@@ -58,7 +58,7 @@ public non-sealed class SystemSettingImpl extends SystemSettingAbstractBL
                         "System Setting not found with ID: " + dto.getSystemSettingsID()));
 
         // UI only allows updating settingValue. 
-        // We preserve settingType and settingKey to ensure integrity with sync mechanism.
+        // We preserve settingName and settingKey to ensure integrity with sync mechanism.
         existing.setSettingValue(dto.getSettingValue());
 
         validator.validateForUpdate(existing);
@@ -77,8 +77,8 @@ public non-sealed class SystemSettingImpl extends SystemSettingAbstractBL
     @Override
     public ResponseEntity<GlobalResponse<List<SystemSettingsDto>>> searchSystemSettings(SystemSettingsSearchRequestDto request) {
         List<Specification<SystemSettingsVO>> specList = new ArrayList<>();
-        if (StringUtils.isNotBlank(request.getSettingType()))
-            specList.add(SystemSettingsSpecifications.hasSettingType(request.getSettingType()));
+        if (StringUtils.isNotBlank(request.getSettingName()))
+            specList.add(SystemSettingsSpecifications.hasSettingName(request.getSettingName()));
 
         Specification<SystemSettingsVO> spec = Specification.allOf(specList);
 
@@ -101,8 +101,8 @@ public non-sealed class SystemSettingImpl extends SystemSettingAbstractBL
     }
 
     @Override
-    public Optional<SystemSettingsVO> findByTypeAndKey(String settingType, String key) {
-        Specification<SystemSettingsVO> spec = SystemSettingsSpecifications.withSettingType(settingType)
+    public Optional<SystemSettingsVO> findByNameAndKey(String settingName, String key) {
+        Specification<SystemSettingsVO> spec = SystemSettingsSpecifications.withSettingName(settingName)
                 .and(SystemSettingsSpecifications.withSettingKey(key));
         return getRepo().findOne(spec);
     }

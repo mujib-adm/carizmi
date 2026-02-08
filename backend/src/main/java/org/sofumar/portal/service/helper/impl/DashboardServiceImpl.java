@@ -4,16 +4,16 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sofumar.portal.constants.QuarterStatus;
-import org.sofumar.portal.constants.ReferenceCodeConstants;
-import org.sofumar.portal.data.dto.response.DashboardMetricsDto;
-import org.sofumar.portal.data.dto.response.PaymentSummary;
-import org.sofumar.portal.data.dto.response.QuarterlyCollectionDto;
-import org.sofumar.portal.core.vo.MemberVO;
-import org.sofumar.portal.framework.data.response.GlobalResponse;
-import org.sofumar.portal.framework.util.ResponseUtils;
+import org.sofumar.portal.constants.ReferenceConstants;
 import org.sofumar.portal.core.businesslogic.Expense;
 import org.sofumar.portal.core.businesslogic.Member;
 import org.sofumar.portal.core.businesslogic.Payment;
+import org.sofumar.portal.core.vo.MemberVO;
+import org.sofumar.portal.data.dto.response.DashboardMetricsDto;
+import org.sofumar.portal.data.dto.response.PaymentSummary;
+import org.sofumar.portal.data.dto.response.QuarterlyCollectionDto;
+import org.sofumar.portal.framework.data.response.GlobalResponse;
+import org.sofumar.portal.framework.util.ResponseUtils;
 import org.sofumar.portal.service.helper.BaselineService;
 import org.sofumar.portal.service.helper.DashboardService;
 import org.springframework.http.ResponseEntity;
@@ -80,7 +80,7 @@ public class DashboardServiceImpl implements DashboardService {
 
         // 4. Overdues (Excluding Current Quarter)
         // Fetch Membership Fee payments aggregated for the current year only
-        List<PaymentSummary> summaries = payment.findPaymentSummaries(ReferenceCodeConstants.FEE_TYPE.MEMBERSHIP_FEE, currentYear);
+        List<PaymentSummary> summaries = payment.findPaymentSummaries(ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, currentYear);
 
         // Map: MemberID -> Quarter -> Amount
         Map<Integer, Map<Integer, BigDecimal>> paymentMap = new HashMap<>();

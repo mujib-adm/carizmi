@@ -2,7 +2,7 @@ import { Col, Divider, Form, Modal, Row } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect } from 'react';
 import { ReferenceCodeConstants } from '../constants/ReferenceCodeConstants';
-import { SystemSettingsCodeConstants } from '../constants/SystemSettingsCodeConstants';
+import { SystemSettingConstants } from '../constants/SystemSettingConstants.ts';
 import { Payment } from '../constants/types';
 import { useSystemSettings } from '../context/SystemSettingsContext';
 import { useApiMessages } from '../hook/ApiResponseHandler';
@@ -44,7 +44,7 @@ export default function PaymentModal({ open, onCancel, onSubmit, initialValues, 
                 form.resetFields();
                 form.setFieldsValue({
                     feeType: ReferenceCodeConstants.FEE_TYPE.MEMBERSHIP_FEE,
-                    amount: getNumericSetting(SystemSettingsCodeConstants.FEE.TYPE, SystemSettingsCodeConstants.FEE.MEMBERSHIP_FEE),
+                    amount: getNumericSetting(SystemSettingConstants.FEE.TYPE, SystemSettingConstants.FEE.MEMBERSHIP_FEE),
                     dateReceived: dayjs(),
                     quarter: Math.floor(dayjs().month() / 3) + 1
                 });
@@ -93,9 +93,9 @@ export default function PaymentModal({ open, onCancel, onSubmit, initialValues, 
                     if (changedValues.feeType) {
                         let amount = 0;
                         if (changedValues.feeType === ReferenceCodeConstants.FEE_TYPE.MEMBERSHIP_FEE) {
-                            amount = getNumericSetting(SystemSettingsCodeConstants.FEE.TYPE, SystemSettingsCodeConstants.FEE.MEMBERSHIP_FEE);
+                            amount = getNumericSetting(SystemSettingConstants.FEE.TYPE, SystemSettingConstants.FEE.MEMBERSHIP_FEE);
                         } else if (changedValues.feeType === ReferenceCodeConstants.FEE_TYPE.REGISTRATION_FEE) {
-                            amount = getNumericSetting(SystemSettingsCodeConstants.FEE.TYPE, SystemSettingsCodeConstants.FEE.REGISTRATION_FEE);
+                            amount = getNumericSetting(SystemSettingConstants.FEE.TYPE, SystemSettingConstants.FEE.REGISTRATION_FEE);
                         }
                         if (amount > 0) {
                             form.setFieldsValue({ amount });

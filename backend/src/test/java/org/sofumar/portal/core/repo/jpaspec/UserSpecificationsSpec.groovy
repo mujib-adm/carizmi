@@ -1,5 +1,6 @@
 package org.sofumar.portal.core.repo.jpaspec
 
+import org.sofumar.portal.constants.Role
 import org.sofumar.portal.constants.FieldConstants
 import org.sofumar.portal.core.vo.UserVO
 import org.sofumar.portal.testsupport.BaseSpecification
@@ -32,7 +33,7 @@ class UserSpecificationsSpec extends BaseSpecification {
     @Unroll
     def "test - hasRole: Should filter by role [role: #role]"() {
         given: "A role"
-        String testRole = role
+        Role testRole = role
 
         when: "The specification is created and inspected"
         JpaSpecification<UserVO> spec = UserSpecifications.hasRole(testRole)
@@ -47,7 +48,7 @@ class UserSpecificationsSpec extends BaseSpecification {
         noExceptionThrown()
 
         where:
-        role << ["ADMIN", null]
+        role << [Role.ADMIN, null]
     }
 
     @Unroll

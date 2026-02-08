@@ -8,7 +8,7 @@ import PaymentModal from '../../modals/PaymentModal.tsx';
 import SearchFilterBar from '../../component/SearchFilterBar.jsx';
 import Sidebar from "../../component/Sidebar";
 import { paymentSearchFiltersConfig } from '../../constants/paymentSearchFiltersConfig.ts';
-import { FEE_TYPE, PAYMENT_METHOD } from "../../constants/referenceConstants";
+import { ReferenceCodeConstants } from "../../constants/ReferenceCodeConstants";
 import { MessageType, Payment, PaymentSearchParams } from '../../constants/types';
 import { useNotification } from "../../context/NotificationContext";
 import { useReference } from "../../context/ReferenceContext";
@@ -35,8 +35,8 @@ export default function PaymentPage() {
 
     // Ref Data
     const { getReference, toDisplay } = useReference();
-    const feeTypes = getReference(FEE_TYPE).map(r => ({ value: r.code, label: r.display }));
-    const paymentMethods = getReference(PAYMENT_METHOD).map(r => ({ value: r.code, label: r.display }));
+    const feeTypes = getReference(ReferenceCodeConstants.FEE_TYPE.NAME).map(r => ({ value: r.code, label: r.display }));
+    const paymentMethods = getReference(ReferenceCodeConstants.PAYMENT_METHOD.NAME).map(r => ({ value: r.code, label: r.display }));
 
     const handleSearch = async () => {
         resetMessages();
@@ -58,7 +58,7 @@ export default function PaymentPage() {
     };
 
     const handleDelete = async (record: Payment) => {
-        const feeTypeDisplay = toDisplay(FEE_TYPE, record.feeType) || record.feeType;
+        const feeTypeDisplay = toDisplay(ReferenceCodeConstants.FEE_TYPE.NAME, record.feeType) || record.feeType;
         Modal.confirm({
             title: 'Are you sure you want to delete payment record?',
             content: (
@@ -116,11 +116,11 @@ export default function PaymentPage() {
             title: 'Fee Type',
             dataIndex: 'feeType',
             key: 'feeType',
-            render: (code: string) => toDisplay(FEE_TYPE, code)
+            render: (code: string) => toDisplay(ReferenceCodeConstants.FEE_TYPE.NAME, code)
         },
         { title: 'Amount', dataIndex: 'amount', key: 'amount', render: (val: number) => `$${val?.toFixed(2) ?? '0.00'}` },
         { title: 'Date', dataIndex: 'dateReceived', key: 'dateReceived' },
-        { title: 'Method', dataIndex: 'methodOfPayment', key: 'methodOfPayment', render: (code: string) => toDisplay(PAYMENT_METHOD, code) },
+        { title: 'Method', dataIndex: 'methodOfPayment', key: 'methodOfPayment', render: (code: string) => toDisplay(ReferenceCodeConstants.PAYMENT_METHOD.NAME, code) },
         { title: 'Period', key: 'period', render: (_, record) => record.year && record.quarter ? `${record.year}-Q${record.quarter}` : '' },
         ...(canWrite ? [{
             title: 'Action',

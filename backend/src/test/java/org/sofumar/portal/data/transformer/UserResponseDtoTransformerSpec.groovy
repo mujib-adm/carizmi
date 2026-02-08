@@ -1,5 +1,6 @@
 package org.sofumar.portal.data.transformer
 
+import org.sofumar.portal.constants.Role
 import org.sofumar.portal.core.vo.UserVO
 import org.sofumar.portal.data.dto.response.UserResponseDto
 import org.sofumar.portal.testsupport.BaseSpecification
@@ -16,7 +17,7 @@ class UserResponseDtoTransformerSpec extends BaseSpecification {
                 email: "jdoe@example.com",
                 firstName: "John",
                 lastName: "Doe",
-                role: "ADMIN",
+                role: Role.ADMIN,
                 active: true
         )
 
@@ -33,7 +34,7 @@ class UserResponseDtoTransformerSpec extends BaseSpecification {
         result.email == vo.email
         result.firstName == vo.firstName
         result.lastName == vo.lastName
-        result.role == vo.role
+        result.role == vo.role.name()
         result.isActive() == vo.isActive()
         noExceptionThrown()
     }

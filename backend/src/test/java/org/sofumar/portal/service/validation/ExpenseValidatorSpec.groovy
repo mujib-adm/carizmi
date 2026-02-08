@@ -1,7 +1,7 @@
 package org.sofumar.portal.service.validation
 
 import org.sofumar.portal.constants.FieldConstants
-import org.sofumar.portal.constants.ReferenceCodeConstants
+import org.sofumar.portal.constants.ReferenceConstants
 import org.sofumar.portal.core.vo.ExpenseVO
 import org.sofumar.portal.framework.exception.ValidationException
 import org.sofumar.portal.testsupport.BaseSpecification
@@ -19,13 +19,13 @@ class ExpenseValidatorSpec extends BaseSpecification {
     def "test - validate: Should pass for valid VO"() {
         given: "A valid ExpenseVO"
         LocalDate date = LocalDate.now()
-        String category = ReferenceCodeConstants.EXPENSE_CATEGORY.OFFICE_SUPPLIES
+        String category = ReferenceConstants.EXPENSE_CATEGORY.OFFICE_SUPPLIES
         String description = "Paper"
         BigDecimal amount = 50.0
         ExpenseVO vo = new ExpenseVO(dateOfExpense: date, category: category, description: description, amount: amount)
 
         String fieldName = FieldConstants.CATEGORY
-        String referenceName = ReferenceCodeConstants.EXPENSE_CATEGORY.NAME
+        String referenceName = ReferenceConstants.EXPENSE_CATEGORY.NAME
 
         when: "The target method executed"
         expenseValidator.validate(vo)
@@ -41,11 +41,11 @@ class ExpenseValidatorSpec extends BaseSpecification {
 
     def "test - validate: Should throw ValidationException when errors exist"() {
         given: "An invalid ExpenseVO (missing description)"
-        String category = ReferenceCodeConstants.EXPENSE_CATEGORY.OFFICE_SUPPLIES
+        String category = ReferenceConstants.EXPENSE_CATEGORY.OFFICE_SUPPLIES
         ExpenseVO vo = new ExpenseVO(dateOfExpense: LocalDate.now(), category: category, amount: 50.0)
 
         String fieldName = FieldConstants.CATEGORY
-        String referenceName = ReferenceCodeConstants.EXPENSE_CATEGORY.NAME
+        String referenceName = ReferenceConstants.EXPENSE_CATEGORY.NAME
 
         when: "The target method executed"
         expenseValidator.validate(vo)
@@ -63,7 +63,7 @@ class ExpenseValidatorSpec extends BaseSpecification {
     @Unroll
     def "test - validate: Handling field validations [field: #field, value: #value, isValid: #isValid]"() {
         given: "An ExpenseVO with a specific field variation"
-        String defaultCategory = ReferenceCodeConstants.EXPENSE_CATEGORY.OFFICE_SUPPLIES
+        String defaultCategory = ReferenceConstants.EXPENSE_CATEGORY.OFFICE_SUPPLIES
         ExpenseVO vo = new ExpenseVO(
                 dateOfExpense: (LocalDate) (field == FieldConstants.DATE_OF_EXPENSE ? value : LocalDate.now()),
                 category: field == FieldConstants.CATEGORY ? value : defaultCategory,
@@ -72,7 +72,7 @@ class ExpenseValidatorSpec extends BaseSpecification {
         )
 
         String fieldName = FieldConstants.CATEGORY
-        String referenceName = ReferenceCodeConstants.EXPENSE_CATEGORY.NAME
+        String referenceName = ReferenceConstants.EXPENSE_CATEGORY.NAME
 
         when: "The target method executed"
         try {
@@ -111,11 +111,11 @@ class ExpenseValidatorSpec extends BaseSpecification {
     def "test - validateForUpdate: Should validate expenseID and call validate"() {
         given: "An ExpenseVO for update"
         Integer expenseID = 1
-        String category = ReferenceCodeConstants.EXPENSE_CATEGORY.OFFICE_SUPPLIES
+        String category = ReferenceConstants.EXPENSE_CATEGORY.OFFICE_SUPPLIES
         ExpenseVO vo = new ExpenseVO(expenseID: expenseID, dateOfExpense: LocalDate.now(), category: category, description: "Desc", amount: 10.0)
 
         String fieldName = FieldConstants.CATEGORY
-        String referenceName = ReferenceCodeConstants.EXPENSE_CATEGORY.NAME
+        String referenceName = ReferenceConstants.EXPENSE_CATEGORY.NAME
 
         when: "The target method executed"
         expenseValidator.validateForUpdate(vo)
@@ -131,11 +131,11 @@ class ExpenseValidatorSpec extends BaseSpecification {
 
     def "test - validateForUpdate: Should catch missing expenseID"() {
         given: "An ExpenseVO for update without ID"
-        String category = ReferenceCodeConstants.EXPENSE_CATEGORY.OFFICE_SUPPLIES
+        String category = ReferenceConstants.EXPENSE_CATEGORY.OFFICE_SUPPLIES
         ExpenseVO vo = new ExpenseVO(dateOfExpense: LocalDate.now(), category: category, description: "Desc", amount: 10.0)
 
         String fieldName = FieldConstants.CATEGORY
-        String referenceName = ReferenceCodeConstants.EXPENSE_CATEGORY.NAME
+        String referenceName = ReferenceConstants.EXPENSE_CATEGORY.NAME
 
         when: "The target method executed"
         expenseValidator.validateForUpdate(vo)

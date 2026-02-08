@@ -3,7 +3,7 @@ package org.sofumar.portal.core.businesslogic.impl
 import org.mockito.MockedStatic
 import org.mockito.Mockito
 import org.sofumar.portal.constants.FieldConstants
-import org.sofumar.portal.constants.ReferenceCodeConstants
+import org.sofumar.portal.constants.ReferenceConstants
 import org.sofumar.portal.core.businesslogic.Payment
 import org.sofumar.portal.core.repo.MemberRepository
 import org.sofumar.portal.core.vo.MemberVO
@@ -363,7 +363,7 @@ class MemberSpec extends BaseSpecification {
         if (found) {
             1 * payment.sumAmountByMemberID(id) >> paidTotal
             1 * payment.sumAmountByMemberIDAndYearAndQuarter(id, currentYear, 2) >> paidCurrent
-            1 * payment.findMemberPaymentSummaries(id, ReferenceCodeConstants.FEE_TYPE.MEMBERSHIP_FEE) >> (paidPast != null ? [psQ1] : [])
+            1 * payment.findMemberPaymentSummaries(id, ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE) >> (paidPast != null ? [psQ1] : [])
             // Implicit calls - use wildcards to handle varying scenarios strictly
             _ * psQ1.getYear() >> currentYear
             _ * psQ1.getQuarter() >> 1
@@ -414,7 +414,7 @@ class MemberSpec extends BaseSpecification {
         result == expectedCount
         Map<String, List> inspection = inspectSpecification(capturedSpec)
         inspection.filters.contains(FieldConstants.STATUS)
-        inspection.values.contains(ReferenceCodeConstants.MEMBER_STATUS.ACTIVE)
+        inspection.values.contains(ReferenceConstants.MEMBER_STATUS.ACTIVE)
         noExceptionThrown()
 
         where:
@@ -437,7 +437,7 @@ class MemberSpec extends BaseSpecification {
         result == expectedList
         Map<String, List> inspection = inspectSpecification(capturedSpec)
         inspection.filters.contains(FieldConstants.STATUS)
-        inspection.values.contains(ReferenceCodeConstants.MEMBER_STATUS.ACTIVE)
+        inspection.values.contains(ReferenceConstants.MEMBER_STATUS.ACTIVE)
         noExceptionThrown()
 
         where:

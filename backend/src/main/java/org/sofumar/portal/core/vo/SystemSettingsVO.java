@@ -30,8 +30,8 @@ public class SystemSettingsVO extends ValueObject {
     private Integer systemSettingsID;
 
     @NotBlank
-    @Column(name = FieldConstants.SETTING_TYPE, nullable = false)
-    private String settingType;
+    @Column(name = FieldConstants.SETTING_NAME, nullable = false)
+    private String settingName;
 
     @NotBlank
     @Column(name = FieldConstants.SETTING_KEY, unique = true, nullable = false)

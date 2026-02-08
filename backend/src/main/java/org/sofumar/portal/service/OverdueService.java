@@ -1,10 +1,10 @@
 package org.sofumar.portal.service;
 
-import org.sofumar.portal.constants.ReferenceCodeConstants;
-import org.sofumar.portal.core.vo.MemberVO;
-import org.sofumar.portal.core.vo.PaymentVO;
+import org.sofumar.portal.constants.ReferenceConstants;
 import org.sofumar.portal.core.businesslogic.Member;
 import org.sofumar.portal.core.businesslogic.Payment;
+import org.sofumar.portal.core.vo.MemberVO;
+import org.sofumar.portal.core.vo.PaymentVO;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -37,7 +37,7 @@ public class OverdueService {
 
         return all.stream().filter(m -> {
             List<PaymentVO> paymentVOList = payments.findPaymentsForMemberQuarter(
-                    m.getMemberID(), year, quarter, ReferenceCodeConstants.FEE_TYPE.MEMBERSHIP_FEE);
+                    m.getMemberID(), year, quarter, ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE);
             boolean paidOnTime = paymentVOList.stream().anyMatch(p -> !p.getDateReceived().isAfter(dueDate));
             return !paidOnTime && asOfDate.isAfter(dueDate);
         }).toList();

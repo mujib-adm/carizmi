@@ -41,10 +41,10 @@ class SystemSettingSpec extends BaseSpecification {
         given: "A valid update request and existing VO"
         Integer id = 1
         String value = "V"
-        String type = "T"
+        String name = "N"
         String key = "K"
         SystemSettingsDto dto = new SystemSettingsDto(systemSettingsID: id, settingValue: value)
-        SystemSettingsVO vo = new SystemSettingsVO(systemSettingsID: id, settingType: type, settingKey: key)
+        SystemSettingsVO vo = new SystemSettingsVO(systemSettingsID: id, settingName: name, settingKey: key)
         ResponseEntity<GlobalResponse<Void>> response
 
         when: "The target method executed"
@@ -156,7 +156,7 @@ class SystemSettingSpec extends BaseSpecification {
         Page<SystemSettingsVO> mockPage = Mock(Page)
         JpaSpecification capturedSpec
 
-        SystemSettingsSearchRequestDto request = new SystemSettingsSearchRequestDto(settingType: type)
+        SystemSettingsSearchRequestDto request = new SystemSettingsSearchRequestDto(settingName: name)
         request.setPage(0)
         request.setSize(10)
         request.setSortField(FieldConstants.SETTING_KEY)
@@ -191,8 +191,8 @@ class SystemSettingSpec extends BaseSpecification {
         }
 
         where:
-        desc         | type   || expectedFilters               | expectedValues
-        "Type only"  | "Type" || [FieldConstants.SETTING_TYPE] | ["type"]
+        desc         | name || expectedFilters | expectedValues
+        "Name only"  | "Name" || [FieldConstants.SETTING_NAME] | ["name"]
         "No filters" | null   || []                            | []
     }
 
@@ -242,15 +242,15 @@ class SystemSettingSpec extends BaseSpecification {
         noExceptionThrown()
     }
 
-    def "test - findByTypeAndKey: Should return Optional of VO"() {
-        given: "Type and Key"
-        String type = "TYPE"
+    def "test - findByNameAndKey: Should return Optional of VO"() {
+        given: "Name and Key"
+        String name = "NAME"
         String key = "KEY"
-        SystemSettingsVO vo = new SystemSettingsVO(settingType: type, settingKey: key)
+        SystemSettingsVO vo = new SystemSettingsVO(settingName: name, settingKey: key)
         JpaSpecification capturedSpec = null
 
         when: "The target method executed"
-        Optional<SystemSettingsVO> result = systemSetting.findByTypeAndKey(type, key)
+        Optional<SystemSettingsVO> result = systemSetting.findByNameAndKey(name, key)
 
         then: "The expected calls are made"
         1 * settingsRepo.findOne(_ as JpaSpecification) >> { JpaSpecification spec -> capturedSpec = spec; Optional.of(vo) }
@@ -260,8 +260,8 @@ class SystemSettingSpec extends BaseSpecification {
         result.isPresent()
         result.get() == vo
         Map<String, List> inspection = inspectSpecification(capturedSpec)
-        inspection.filters.containsAll([FieldConstants.SETTING_TYPE, FieldConstants.SETTING_KEY])
-        inspection.values.containsAll([type.toLowerCase(), key.toLowerCase()])
+        inspection.filters.containsAll([FieldConstants.SETTING_NAME, FieldConstants.SETTING_KEY])
+        inspection.values.containsAll([name.toLowerCase(), key.toLowerCase()])
         noExceptionThrown()
     }
 }

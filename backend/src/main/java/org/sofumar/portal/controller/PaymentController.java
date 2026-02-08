@@ -32,21 +32,21 @@ public class PaymentController {
 
     @PostMapping("/add")
     @Operation(summary = "Add a new payment")
-    @PreAuthorize("hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_ADMIN) or hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_MANAGER)")
+    @PreAuthorize("hasRole(T(org.sofumar.portal.constants.Role).ADMIN.name()) or hasRole(T(org.sofumar.portal.constants.Role).MANAGER.name())")
     public ResponseEntity<GlobalResponse<Integer>> addPayment(@RequestBody PaymentDto requestDto) {
         return payment.addPayment(requestDto);
     }
 
     @PutMapping("/update")
     @Operation(summary = "Update an existing payment")
-    @PreAuthorize("hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_ADMIN) or hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_MANAGER)")
+    @PreAuthorize("hasRole(T(org.sofumar.portal.constants.Role).ADMIN.name()) or hasRole(T(org.sofumar.portal.constants.Role).MANAGER.name())")
     public ResponseEntity<GlobalResponse<Void>> updatePayment(@RequestBody PaymentDto requestDto) {
         return payment.updatePayment(requestDto);
     }
 
     @DeleteMapping("/delete/{paymentID}")
     @Operation(summary = "Delete payment by ID")
-    @PreAuthorize("hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_ADMIN) or hasRole(T(org.sofumar.portal.constants.RoleConstants).ROLE_MANAGER)")
+    @PreAuthorize("hasRole(T(org.sofumar.portal.constants.Role).ADMIN.name()) or hasRole(T(org.sofumar.portal.constants.Role).MANAGER.name())")
     public ResponseEntity<GlobalResponse<Void>> deletePayment(@PathVariable Integer paymentID) {
         return payment.deletePayment(paymentID);
     }

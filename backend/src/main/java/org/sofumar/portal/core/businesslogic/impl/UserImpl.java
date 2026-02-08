@@ -10,7 +10,8 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.sofumar.portal.constants.RoleConstants;
+import org.sofumar.portal.constants.MessagesConstants;
+import org.sofumar.portal.constants.Role;
 import org.sofumar.portal.data.dto.response.UserResponseDto;
 import org.sofumar.portal.data.dto.response.UserProfileDto;
 import org.sofumar.portal.data.dto.request.PasswordUpdateRequestDto;
@@ -27,6 +28,7 @@ import org.sofumar.portal.core.repo.UserRepository;
 import org.sofumar.portal.core.repo.jpaspec.UserSpecifications;
 import org.sofumar.portal.core.businesslogic.User;
 import org.sofumar.portal.service.validation.UserValidator;
+import org.springframework.lang.NonNull;
 import org.sofumar.portal.framework.service.RefreshTokenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -84,7 +86,7 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
     @Transactional
     public ResponseEntity<GlobalResponse<Void>> register(UserDto requestDto) {
         UserVO userVO = voTransformer.transform(requestDto);
-        userVO.setRole(RoleConstants.ROLE_ANONYMOUS);
+        userVO.setRole(Role.ANONYMOUS);
         userVO.setActive(true);
         validator.validate(userVO);
         userVO.setPassword(encoder.encode(userVO.getPassword()));
@@ -99,7 +101,7 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
             return ResponseUtils.withStatus(HttpStatus.UNAUTHORIZED, Message.Type.ERROR, "Invalid username or password.");
         } else if (!userVO.isActive()) {
             return ResponseUtils.withStatus(HttpStatus.UNAUTHORIZED, Message.Type.ERROR, "Your account is inactive. Please contact support for assistance.");
-        } else if (RoleConstants.ROLE_ANONYMOUS.equalsIgnoreCase(userVO.getRole())) {
+        } else if (Role.ANONYMOUS == userVO.getRole()) {
             return ResponseUtils.ok("Welcome! Your account is pending role assignment. Please contact support for assistance.");
         }
 
@@ -109,7 +111,7 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
         return ResponseUtils.withMap(Map.of(
             "token", accessToken, 
             "refreshToken", refreshToken,
-            "role", userVO.getRole(), 
+            "role", userVO.getRole().name(), 
             "firstName", userVO.getFirstName()
         ));
     }
@@ -167,7 +169,7 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
 
     private String generateAccessToken(UserVO userVO) {
         return Jwts.builder()
-                .setSubject(userVO.getUsername()).claim("roles", List.of(userVO.getRole()))
+                .setSubject(userVO.getUsername()).claim("roles", List.of(userVO.getRole().name()))
                 .setIssuer("sofumar.portal").setIssuedAt(new Date())
                 .setExpiration(Date.from(Instant.now().plus(expMin, ChronoUnit.MINUTES)))
                 .signWith(Keys.hmacShaKeyFor(Base64.getDecoder().decode(secret)), SignatureAlgorithm.HS256).compact();
@@ -184,7 +186,7 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
         
         UserProfileDto dto = UserProfileDto.builder()
                 .username(userVO.getUsername())
-                .role(userVO.getRole())
+                .role(userVO.getRole().name())
                 .firstName(userVO.getFirstName())
                 .lastName(userVO.getLastName())
                 .email(userVO.getEmail())
@@ -231,29 +233,33 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
 
     @Override
     @Transactional
-    public ResponseEntity<GlobalResponse<Void>> updateUserRole(Integer userId, String newRole) {
+    public ResponseEntity<GlobalResponse<Void>> updateUserRole(@NonNull Integer userId, String newRole) {
         UserVO userVO = getRepo().findById(userId).orElseThrow(() -> new RecordNotFoundException("User not found"));
-        
+
+        if (validator.isInvalidRole(newRole)) {
+            return ResponseUtils.badRequest(MessagesConstants.INVALID_ROLE.getMessageString());
+        }
+
         // Prevent removing the last active admin
-        if (RoleConstants.ROLE_ADMIN.equals(userVO.getRole()) && !RoleConstants.ROLE_ADMIN.equals(newRole)) {
+        if (Role.ADMIN == userVO.getRole() && !Role.ADMIN.name().equals(newRole)) {
             if (userVO.isActive() && countActiveAdmins() <= 1) {
-                return ResponseUtils.badRequest("Cannot update role for the last active " + RoleConstants.ROLE_ADMIN + ".");
+                return ResponseUtils.badRequest("Cannot update role for the last active " + Role.ADMIN.name() + ".");
             }
         }
         
-        userVO.setRole(newRole);
+        userVO.setRole(Role.valueOf(newRole));
         update(userVO);
         return ResponseUtils.ok(RECORD_UPDATED.addMessageArgs("User role").getMessageString());
     }
 
     @Override
     @Transactional
-    public ResponseEntity<GlobalResponse<Void>> toggleUserStatus(Integer userId, boolean active) {
+    public ResponseEntity<GlobalResponse<Void>> toggleUserStatus(@NonNull Integer userId, boolean active) {
         UserVO userVO = getRepo().findById(userId).orElseThrow(() -> new RecordNotFoundException("User not found"));
         
         // Prevent deactivating the last active admin
-        if (!active && RoleConstants.ROLE_ADMIN.equals(userVO.getRole()) && countActiveAdmins() <= 1) {
-            return ResponseUtils.badRequest("Cannot deactivate the last active " + RoleConstants.ROLE_ADMIN + ".");
+        if (!active && Role.ADMIN == userVO.getRole() && countActiveAdmins() <= 1) {
+            return ResponseUtils.badRequest("Cannot deactivate the last active " + Role.ADMIN.name() + ".");
         }
         
         userVO.setActive(active);
@@ -262,12 +268,12 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
     }
 
     private long countActiveAdmins() {
-        return getRepo().count(UserSpecifications.hasRole(RoleConstants.ROLE_ADMIN).and(UserSpecifications.isActive(true)));
+        return getRepo().count(UserSpecifications.hasRole(Role.ADMIN).and(UserSpecifications.isActive(true)));
     }
 
     @Override
     public boolean adminUserExists() {
-        return getRepo().exists(UserSpecifications.hasRole(RoleConstants.ROLE_ADMIN));
+        return getRepo().exists(UserSpecifications.hasRole(Role.ADMIN));
     }
 
 }

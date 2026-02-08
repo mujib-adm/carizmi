@@ -6,7 +6,7 @@ import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { getDashboardMetrics, getLatestPayments } from "../../apiclient/dashboardApi";
 import { MessageBanner } from "../../component/MessageBanner";
 import Sidebar from "../../component/Sidebar";
-import { FEE_TYPE } from "../../constants/referenceConstants";
+import { ReferenceCodeConstants } from "../../constants/ReferenceCodeConstants";
 import { DashboardMetrics, RecentTransactions } from "../../constants/types";
 import { useReference } from "../../context/ReferenceContext";
 import { useApiMessages } from "../../hook/ApiResponseHandler";
@@ -90,7 +90,7 @@ export default function Dashboard() {
   const columns = [
     { title: 'Date', dataIndex: 'paymentDate', key: 'paymentDate', render: (d: string) => d ? new Date(d).toLocaleDateString() : 'N/A' },
     { title: 'Member Name', dataIndex: 'memberName', key: 'memberName', render: (text: string, record: RecentTransactions) => <Link to={`/members/${record.memberID}`}>{text}</Link> },
-    { title: 'Description', dataIndex: 'feeType', key: 'feeType', render: (code: string) => toDisplay(FEE_TYPE, code) },
+    { title: 'Description', dataIndex: 'feeType', key: 'feeType', render: (code: string) => toDisplay(ReferenceCodeConstants.FEE_TYPE.NAME, code) },
     { title: 'Amount', dataIndex: 'amount', key: 'amount', render: (val: number) => `$${val?.toFixed(2) ?? '0.00'}` },
   ];
 
@@ -194,7 +194,7 @@ export default function Dashboard() {
             </Col>
           </Row>
 
-          {/* Second Row — Quarterly Membership Fee Visualization & Recent Transactions */}
+          {/* Second Row — Quarterly Membership Fee Visualization & Recent Payments */}
           <Row gutter={[24, 24]} style={{ marginBottom: 32 }}>
             <Col xs={24} md={12}>
               <Card className="glass-card" style={{ height: '100%' }}>
@@ -262,7 +262,7 @@ export default function Dashboard() {
             <Col xs={24} md={12}>
               <Card className="glass-card" style={{ height: '100%' }}>
                 <div className="chart-container" style={{ position: 'relative' }}>
-                  <div className="chart-title" style={{ marginBottom: '28px' }}>Recent Transactions</div>
+                  <div className="chart-title" style={{ marginBottom: '28px' }}>Recent Payments</div>
                   <Table
                     columns={columns}
                     dataSource={payments}

@@ -3,7 +3,7 @@ package org.sofumar.portal.service.helper.impl
 import org.mockito.MockedStatic
 import org.mockito.Mockito
 import org.sofumar.portal.constants.QuarterStatus
-import org.sofumar.portal.constants.ReferenceCodeConstants
+import org.sofumar.portal.constants.ReferenceConstants
 import org.sofumar.portal.data.dto.response.DashboardMetricsDto
 import org.sofumar.portal.core.vo.MemberVO
 import org.sofumar.portal.framework.data.response.GlobalResponse
@@ -60,7 +60,7 @@ class DashboardServiceSpec extends BaseSpecification {
         1 * expense.sumAmountByDateOfExpenseBetween(_ as LocalDate, fixedDate) >> null
         // Q2 logic: 1 call from main method, 1 from compute(Q1), 1 from compute(Q2) = 3 total
         3 * payment.sumAmountByYearAndQuarter(year, _ as Integer) >> null
-        1 * payment.findPaymentSummaries(ReferenceCodeConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> [ps1]
+        1 * payment.findPaymentSummaries(ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> [ps1]
         1 * member.findAllActiveMembers() >> [m1, m2, m3, m4]
         // Implicit calls from summary logic - use wildcards effectively but strictly
         _ * ps1.getMemberID() >> 1

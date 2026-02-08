@@ -9,6 +9,7 @@ import org.sofumar.portal.core.vo.ExpenseVO;
 import org.sofumar.portal.framework.bl.BusinessLogic;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 
 import java.math.BigDecimal;
 
@@ -18,9 +19,9 @@ public interface Expense extends BusinessLogic<ExpenseVO> {
 
     ResponseEntity<GlobalResponse<Void>> updateExpense(ExpenseDto requestDto);
 
-    ResponseEntity<GlobalResponse<Void>> deleteExpense(Integer expenseID);
+    ResponseEntity<GlobalResponse<Void>> deleteExpense(@NonNull Integer expenseID);
 
-    ResponseEntity<GlobalResponse<ExpenseDto>> getExpense(Integer expenseID);
+    ResponseEntity<GlobalResponse<ExpenseDto>> getExpense(@NonNull Integer expenseID);
 
     ResponseEntity<GlobalResponse<List<ExpenseDto>>> searchExpenses(ExpenseSearchRequestDto request);
 

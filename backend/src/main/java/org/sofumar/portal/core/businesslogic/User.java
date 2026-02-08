@@ -9,6 +9,7 @@ import org.sofumar.portal.core.vo.UserVO;
 import org.sofumar.portal.framework.bl.BusinessLogic;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 
 public interface User extends BusinessLogic<UserVO> {
     ResponseEntity<GlobalResponse<Void>> register(UserDto requestDto);
@@ -25,9 +26,9 @@ public interface User extends BusinessLogic<UserVO> {
 
     ResponseEntity<GlobalResponse<List<UserResponseDto>>> getAllUsers();
 
-    ResponseEntity<GlobalResponse<Void>> updateUserRole(Integer userId, String newRole);
+    ResponseEntity<GlobalResponse<Void>> updateUserRole(@NonNull Integer userId, String newRole);
 
-    ResponseEntity<GlobalResponse<Void>> toggleUserStatus(Integer userId, boolean active);
+    ResponseEntity<GlobalResponse<Void>> toggleUserStatus(@NonNull Integer userId, boolean active);
 
     boolean adminUserExists();
 

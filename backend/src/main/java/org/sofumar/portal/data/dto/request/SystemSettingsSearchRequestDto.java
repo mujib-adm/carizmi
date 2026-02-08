@@ -14,5 +14,5 @@ import lombok.EqualsAndHashCode;
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 public class SystemSettingsSearchRequestDto extends PaginationDto {
-    private String settingType;
+    private String settingName;
 }

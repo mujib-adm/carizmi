@@ -1,6 +1,6 @@
 package org.sofumar.portal.core.businesslogic.impl
 
-import org.sofumar.portal.constants.ReferenceCodeConstants
+import org.sofumar.portal.constants.ReferenceConstants
 import org.sofumar.portal.constants.FieldConstants
 import org.sofumar.portal.constants.TableConstants
 import org.sofumar.portal.data.dto.response.LatestPaymentDto
@@ -53,7 +53,7 @@ class PaymentSpec extends BaseSpecification {
         Integer paymentId = 1
         int year = LocalDate.now().year
         int quarter = 1
-        String feeType = ReferenceCodeConstants.FEE_TYPE.MEMBERSHIP_FEE
+        String feeType = ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE
         PaymentDto request = new PaymentDto(memberID: memberId, feeType: feeType, year: year, quarter: quarter)
         PaymentVO vo = new PaymentVO(paymentID: paymentId)
         ResponseEntity<GlobalResponse<Integer>> response
@@ -84,7 +84,7 @@ class PaymentSpec extends BaseSpecification {
         Integer memberId = 1
         int year = LocalDate.now().year
         int quarter = 1
-        String feeType = ReferenceCodeConstants.FEE_TYPE.MEMBERSHIP_FEE
+        String feeType = ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE
         PaymentDto request = new PaymentDto(memberID: memberId, feeType: feeType, year: year, quarter: quarter)
         JpaSpecification capturedSpec
 

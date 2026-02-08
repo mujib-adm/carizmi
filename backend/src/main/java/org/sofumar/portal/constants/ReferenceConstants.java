@@ -2,9 +2,9 @@ package org.sofumar.portal.constants;
 
 /**
  * Auto-generated constants from reference-data.json.
- * DO NOT MODIFY MANUALLY. Run ReferenceCodeGenerator to regenerate.
+ * DO NOT MODIFY MANUALLY. Run ReferenceConstantsGenerator to regenerate.
  */
-public final class ReferenceCodeConstants {
+public final class ReferenceConstants {
 
     public static final class MEMBER_STATUS {
         public static final String NAME = "memberStatus";

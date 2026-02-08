@@ -50,12 +50,12 @@ public class SystemSettingsDataLoader implements CommandLineRunner {
             JsonNode rootNode = objectMapper.readTree(inputStream);
             
         for (Map.Entry<String, JsonNode> entry : rootNode.properties()) {
-            String settingType = entry.getKey();
+            String settingName = entry.getKey();
             JsonNode items = entry.getValue();
 
                 if (items.isArray()) {
                 for (JsonNode item : items) {
-                    sync(settingType, item);
+                    sync(settingName, item);
                     }
                 }
             }
@@ -65,9 +65,9 @@ public class SystemSettingsDataLoader implements CommandLineRunner {
         }
     }
 
-    private void sync(String settingType, JsonNode item) {
+    private void sync(String settingName, JsonNode item) {
         SystemSettingsVO newSettingVO = new SystemSettingsVO();
-        newSettingVO.setSettingType(settingType);
+        newSettingVO.setSettingName(settingName);
         if (item.has(KEY)) newSettingVO.setSettingKey(item.get(KEY).asText());
         if (item.has(VALUE)) newSettingVO.setSettingValue(item.get(VALUE).asText());
         if (item.has(FieldConstants.ACTIVE)) newSettingVO.setActive(item.get(FieldConstants.ACTIVE).asBoolean(true));
@@ -84,15 +84,15 @@ public class SystemSettingsDataLoader implements CommandLineRunner {
     }
 
     private void sync(SystemSettingsVO newSettingVO) {
-        String type = newSettingVO.getSettingType();
+        String name = newSettingVO.getSettingName();
         String key = newSettingVO.getSettingKey();
         
-        if (type == null || key == null) {
-            logger.warn("Skipping invalid setting: [{}] {}", type, key);
+        if (name == null || key == null) {
+            logger.warn("Skipping invalid setting: [{}] {}", name, key);
             return;
         }
 
-        Optional<SystemSettingsVO> existingSettingOpt = systemSetting.findByTypeAndKey(type, key);
+        Optional<SystemSettingsVO> existingSettingOpt = systemSetting.findByNameAndKey(name, key);
 
         if (existingSettingOpt.isPresent()) {
             SystemSettingsVO existingSettingVO = existingSettingOpt.get();
@@ -117,11 +117,11 @@ public class SystemSettingsDataLoader implements CommandLineRunner {
             }
 
             if (changed) {
-                logger.info("Updating existing setting: [{}] {}", type, key);
+                logger.info("Updating existing setting: [{}] {}", name, key);
                 systemSetting.update(existingSettingVO);
             }
         } else {
-            logger.info("Creating new setting: [{}] {}", type, key);
+            logger.info("Creating new setting: [{}] {}", name, key);
             systemSetting.add(newSettingVO);
         }
     }

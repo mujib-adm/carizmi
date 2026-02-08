@@ -1,7 +1,7 @@
 package org.sofumar.portal.service.validation
 
 import org.sofumar.portal.constants.FieldConstants
-import org.sofumar.portal.constants.ReferenceCodeConstants
+import org.sofumar.portal.constants.ReferenceConstants
 import org.sofumar.portal.core.vo.MemberVO
 import org.sofumar.portal.core.vo.PaymentVO
 import org.sofumar.portal.framework.exception.ValidationException
@@ -21,17 +21,17 @@ class PaymentValidatorSpec extends BaseSpecification {
     def "test - validate: Should pass for valid Non-Membership Payment"() {
         given: "A valid PaymentVO (e.g., REGISTRATION_FEE)"
         MemberVO member = new MemberVO(memberID: 1)
-        String feeType = ReferenceCodeConstants.FEE_TYPE.REGISTRATION_FEE
+        String feeType = ReferenceConstants.FEE_TYPE.REGISTRATION_FEE
         BigDecimal amount = 50.0
         LocalDate date = LocalDate.now()
-        String method = ReferenceCodeConstants.PAYMENT_METHOD.CASH
+        String method = ReferenceConstants.PAYMENT_METHOD.CASH
         PaymentVO vo = new PaymentVO(member: member, feeType: feeType, amount: amount, dateReceived: date, methodOfPayment: method)
 
         String feeTypeField = FieldConstants.FEE_TYPE
-        String feeTypeName = ReferenceCodeConstants.FEE_TYPE.NAME
+        String feeTypeName = ReferenceConstants.FEE_TYPE.NAME
 
         String methodField = FieldConstants.METHOD_OF_PAYMENT
-        String methodName = ReferenceCodeConstants.PAYMENT_METHOD.NAME
+        String methodName = ReferenceConstants.PAYMENT_METHOD.NAME
 
         when: "The target method executed"
         paymentValidator.validate(vo)
@@ -49,19 +49,19 @@ class PaymentValidatorSpec extends BaseSpecification {
     def "test - validate: Should pass for valid Membership Payment"() {
         given: "A valid Membership PaymentVO"
         MemberVO member = new MemberVO(memberID: 1)
-        String feeType = ReferenceCodeConstants.FEE_TYPE.MEMBERSHIP_FEE
+        String feeType = ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE
         BigDecimal amount = 100.0
         LocalDate date = LocalDate.now()
-        String method = ReferenceCodeConstants.PAYMENT_METHOD.CHECK
+        String method = ReferenceConstants.PAYMENT_METHOD.CHECK
         Integer year = 2024
         Integer quarter = 1
         PaymentVO vo = new PaymentVO(member: member, feeType: feeType, amount: amount, dateReceived: date, methodOfPayment: method, year: year, quarter: quarter)
 
         String feeTypeField = FieldConstants.FEE_TYPE
-        String feeTypeName = ReferenceCodeConstants.FEE_TYPE.NAME
+        String feeTypeName = ReferenceConstants.FEE_TYPE.NAME
 
         String methodField = FieldConstants.METHOD_OF_PAYMENT
-        String methodName = ReferenceCodeConstants.PAYMENT_METHOD.NAME
+        String methodName = ReferenceConstants.PAYMENT_METHOD.NAME
 
         when: "The target method executed"
         paymentValidator.validate(vo)
@@ -79,8 +79,8 @@ class PaymentValidatorSpec extends BaseSpecification {
     @Unroll
     def "test - validate: Handling field validations [field: #field, value: #value]"() {
         given: "A PaymentVO with a specific field variation"
-        String defaultFeeType = ReferenceCodeConstants.FEE_TYPE.REGISTRATION_FEE
-        String defaultMethod = ReferenceCodeConstants.PAYMENT_METHOD.CASH
+        String defaultFeeType = ReferenceConstants.FEE_TYPE.REGISTRATION_FEE
+        String defaultMethod = ReferenceConstants.PAYMENT_METHOD.CASH
 
         MemberVO member = field == FieldConstants.MEMBER_ID && value == null ? null : new MemberVO(memberID: 1)
         PaymentVO vo = new PaymentVO(
@@ -95,10 +95,10 @@ class PaymentValidatorSpec extends BaseSpecification {
         }
 
         String feeTypeField = FieldConstants.FEE_TYPE
-        String feeTypeName = ReferenceCodeConstants.FEE_TYPE.NAME
+        String feeTypeName = ReferenceConstants.FEE_TYPE.NAME
 
         String paymentMethodField = FieldConstants.METHOD_OF_PAYMENT
-        String methodName = ReferenceCodeConstants.PAYMENT_METHOD.NAME
+        String methodName = ReferenceConstants.PAYMENT_METHOD.NAME
 
         when: "The target method executed"
         try {
@@ -137,15 +137,15 @@ class PaymentValidatorSpec extends BaseSpecification {
     def "test - validate: Handling period logic for Membership [year: #year, quarter: #quarter]"() {
         given: "A Membership PaymentVO with partial period"
         MemberVO member = new MemberVO(memberID: 1)
-        String feeType = ReferenceCodeConstants.FEE_TYPE.MEMBERSHIP_FEE
-        String method = ReferenceCodeConstants.PAYMENT_METHOD.CASH
+        String feeType = ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE
+        String method = ReferenceConstants.PAYMENT_METHOD.CASH
         PaymentVO vo = new PaymentVO(member: member, feeType: feeType, amount: 100.0, dateReceived: LocalDate.now(), methodOfPayment: method, year: year, quarter: quarter)
 
         String feeTypeField = FieldConstants.FEE_TYPE
-        String feeTypeName = ReferenceCodeConstants.FEE_TYPE.NAME
+        String feeTypeName = ReferenceConstants.FEE_TYPE.NAME
 
         String methodField = FieldConstants.METHOD_OF_PAYMENT
-        String methodName = ReferenceCodeConstants.PAYMENT_METHOD.NAME
+        String methodName = ReferenceConstants.PAYMENT_METHOD.NAME
 
         when: "The target method executed"
         try {
@@ -176,15 +176,15 @@ class PaymentValidatorSpec extends BaseSpecification {
         given: "A PaymentVO for update"
         Integer paymentID = 1
         MemberVO member = new MemberVO(memberID: 1)
-        String feeType = ReferenceCodeConstants.FEE_TYPE.REGISTRATION_FEE
-        String method = ReferenceCodeConstants.PAYMENT_METHOD.CASH
+        String feeType = ReferenceConstants.FEE_TYPE.REGISTRATION_FEE
+        String method = ReferenceConstants.PAYMENT_METHOD.CASH
         PaymentVO vo = new PaymentVO(paymentID: paymentID, member: member, feeType: feeType, amount: 50.0, dateReceived: LocalDate.now(), methodOfPayment: method)
 
         String feeTypeField = FieldConstants.FEE_TYPE
-        String feeTypeName = ReferenceCodeConstants.FEE_TYPE.NAME
+        String feeTypeName = ReferenceConstants.FEE_TYPE.NAME
 
         String methodField = FieldConstants.METHOD_OF_PAYMENT
-        String methodName = ReferenceCodeConstants.PAYMENT_METHOD.NAME
+        String methodName = ReferenceConstants.PAYMENT_METHOD.NAME
 
         when: "The target method executed"
         paymentValidator.validateForUpdate(vo)
@@ -202,15 +202,15 @@ class PaymentValidatorSpec extends BaseSpecification {
     def "test - validateForUpdate: Should catch missing paymentID"() {
         given: "A PaymentVO for update without ID"
         MemberVO member = new MemberVO(memberID: 1)
-        String feeType = ReferenceCodeConstants.FEE_TYPE.REGISTRATION_FEE
-        String method = ReferenceCodeConstants.PAYMENT_METHOD.CASH
+        String feeType = ReferenceConstants.FEE_TYPE.REGISTRATION_FEE
+        String method = ReferenceConstants.PAYMENT_METHOD.CASH
         PaymentVO vo = new PaymentVO(member: member, feeType: feeType, amount: 50.0, dateReceived: LocalDate.now(), methodOfPayment: method)
 
         String feeTypeField = FieldConstants.FEE_TYPE
-        String feeTypeName = ReferenceCodeConstants.FEE_TYPE.NAME
+        String feeTypeName = ReferenceConstants.FEE_TYPE.NAME
 
         String methodField = FieldConstants.METHOD_OF_PAYMENT
-        String methodName = ReferenceCodeConstants.PAYMENT_METHOD.NAME
+        String methodName = ReferenceConstants.PAYMENT_METHOD.NAME
 
         when: "The target method executed"
         paymentValidator.validateForUpdate(vo)

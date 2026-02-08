@@ -3,6 +3,7 @@ package org.sofumar.portal.service.validation;
 import org.apache.commons.lang3.StringUtils;
 import org.sofumar.portal.constants.FieldConstants;
 import org.sofumar.portal.constants.MessagesConstants;
+import org.sofumar.portal.constants.Role;
 import org.sofumar.portal.core.vo.UserVO;
 import org.sofumar.portal.framework.exception.ValidationException;
 import org.springframework.stereotype.Service;
@@ -16,9 +17,20 @@ public class UserValidator {
     public void validate(UserVO vo) throws ValidationException {
         validateUsername(vo);
         validatePassword(vo);
+        validateRole(vo);
 
         if (vo.hasErrors()) {
             throw new ValidationException(vo);
+        }
+    }
+
+    public boolean isInvalidRole(String role) {
+        if (StringUtils.isBlank(role)) return true;
+        try {
+            Role.valueOf(role);
+            return false;
+        } catch (IllegalArgumentException e) {
+            return true;
         }
     }
 
@@ -31,6 +43,13 @@ public class UserValidator {
     private void validatePassword(UserVO vo) {
         if (isNotMatchRegex(vo.getPassword(), PASSWORD_REGEX_TEMP)) {
             vo.addFieldMessage(FieldConstants.PASSWORD, MessagesConstants.INVALID_PASSWORD);
+        }
+    }
+
+    private void validateRole(UserVO vo) {
+        String role = String.valueOf(vo.getRole());
+        if (isInvalidRole(role)) {
+            vo.addFieldMessage(FieldConstants.ROLE, MessagesConstants.INVALID_ROLE);
         }
     }
 

@@ -4,11 +4,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sofumar.portal.constants.FieldConstants;
 import org.sofumar.portal.constants.MessagesConstants;
-import org.sofumar.portal.constants.ReferenceCodeConstants;
+import org.sofumar.portal.constants.ReferenceConstants;
+import org.sofumar.portal.core.businesslogic.Payment;
+import org.sofumar.portal.core.repo.PaymentRepository;
+import org.sofumar.portal.core.repo.jpaspec.PaymentSpecifications;
 import org.sofumar.portal.core.vo.PaymentVO;
-import org.sofumar.portal.data.dto.response.LatestPaymentDto;
 import org.sofumar.portal.data.dto.PaymentDto;
 import org.sofumar.portal.data.dto.request.PaymentSearchRequestDto;
+import org.sofumar.portal.data.dto.response.LatestPaymentDto;
 import org.sofumar.portal.data.dto.response.PaymentSummary;
 import org.sofumar.portal.data.transformer.PaymentDtoTransformer;
 import org.sofumar.portal.data.transformer.PaymentVOTransformer;
@@ -17,9 +20,6 @@ import org.sofumar.portal.framework.data.response.PaginationMeta;
 import org.sofumar.portal.framework.exception.RecordNotFoundException;
 import org.sofumar.portal.framework.exception.ValidationException;
 import org.sofumar.portal.framework.util.ResponseUtils;
-import org.sofumar.portal.core.repo.PaymentRepository;
-import org.sofumar.portal.core.repo.jpaspec.PaymentSpecifications;
-import org.sofumar.portal.core.businesslogic.Payment;
 import org.sofumar.portal.service.validation.PaymentValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -27,6 +27,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -66,7 +67,7 @@ public non-sealed class PaymentImpl extends PaymentAbstractBL implements Payment
     @Transactional
     public ResponseEntity<GlobalResponse<Integer>> addPayment(PaymentDto requestDto) {
         // Duplicate Check logic
-        if (ReferenceCodeConstants.FEE_TYPE.MEMBERSHIP_FEE.equalsIgnoreCase(requestDto.getFeeType())) {
+        if (ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE.equalsIgnoreCase(requestDto.getFeeType())) {
             validateDuplicate(requestDto);
         }
 
@@ -112,7 +113,7 @@ public non-sealed class PaymentImpl extends PaymentAbstractBL implements Payment
 
     @Override
     @Transactional
-    public ResponseEntity<GlobalResponse<Void>> deletePayment(Integer paymentID) {
+    public ResponseEntity<GlobalResponse<Void>> deletePayment(@NonNull Integer paymentID) {
         PaymentVO existing = getRepo().findById(paymentID)
                 .orElseThrow(() -> new RecordNotFoundException("Payment not found: " + paymentID));
         delete(existing);
@@ -120,7 +121,7 @@ public non-sealed class PaymentImpl extends PaymentAbstractBL implements Payment
     }
 
     @Override
-    public ResponseEntity<GlobalResponse<PaymentDto>> getPayment(Integer paymentID) {
+    public ResponseEntity<GlobalResponse<PaymentDto>> getPayment(@NonNull Integer paymentID) {
         PaymentVO existing = getRepo().findById(paymentID)
                 .orElseThrow(() -> new RecordNotFoundException("Payment not found: " + paymentID));
         return ResponseUtils.okWithData(dtoTransformer.transform(existing));
@@ -156,27 +157,27 @@ public non-sealed class PaymentImpl extends PaymentAbstractBL implements Payment
     }
 
     @Override
-    public BigDecimal sumAmountByYearAndQuarter(Integer year, Integer quarter) {
+    public BigDecimal sumAmountByYearAndQuarter(@NonNull Integer year, @NonNull Integer quarter) {
         return getRepo().sumAmountByYearAndQuarter(year, quarter);
     }
 
     @Override
-    public BigDecimal sumAmountByMemberID(Integer memberID) {
+    public BigDecimal sumAmountByMemberID(@NonNull Integer memberID) {
         return getRepo().sumAmountByMemberID(memberID);
     }
 
     @Override
-    public BigDecimal sumAmountByMemberIDAndYearAndQuarter(Integer memberID, Integer year, Integer quarter) {
+    public BigDecimal sumAmountByMemberIDAndYearAndQuarter(@NonNull Integer memberID, @NonNull Integer year, @NonNull Integer quarter) {
         return getRepo().sumAmountByMemberIDAndYearAndQuarter(memberID, year, quarter);
     }
 
     @Override
-    public List<PaymentSummary> findMemberPaymentSummaries(Integer memberID, String feeType) {
+    public List<PaymentSummary> findMemberPaymentSummaries(@NonNull Integer memberID, String feeType) {
         return getRepo().findMemberPaymentSummaries(memberID, feeType);
     }
 
     @Override
-    public List<PaymentSummary> findPaymentSummaries(String feeType, Integer year) {
+    public List<PaymentSummary> findPaymentSummaries(String feeType, @NonNull Integer year) {
         return getRepo().findPaymentSummaries(feeType, year);
     }
 
@@ -209,7 +210,7 @@ public non-sealed class PaymentImpl extends PaymentAbstractBL implements Payment
     }
 
     @Override
-    public List<PaymentVO> findPaymentsForMemberQuarter(Integer memberID, Integer year, Integer quarter, String feeType) {
+    public List<PaymentVO> findPaymentsForMemberQuarter(@NonNull Integer memberID, @NonNull Integer year, @NonNull Integer quarter, String feeType) {
         Specification<PaymentVO> spec = Specification.allOf(
                 PaymentSpecifications.hasMemberID(memberID),
                 PaymentSpecifications.hasYear(year),

@@ -2,9 +2,9 @@ package org.sofumar.portal.constants;
 
 /**
  * Auto-generated constants from systemsettings-data.json.
- * DO NOT MODIFY MANUALLY. Run SystemSettingsCodeGenerator to regenerate.
+ * DO NOT MODIFY MANUALLY. Run SystemSettingConstantsGenerator to regenerate.
  */
-public final class SystemSettingsCodeConstants {
+public final class SystemSettingConstants {
 
     public static final class BASELINE_REVENUE {
         public static final String TYPE = "BASELINE_REVENUE";
