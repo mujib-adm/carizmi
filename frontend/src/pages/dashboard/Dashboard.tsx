@@ -6,7 +6,7 @@ import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { getDashboardMetrics, getLatestPayments } from "../../apiclient/dashboardApi";
 import { MessageBanner } from "../../component/MessageBanner";
 import Sidebar from "../../component/Sidebar";
-import { ReferenceCodeConstants } from "../../constants/ReferenceCodeConstants";
+import { ReferenceConstants } from "../../constants/ReferenceConstants";
 import { DashboardMetrics, RecentTransactions } from "../../constants/types";
 import { useReference } from "../../context/ReferenceContext";
 import { useApiMessages } from "../../hook/ApiResponseHandler";
@@ -90,7 +90,7 @@ export default function Dashboard() {
   const columns = [
     { title: 'Date', dataIndex: 'paymentDate', key: 'paymentDate', render: (d: string) => d ? new Date(d).toLocaleDateString() : 'N/A' },
     { title: 'Member Name', dataIndex: 'memberName', key: 'memberName', render: (text: string, record: RecentTransactions) => <Link to={`/members/${record.memberID}`}>{text}</Link> },
-    { title: 'Description', dataIndex: 'feeType', key: 'feeType', render: (code: string) => toDisplay(ReferenceCodeConstants.FEE_TYPE.NAME, code) },
+    { title: 'Description', dataIndex: 'feeType', key: 'feeType', render: (code: string) => toDisplay(ReferenceConstants.FEE_TYPE.NAME, code) },
     { title: 'Amount', dataIndex: 'amount', key: 'amount', render: (val: number) => `$${val?.toFixed(2) ?? '0.00'}` },
   ];
 

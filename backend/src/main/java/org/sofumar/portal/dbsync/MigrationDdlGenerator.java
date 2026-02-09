@@ -197,26 +197,8 @@ public class MigrationDdlGenerator {
     }
 
     private static String getNextMigrationFileName(File migrationDir) {
-        int maxVersion = 1; // Default to 1 so the next is 2
-        File[] files = migrationDir.listFiles((dir, name) -> name.startsWith("V") && name.endsWith(".sql"));
-        if (files != null) {
-            for (File file : files) {
-                String name = file.getName();
-                try {
-                    int underscoreIndex = name.indexOf("__");
-                    if (underscoreIndex > 1) {
-                        String versionStr = name.substring(1, underscoreIndex);
-                        int version = Integer.parseInt(versionStr);
-                        if (version > maxVersion) {
-                            maxVersion = version;
-                        }
-                    }
-                } catch (NumberFormatException e) {
-                    // skip files that don't follow the pattern V<number>__
-                }
-            }
-        }
-        return String.format("V%05d__DDL.sql", maxVersion + 1);
+        String timestamp = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        return String.format("V%s__DDL.sql", timestamp);
     }
 
     private static Path getResourcesPath() {

@@ -1,17 +1,17 @@
 import { useCallback, useState } from 'react';
 import { searchExpenses } from '../apiclient/expenseApi';
-import { Expense, ExpenseSearchParams, GlobalResponse, PaginationMeta } from '../constants/types';
+import { Expense, ExpenseSearchRequest, GlobalResponse, PaginationMeta } from '../constants/types';
 
-export function usePaginatedExpenses(initialParams: ExpenseSearchParams = {}) {
+export function usePaginatedExpenses(initialRequest: ExpenseSearchRequest = {}) {
     const [expenses, setExpenses] = useState<Expense[]>([]);
     const [meta, setMeta] = useState<PaginationMeta | null>(null);
     const [loading, setLoading] = useState(false);
 
-    const fetchExpenses = useCallback(async (override: ExpenseSearchParams = {}) => {
+    const fetchExpenses = useCallback(async (request: ExpenseSearchRequest = {}) => {
         setLoading(true);
         try {
-            const merged = { ...initialParams, ...override };
-            const resp: GlobalResponse<Expense[]> = await searchExpenses(merged);
+            const mergedRequest = { ...initialRequest, ...request };
+            const resp: GlobalResponse<Expense[]> = await searchExpenses(mergedRequest);
             setExpenses(resp.responseData ?? []);
             setMeta(resp.meta ?? null);
         } catch (e: any) {

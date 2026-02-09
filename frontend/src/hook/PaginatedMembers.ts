@@ -1,17 +1,17 @@
 import { useCallback, useState } from "react";
 import { searchMembers } from "../apiclient/memberApi";
-import { GlobalResponse, Member, MemberSearchParams, PaginationMeta } from "../constants/types";
+import { GlobalResponse, Member, MemberSearchRequest, PaginationMeta } from "../constants/types";
 
-export function usePaginatedMembers(initialParams: MemberSearchParams = {}) {
+export function usePaginatedMembers(initialRequest: MemberSearchRequest = {}) {
   const [members, setMembers] = useState<Member[]>([]);
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const fetchMembers = useCallback( async (override: MemberSearchParams = {}) => {
+  const fetchMembers = useCallback( async (request: MemberSearchRequest = {}) => {
       setLoading(true);
       try {
-        const merged = { ...initialParams, ...override };
-        const resp: GlobalResponse<Member[]> = await searchMembers(merged);
+        const mergedRequest = { ...initialRequest, ...request };
+        const resp: GlobalResponse<Member[]> = await searchMembers(mergedRequest);
         setMembers(resp.responseData ?? []);
         setMeta(resp.meta ?? null);
       } catch (e: any) {

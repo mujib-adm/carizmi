@@ -1,7 +1,7 @@
 import { Col, Form, Modal, Row } from "antd";
 import dayjs from "dayjs";
 import { useEffect } from "react";
-import { ReferenceCodeConstants } from "../constants/ReferenceCodeConstants";
+import { ReferenceConstants } from "../constants/ReferenceConstants";
 import { Member, MemberRequestDto } from "../constants/types";
 import { useApiMessages } from "../hook/ApiResponseHandler";
 import "../themes/css/member.css";
@@ -37,7 +37,7 @@ export function MemberModal({ open, onCancel, onSubmit, initial, statusOptions }
       } else {
         form.resetFields();
         form.setFieldsValue({
-          status: ReferenceCodeConstants.MEMBER_STATUS.ACTIVE,
+          status: ReferenceConstants.MEMBER_STATUS.ACTIVE,
           joinDate: dayjs(),
           state: "MN",
         });

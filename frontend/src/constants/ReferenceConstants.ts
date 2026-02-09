@@ -1,8 +1,8 @@
 /**
  * Reference Code Constants
- * These should match the backend ReferenceCodeConstants.java
+ * These should match the backend ReferenceConstants.java
  */
-export const ReferenceCodeConstants = {
+export const ReferenceConstants = {
     MEMBER_STATUS: {
         NAME: "memberStatus",
         ACTIVE: "01",
@@ -32,8 +32,8 @@ export const ReferenceCodeConstants = {
 };
 
 export const STARTUP_REFERENCES = [
-    ReferenceCodeConstants.MEMBER_STATUS.NAME,
-    ReferenceCodeConstants.FEE_TYPE.NAME,
-    ReferenceCodeConstants.PAYMENT_METHOD.NAME,
-    ReferenceCodeConstants.EXPENSE_CATEGORY.NAME,
+    ReferenceConstants.MEMBER_STATUS.NAME,
+    ReferenceConstants.FEE_TYPE.NAME,
+    ReferenceConstants.PAYMENT_METHOD.NAME,
+    ReferenceConstants.EXPENSE_CATEGORY.NAME,
 ];

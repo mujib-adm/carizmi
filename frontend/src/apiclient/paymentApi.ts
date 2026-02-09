@@ -1,5 +1,5 @@
 import { ApiEndpoints } from "../constants/endpoints";
-import { GlobalResponse, Payment, PaymentRequestDto, PaymentSearchParams } from "../constants/types";
+import { GlobalResponse, Payment, PaymentRequestDto, PaymentSearchRequest } from "../constants/types";
 import apiClient from "./ApiClient";
 
 export const addPayment = async (data: PaymentRequestDto) => {
@@ -22,7 +22,7 @@ export const getPayment = async (paymentID: number) => {
   return res.data;
 };
 
-export const searchPayments = async (params: PaymentSearchParams) => {
-  const res = await apiClient.post<GlobalResponse<Payment[]>>(ApiEndpoints.PAYMENTS.SEARCH, params);
+export const searchPayments = async (request: PaymentSearchRequest) => {
+  const res = await apiClient.post<GlobalResponse<Payment[]>>(ApiEndpoints.PAYMENTS.SEARCH, request);
   return res.data;
 };

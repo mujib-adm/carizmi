@@ -1,5 +1,5 @@
 import { ApiEndpoints } from "../constants/endpoints";
-import { Expense, ExpenseSearchParams, GlobalResponse } from "../constants/types";
+import { Expense, ExpenseSearchRequest, GlobalResponse } from "../constants/types";
 import apiClient from "./ApiClient";
 
 export const addExpense = async (data: Omit<Expense, 'expenseID'>) => {
@@ -22,7 +22,7 @@ export const getExpense = async (expenseID: number) => {
   return res.data;
 };
 
-export const searchExpenses = async (params: ExpenseSearchParams) => {
-  const res = await apiClient.post<GlobalResponse<Expense[]>>(ApiEndpoints.EXPENSES.SEARCH, params);
+export const searchExpenses = async (request: ExpenseSearchRequest) => {
+  const res = await apiClient.post<GlobalResponse<Expense[]>>(ApiEndpoints.EXPENSES.SEARCH, request);
   return res.data;
 };

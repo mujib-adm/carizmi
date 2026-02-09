@@ -15,6 +15,13 @@ export interface Pagination {
   sortOrder?: "asc" | "desc"; // optional sort order
 }
 
+export interface PaginationMeta {
+  page: number;
+  pageSize: number;
+  totalRecords: number;
+  totalPages: number;
+}
+
 // Generic API response structure
 export interface GlobalResponse<T = any, DataMap = Record<string, string>> {
   statusCode: number;             // e.g. 200, 401, 409
@@ -35,13 +42,6 @@ export interface FieldMsg {
   type: MessageType;
   field: string;
   message: string;
-}
-
-export interface PaginationMeta {
-  page: number;
-  pageSize: number;
-  totalRecords: number;
-  totalPages: number;
 }
 
 // Login response payload
@@ -101,7 +101,7 @@ export type Member = {
 };
 export type MemberRequestDto = Omit<Member, "memberID"> & { memberID?: number };
 
-export interface MemberSearchParams extends Pagination {
+export interface MemberSearchRequest extends Pagination {
   firstName?: string;
   lastName?: string;
   phone?: string;
@@ -136,7 +136,7 @@ export type Payment = {
 
 export type PaymentRequestDto = Omit<Payment, "paymentID"> & { paymentID?: number };
 
-export interface PaymentSearchParams extends Pagination {
+export interface PaymentSearchRequest extends Pagination {
   memberID?: number;
   feeType?: string;
   year?: number;
@@ -155,7 +155,7 @@ export type Expense = {
   amount: number;
 };
 
-export interface ExpenseSearchParams extends Pagination {
+export interface ExpenseSearchRequest extends Pagination {
   category?: string;
   dateFrom?: string;
   dateTo?: string;
@@ -169,7 +169,7 @@ export type SystemSetting = {
   settingValue: string;
 };
 
-export interface SystemSettingSearchParams extends Pagination {
+export interface SystemSettingSearchRequest extends Pagination {
   settingName?: string;
 }
 
@@ -184,7 +184,7 @@ export type Reference = {
 
 export type ReferenceRequestDto = Omit<Reference, "referenceID"> & { referenceID?: number };
 
-export interface ReferenceSearchParams extends Pagination {
+export interface ReferenceSearchRequest extends Pagination {
   referenceName?: string;
 }
 

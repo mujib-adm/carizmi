@@ -8,8 +8,8 @@ import { MessageBanner } from '../../component/MessageBanner';
 import SearchFilterBar from '../../component/SearchFilterBar.jsx';
 import Sidebar from "../../component/Sidebar";
 import { expenseSearchFiltersConfig } from '../../constants/expenseSearchFiltersConfig.ts';
-import { ReferenceCodeConstants } from "../../constants/ReferenceCodeConstants";
-import { Expense, ExpenseSearchParams, MessageType } from '../../constants/types';
+import { ReferenceConstants } from "../../constants/ReferenceConstants";
+import { Expense, ExpenseSearchRequest, MessageType } from '../../constants/types';
 import { useNotification } from "../../context/NotificationContext";
 import { useReference } from "../../context/ReferenceContext";
 import { useApiMessages } from '../../hook/ApiResponseHandler';
@@ -25,7 +25,7 @@ export default function ExpensePage() {
     const { globalMessages, handleError, resetMessages } = useApiMessages<any>();
 
     // search filters
-    const [filters, setFilters] = useState<ExpenseSearchParams>({});
+    const [filters, setFilters] = useState<ExpenseSearchRequest>({});
 
     // Modal State
     const [modalOpenInd, setModalOpenInd] = useState(false);
@@ -35,7 +35,7 @@ export default function ExpensePage() {
 
     // Ref Data
     const { getReference, toDisplay } = useReference();
-    const categories = getReference(ReferenceCodeConstants.EXPENSE_CATEGORY.NAME).map(r => ({ value: r.code, label: r.display }));
+    const categories = getReference(ReferenceConstants.EXPENSE_CATEGORY.NAME).map(r => ({ value: r.code, label: r.display }));
 
     const handleSearch = async () => {
         resetMessages();
@@ -57,7 +57,7 @@ export default function ExpensePage() {
     };
 
     const handleDelete = async (record: Expense) => {
-        const categoryDisplay = toDisplay(ReferenceCodeConstants.EXPENSE_CATEGORY.NAME, record.category) || record.category;
+        const categoryDisplay = toDisplay(ReferenceConstants.EXPENSE_CATEGORY.NAME, record.category) || record.category;
 
         Modal.confirm({
             title: 'Are you sure you want to delete expense record?',
@@ -115,7 +115,7 @@ export default function ExpensePage() {
             title: 'Category',
             dataIndex: 'category',
             key: 'category',
-            render: (code: string) => toDisplay(ReferenceCodeConstants.EXPENSE_CATEGORY.NAME, code)
+            render: (code: string) => toDisplay(ReferenceConstants.EXPENSE_CATEGORY.NAME, code)
         },
         { title: 'Description', dataIndex: 'description', key: 'description' },
         { title: 'Amount', dataIndex: 'amount', key: 'amount', render: (val: number) => `$${val?.toFixed(2) ?? '0.00'}` },

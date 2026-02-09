@@ -1,5 +1,5 @@
 import { ApiEndpoints } from "../constants/endpoints";
-import { GlobalResponse, SystemSetting, SystemSettingSearchParams } from "../constants/types";
+import { GlobalResponse, SystemSetting, SystemSettingSearchRequest } from "../constants/types";
 import apiClient from "./ApiClient";
 
 export const getSettingsByKey = async (key: string) => {
@@ -11,7 +11,7 @@ export const updateSystemSetting = async (data: any) => {
     return await apiClient.put("/system-settings/update", data);
 };
 
-export const searchSystemSettings = async (params: SystemSettingSearchParams) => {
-  const res = await apiClient.post<GlobalResponse<SystemSetting[]>>(ApiEndpoints.SETTINGS.SEARCH, params);
+export const searchSystemSettings = async (request: SystemSettingSearchRequest) => {
+  const res = await apiClient.post<GlobalResponse<SystemSetting[]>>(ApiEndpoints.SETTINGS.SEARCH, request);
   return res.data;
 };

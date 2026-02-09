@@ -6,7 +6,7 @@ import { MessageBanner } from "../../component/MessageBanner";
 import SearchFilterBar from "../../component/SearchFilterBar";
 import Sidebar from "../../component/Sidebar";
 import { referenceSearchFiltersConfig } from "../../constants/referenceSearchFiltersConfig";
-import { Reference, ReferenceSearchParams } from "../../constants/types";
+import { Reference, ReferenceSearchRequest } from "../../constants/types";
 import { useApiMessages } from "../../hook/ApiResponseHandler";
 import { usePaginatedReferences } from "../../hook/PaginatedReferences";
 
@@ -17,7 +17,7 @@ export default function ReferencePage() {
     const { globalMessages, handleError, resetMessages } = useApiMessages<any>();
 
     // search filters
-    const [filters, setFilters] = useState<ReferenceSearchParams>({});
+    const [filters, setFilters] = useState<ReferenceSearchRequest>({});
 
     // Initial load
     useEffect(() => {

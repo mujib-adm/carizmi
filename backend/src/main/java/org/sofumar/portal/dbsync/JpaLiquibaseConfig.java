@@ -20,10 +20,7 @@ public class JpaLiquibaseConfig {
 
     @Bean
     public DataSource dataSource() {
-        String dbUrl = System.getenv("DB_URL");
-        if (StringUtils.isBlank(dbUrl)) {
-            dbUrl = System.getProperty("DB_URL", "jdbc:mysql://db:3306/sofumar?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&zeroDateTimeBehavior=CONVERT_TO_NULL&characterEncoding=UTF-8");
-        }
+        String dbUrl = "jdbc:mysql://localhost:3306/sofumar?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&zeroDateTimeBehavior=CONVERT_TO_NULL&characterEncoding=UTF-8";
 
         String dbUser = System.getenv("DB_USER");
         if (StringUtils.isBlank(dbUser)) {

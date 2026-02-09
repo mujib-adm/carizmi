@@ -54,6 +54,7 @@ target/
 *.jar
 *.war
 *.ear
+generated-changelog.xml
 
 # Maven / Gradle
 .mvn/

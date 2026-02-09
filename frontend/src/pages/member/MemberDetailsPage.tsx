@@ -5,7 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { getMember, getMemberSummary } from "../../apiclient/memberApi";
 import { searchPayments } from "../../apiclient/paymentApi";
 import Sidebar from "../../component/Sidebar";
-import { ReferenceCodeConstants } from "../../constants/ReferenceCodeConstants";
+import { ReferenceConstants } from "../../constants/ReferenceConstants";
 import { Member, MemberSummary, Payment } from "../../constants/types";
 import { useReference } from "../../context/ReferenceContext";
 import { useApiMessages } from "../../hook/ApiResponseHandler";
@@ -47,8 +47,8 @@ export default function MemberDetailsPage() {
 
     const columns = [
         { title: 'Date', dataIndex: 'dateReceived', key: 'dateReceived', render: (d: string) => d ? new Date(d).toLocaleDateString() : 'N/A' },
-        { title: 'Description', dataIndex: 'feeType', key: 'feeType', render: (code: string) => toDisplay(ReferenceCodeConstants.FEE_TYPE.NAME, code) },
-        { title: 'Method', dataIndex: 'methodOfPayment', key: 'methodOfPayment', render: (code: string) => toDisplay(ReferenceCodeConstants.PAYMENT_METHOD.NAME, code) },
+        { title: 'Description', dataIndex: 'feeType', key: 'feeType', render: (code: string) => toDisplay(ReferenceConstants.FEE_TYPE.NAME, code) },
+        { title: 'Method', dataIndex: 'methodOfPayment', key: 'methodOfPayment', render: (code: string) => toDisplay(ReferenceConstants.PAYMENT_METHOD.NAME, code) },
         { title: 'Amount', dataIndex: 'amount', key: 'amount', render: (val: number) => `$${val.toFixed(2)}` },
     ];
 
@@ -74,7 +74,7 @@ export default function MemberDetailsPage() {
                                         <Title level={2} className="title-wrap" style={{ margin: 0 }}>{member.firstName} {member.lastName}</Title>
                                         <Text type="secondary">{member.email} | {member.phone}</Text>
                                         <div style={{ marginTop: 8 }}>
-                                            <Badge status={member.status === 'ACTIVE' ? 'success' : 'default'} text={toDisplay(ReferenceCodeConstants.MEMBER_STATUS.NAME, member.status)} />
+                                            <Badge status={member.status === 'ACTIVE' ? 'success' : 'default'} text={toDisplay(ReferenceConstants.MEMBER_STATUS.NAME, member.status)} />
                                         </div>
                                     </Col>
                                 </Row>

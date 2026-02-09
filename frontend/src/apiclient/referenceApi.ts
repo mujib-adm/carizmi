@@ -1,9 +1,9 @@
 import { ApiEndpoints } from "../constants/endpoints";
-import { GlobalResponse, Reference, ReferenceRequestDto, ReferenceSearchParams } from "../constants/types";
+import { GlobalResponse, Reference, ReferenceRequestDto, ReferenceSearchRequest } from "../constants/types";
 import apiClient from "./ApiClient";
 
-export const searchReferences = async (params: ReferenceSearchParams) => {
-    const res = await apiClient.post<GlobalResponse<Reference[]>>(ApiEndpoints.REFERENCE.SEARCH, params);
+export const searchReferences = async (request: ReferenceSearchRequest) => {
+    const res = await apiClient.post<GlobalResponse<Reference[]>>(ApiEndpoints.REFERENCE.SEARCH, request);
     return res.data;
 };
 

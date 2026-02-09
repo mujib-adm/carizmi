@@ -1,7 +1,7 @@
 import { Col, Divider, Form, Modal, Row } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect } from 'react';
-import { ReferenceCodeConstants } from '../constants/ReferenceCodeConstants';
+import { ReferenceConstants } from '../constants/ReferenceConstants';
 import { SystemSettingConstants } from '../constants/SystemSettingConstants.ts';
 import { Payment } from '../constants/types';
 import { useSystemSettings } from '../context/SystemSettingsContext';
@@ -43,7 +43,7 @@ export default function PaymentModal({ open, onCancel, onSubmit, initialValues, 
             } else {
                 form.resetFields();
                 form.setFieldsValue({
-                    feeType: ReferenceCodeConstants.FEE_TYPE.MEMBERSHIP_FEE,
+                    feeType: ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE,
                     amount: getNumericSetting(SystemSettingConstants.FEE.TYPE, SystemSettingConstants.FEE.MEMBERSHIP_FEE),
                     dateReceived: dayjs(),
                     quarter: Math.floor(dayjs().month() / 3) + 1
@@ -92,9 +92,9 @@ export default function PaymentModal({ open, onCancel, onSubmit, initialValues, 
                 onValuesChange={(changedValues) => {
                     if (changedValues.feeType) {
                         let amount = 0;
-                        if (changedValues.feeType === ReferenceCodeConstants.FEE_TYPE.MEMBERSHIP_FEE) {
+                        if (changedValues.feeType === ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE) {
                             amount = getNumericSetting(SystemSettingConstants.FEE.TYPE, SystemSettingConstants.FEE.MEMBERSHIP_FEE);
-                        } else if (changedValues.feeType === ReferenceCodeConstants.FEE_TYPE.REGISTRATION_FEE) {
+                        } else if (changedValues.feeType === ReferenceConstants.FEE_TYPE.REGISTRATION_FEE) {
                             amount = getNumericSetting(SystemSettingConstants.FEE.TYPE, SystemSettingConstants.FEE.REGISTRATION_FEE);
                         }
                         if (amount > 0) {
@@ -120,7 +120,7 @@ export default function PaymentModal({ open, onCancel, onSubmit, initialValues, 
 
                 <Form.Item noStyle shouldUpdate={(prev, curr) => prev.feeType !== curr.feeType}>
                     {({ getFieldValue }) => {
-                        return getFieldValue('feeType') === ReferenceCodeConstants.FEE_TYPE.MEMBERSHIP_FEE ? (
+                        return getFieldValue('feeType') === ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE ? (
                             <Row gutter={16}>
                                 <Col xs={24} sm={12}> <AntdFormItem name="year" label="Year" type="select" rules={[{ required: true }]} initialValue={dayjs().year()} options={[0, 1, 2].map(i => { const y = dayjs().year() - 1 + i; return { value: y, label: y }; })} /> </Col>
                                 <Col xs={24} sm={12}> <AntdFormItem name="quarter" label="Quarter" type="select" rules={[{ required: true }]} options={[1, 2, 3, 4].map(q => ({ value: q, label: `Q${q}` }))} /> </Col>

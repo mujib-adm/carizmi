@@ -7,9 +7,9 @@ import SearchFilterBar from '../../component/SearchFilterBar.jsx';
 import Sidebar from "../../component/Sidebar";
 import "../../component/Sidebar.css";
 import { SystemSettingsModal } from '../../modals/SystemSettingsModal.js';
-import { ReferenceCodeConstants } from "../../constants/ReferenceCodeConstants";
+import { ReferenceConstants } from "../../constants/ReferenceConstants";
 import { systemSettingsSearchFiltersConfig } from '../../constants/systemSettingsSearchFiltersConfig';
-import { SystemSetting, SystemSettingSearchParams } from '../../constants/types';
+import { SystemSetting, SystemSettingSearchRequest } from '../../constants/types';
 import { useReference } from "../../context/ReferenceContext";
 import { useApiMessages } from "../../hook/ApiResponseHandler";
 import { usePaginatedSystemSettings } from '../../hook/PaginatedSystemSettings';
@@ -19,7 +19,7 @@ const { Title } = Typography;
 
 export default function SystemSettingsPage() {
     const { settings, meta, loading, fetchSettings } = usePaginatedSystemSettings();
-    const [filters, setFilters] = useState<SystemSettingSearchParams>({});
+    const [filters, setFilters] = useState<SystemSettingSearchRequest>({});
     const { globalMessages, handleError, resetMessages } = useApiMessages<any>();
 
     const { canWrite } = useAuthorization();
@@ -71,7 +71,7 @@ export default function SystemSettingsPage() {
             render: (text: string, record: SystemSetting) => {
                 // If it's a FEE setting, try to use the feeType reference display
                 if (record.settingName === 'FEE') {
-                    const display = toDisplay(ReferenceCodeConstants.FEE_TYPE.NAME, text);
+                    const display = toDisplay(ReferenceConstants.FEE_TYPE.NAME, text);
                     // toDisplay returns code if not found, check if it's different or just format
                     return display !== text ? display : formatCode(text);
                 }

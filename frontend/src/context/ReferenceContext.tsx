@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { getReferencesByName } from "../apiclient/referenceApi";
-import { STARTUP_REFERENCES } from "../constants/ReferenceCodeConstants";
+import { STARTUP_REFERENCES } from "../constants/ReferenceConstants";
 import { ReferenceData } from "../constants/types";
 import { useAuth } from "./AuthContext";
 import { useNotification } from "./NotificationContext";
