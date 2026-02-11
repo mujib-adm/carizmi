@@ -133,6 +133,35 @@ class PaymentValidatorSpec extends BaseSpecification {
         FieldConstants.METHOD_OF_PAYMENT | ""
     }
 
+    def "test - validate: Handling memberID, should catch missing member ID even if member object exists"() {
+        given: "A PaymentVO with member object but null ID"
+        MemberVO testMember = new MemberVO(memberID: null)
+        String testFeeType = ReferenceConstants.FEE_TYPE.REGISTRATION_FEE
+        String testMethod = ReferenceConstants.PAYMENT_METHOD.CASH
+        PaymentVO vo = new PaymentVO(member: testMember, feeType: testFeeType, amount: 50.0, dateReceived: LocalDate.now(), methodOfPayment: testMethod)
+
+        String feeTypeField = FieldConstants.FEE_TYPE
+        String feeTypeName = ReferenceConstants.FEE_TYPE.NAME
+        String methodField = FieldConstants.METHOD_OF_PAYMENT
+        String methodName = ReferenceConstants.PAYMENT_METHOD.NAME
+
+        when: "The target method executed"
+        try {
+            paymentValidator.validate(vo)
+        } catch (ValidationException e) {
+            // expected
+        }
+
+        then: "The expected calls are made"
+        1 * referenceValidator.validate(vo, feeTypeField, feeTypeName, testFeeType)
+        1 * referenceValidator.validate(vo, methodField, methodName, testMethod)
+        0 * _
+
+        and: "The error is captured for member ID"
+        vo.hasErrors()
+        vo.getFieldMessages().containsKey(FieldConstants.MEMBER_ID)
+    }
+
     @Unroll
     def "test - validate: Handling period logic for Membership [year: #year, quarter: #quarter]"() {
         given: "A Membership PaymentVO with partial period"

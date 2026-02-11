@@ -1,4 +1,4 @@
-package org.sofumar.portal.security;
+package org.sofumar.portal.security.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;

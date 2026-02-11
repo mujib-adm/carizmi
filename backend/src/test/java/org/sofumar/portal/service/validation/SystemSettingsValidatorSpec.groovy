@@ -56,8 +56,8 @@ class SystemSettingsValidatorSpec extends BaseSpecification {
 
         where:
         field                        | value
-        FieldConstants.SETTING_NAME | null
-        FieldConstants.SETTING_NAME | ""
+        FieldConstants.SETTING_NAME  | null
+        FieldConstants.SETTING_NAME  | ""
         FieldConstants.SETTING_KEY   | null
         FieldConstants.SETTING_KEY   | ""
         FieldConstants.SETTING_VALUE | null

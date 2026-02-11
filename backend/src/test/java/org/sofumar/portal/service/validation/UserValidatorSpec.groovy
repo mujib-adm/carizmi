@@ -138,4 +138,29 @@ class UserValidatorSpec extends BaseSpecification {
         "   "                           | false
         null                            | false
     }
+
+    @Unroll
+    def "test - isInvalidRole: Testing various role strings [roleStr: #roleStr, expected: #expected]"() {
+        given: "A role string"
+        String testRole = roleStr
+
+        when: "Checking if role is invalid"
+        boolean result = userValidator.isInvalidRole(testRole)
+
+        then: "No mock interactions occurred"
+        0 * _
+
+        and: "Result matches expectation"
+        result == expected
+
+        where:
+        roleStr   | expected
+        "ADMIN"   | false
+        "MANAGER" | false
+        "MEMBER"  | false
+        "INVALID" | true
+        ""        | true
+        " "       | true
+        null      | true
+    }
 }

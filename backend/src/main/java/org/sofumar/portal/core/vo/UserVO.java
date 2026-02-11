@@ -67,6 +67,12 @@ public class UserVO extends ValueObject {
     @Column(name = FieldConstants.ACTIVE)
     private boolean active = true;
 
+    @Column(name = "failedLoginAttempts")
+    private int failedLoginAttempts = 0;
+
+    @Column(name = "lockoutTime")
+    private LocalDateTime lockoutTime;
+
     @Override
     public String getTableName() {
         return TableConstants.USER_TABLE;

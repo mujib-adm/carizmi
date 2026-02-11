@@ -2,7 +2,6 @@ package org.sofumar.portal.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.sofumar.portal.data.dto.response.UserProfileDto;
-import org.sofumar.portal.data.dto.request.LoginRequest;
 import org.sofumar.portal.data.dto.request.PasswordUpdateRequestDto;
 import org.sofumar.portal.data.dto.UserDto;
 import org.sofumar.portal.framework.data.msg.Message;
@@ -32,11 +31,6 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<GlobalResponse<Void>> register(@RequestBody UserDto requestDto) {
         return user.register(requestDto);
-    }
-
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-        return user.login(request.username(), request.password());
     }
 
     @PostMapping("/logout")

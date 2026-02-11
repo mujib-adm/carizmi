@@ -1,10 +1,6 @@
 package org.sofumar.portal.core.businesslogic.impl;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.Base64;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -27,6 +23,8 @@ import org.sofumar.portal.framework.util.ResponseUtils;
 import org.sofumar.portal.core.repo.UserRepository;
 import org.sofumar.portal.core.repo.jpaspec.UserSpecifications;
 import org.sofumar.portal.core.businesslogic.User;
+import org.sofumar.portal.security.JwtService;
+import org.sofumar.portal.security.SofumarUserDetails;
 import org.sofumar.portal.service.validation.UserValidator;
 import org.springframework.lang.NonNull;
 import org.sofumar.portal.framework.service.RefreshTokenService;
@@ -38,19 +36,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import io.jsonwebtoken.JwtException;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
-
 import static org.sofumar.portal.constants.MessagesConstants.RECORD_UPDATED;
 
 @Service
 public non-sealed class UserImpl extends UserAbstractBL implements User {
     private static final Logger logger = LoggerFactory.getLogger(UserImpl.class);
 
-    @Value("${jwt.secret}")
-    private String secret;
     @Value("${jwt.expirationMinutes}")
     private int expMin;
 
@@ -60,9 +51,10 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
     private final UserValidator validator;
     private final TokenBlacklistService blacklistService;
     private final RefreshTokenService refreshTokenService;
+    private final JwtService jwtService;
 
     @Autowired
-    public UserImpl(final UserRepository userRepo, final PasswordEncoder encoder, UserResponseDtoTransformer dtoTransformer, final UserVOTransformer voTransformer, final UserValidator validator, TokenBlacklistService blacklistService, RefreshTokenService refreshTokenService) {
+    public UserImpl(final UserRepository userRepo, final PasswordEncoder encoder, UserResponseDtoTransformer dtoTransformer, final UserVOTransformer voTransformer, final UserValidator validator, TokenBlacklistService blacklistService, RefreshTokenService refreshTokenService, JwtService jwtService) {
         super(userRepo);
         this.encoder = encoder;
         this.dtoTransformer = dtoTransformer;
@@ -70,6 +62,7 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
         this.validator = validator;
         this.blacklistService = blacklistService;
         this.refreshTokenService = refreshTokenService;
+        this.jwtService = jwtService;
     }
 
     @Override
@@ -95,45 +88,11 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
     }
 
     @Override
-    public ResponseEntity<?> login(String username, String password) {
-        UserVO userVO = getRepo().findOne(UserSpecifications.hasUsername(username)).orElse(null);
-        if (userVO == null || !encoder.matches(password, userVO.getPassword())) {
-            return ResponseUtils.withStatus(HttpStatus.UNAUTHORIZED, Message.Type.ERROR, "Invalid username or password.");
-        } else if (!userVO.isActive()) {
-            return ResponseUtils.withStatus(HttpStatus.UNAUTHORIZED, Message.Type.ERROR, "Your account is inactive. Please contact support for assistance.");
-        } else if (Role.ANONYMOUS == userVO.getRole()) {
-            return ResponseUtils.ok("Welcome! Your account is pending role assignment. Please contact support for assistance.");
-        }
-
-        String accessToken = generateAccessToken(userVO);
-        String refreshToken = refreshTokenService.createRefreshToken(userVO.getUsername());
-        
-        return ResponseUtils.withMap(Map.of(
-            "token", accessToken, 
-            "refreshToken", refreshToken,
-            "role", userVO.getRole().name(), 
-            "firstName", userVO.getFirstName()
-        ));
-    }
-
-    @Override
     public void logout(String accessToken, String refreshToken) {
         if (accessToken != null) {
-            try {
-                // Parse JWT to get expiration
-                var claims = Jwts.parserBuilder()
-                        .setSigningKey(Keys.hmacShaKeyFor(Base64.getDecoder().decode(secret)))
-                        .build()
-                        .parseClaimsJws(accessToken)
-                        .getBody();
-
-                long expSeconds = (claims.getExpiration().getTime() - System.currentTimeMillis()) / 1000;
-
-                if (expSeconds > 0) {
-                    blacklistService.revokeToken(accessToken, expSeconds);
-                }
-            } catch (JwtException e) {
-                // If token is already expired or invalid, we don't need to blacklist it.
+            long expSeconds = jwtService.getRemainingExpirationSeconds(accessToken);
+            if (expSeconds > 0) {
+                blacklistService.revokeToken(accessToken, expSeconds);
             }
         }
         
@@ -146,17 +105,25 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
     public ResponseEntity<?> refreshToken(String token) {
         try {
             String newRefreshToken = refreshTokenService.rotateRefreshToken(token);
-            String username = refreshTokenService.validateRefreshToken(newRefreshToken).orElseThrow(() -> new IllegalArgumentException("Invalid refresh token state"));
+            String username = refreshTokenService.validateRefreshToken(newRefreshToken)
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid refresh token state"));
             
-            UserVO userVO = getRepo().findOne(UserSpecifications.hasUsername(username)).orElseThrow(() -> new RecordNotFoundException("User not found"));
+            UserVO userVO = getRepo().findOne(UserSpecifications.hasUsername(username))
+                    .orElseThrow(() -> new RecordNotFoundException("User not found"));
             
-            if (!userVO.isActive()) {
-                // Identify inactive user, revoke token
+            SofumarUserDetails userDetails = new SofumarUserDetails(userVO);
+            
+            if (!userDetails.isEnabled()) {
                 refreshTokenService.deleteRefreshToken(newRefreshToken);
-                return ResponseUtils.withStatus(HttpStatus.UNAUTHORIZED, Message.Type.ERROR, "Account inactive.");
+                return ResponseUtils.withStatus(HttpStatus.UNAUTHORIZED, Message.Type.ERROR, "Account inactive or invalid.");
+            }
+
+            if (!userDetails.isAccountNonLocked()) {
+                refreshTokenService.deleteRefreshToken(newRefreshToken);
+                return ResponseUtils.withStatus(HttpStatus.UNAUTHORIZED, Message.Type.ERROR, "Account temporarily locked.");
             }
             
-            String newAccessToken = generateAccessToken(userVO);
+            String newAccessToken = jwtService.generateAccessToken(userDetails);
             
             return ResponseUtils.withMap(Map.of(
                 "token", newAccessToken,
@@ -165,14 +132,6 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
         } catch (IllegalArgumentException e) {
             return ResponseUtils.withStatus(HttpStatus.UNAUTHORIZED, Message.Type.ERROR, "Invalid or expired refresh token.");
         }
-    }
-
-    private String generateAccessToken(UserVO userVO) {
-        return Jwts.builder()
-                .setSubject(userVO.getUsername()).claim("roles", List.of(userVO.getRole().name()))
-                .setIssuer("sofumar.portal").setIssuedAt(new Date())
-                .setExpiration(Date.from(Instant.now().plus(expMin, ChronoUnit.MINUTES)))
-                .signWith(Keys.hmacShaKeyFor(Base64.getDecoder().decode(secret)), SignatureAlgorithm.HS256).compact();
     }
 
     @Override
@@ -217,7 +176,7 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
         
         // Revoke the current token
         if (token != null) {
-             blacklistService.revokeToken(token, expMin * 60L);
+             blacklistService.revokeToken(token, (long) expMin * 60);
         }
 
         update(userVO);
@@ -276,4 +235,34 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
         return getRepo().exists(UserSpecifications.hasRole(Role.ADMIN));
     }
 
+    @Override
+    public UserVO findUserForAuthentication(String username) {
+        return getRepo().findOne(UserSpecifications.hasUsername(username)).orElse(null);
+    }
+
+    @Override
+    @Transactional
+    public void onLoginSuccess(String username) {
+        getRepo().findOne(UserSpecifications.hasUsername(username)).ifPresent(user -> {
+            if (user.getFailedLoginAttempts() > 0 || user.getLockoutTime() != null) {
+                user.setFailedLoginAttempts(0);
+                user.setLockoutTime(null);
+                update(user);
+            }
+        });
+    }
+
+    @Override
+    @Transactional
+    public void onLoginFailure(String username) {
+        getRepo().findOne(UserSpecifications.hasUsername(username)).ifPresent(user -> {
+            int newFailures = user.getFailedLoginAttempts() + 1;
+            user.setFailedLoginAttempts(newFailures);
+
+            if (newFailures >= 5) {
+                user.setLockoutTime(java.time.LocalDateTime.now());
+            }
+            update(user);
+        });
+    }
 }

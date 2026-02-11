@@ -177,21 +177,24 @@ class MemberValidatorSpec extends BaseSpecification {
     }
 
     @Unroll
-    def "test - isNotMatchRegex: Internal helper coverage for blank values [value: #value]"() {
+    def "test - isNotMatchRegex: Internal helper coverage [value: #value, expected: #expected]"() {
         given: "A value and a regex"
-        String regex = ".*"
+        String regex = "^[abc]+\$"
 
         when: "The internal helper is called"
         boolean result = memberValidator.isNotMatchRegex(value, regex)
 
-        then: "No external calls are made"
+        then: "No mock interactions occurred"
         0 * _
 
-        and: "The helper returns true (blank implies 'not match' for logic flow)"
-        result
-        noExceptionThrown()
+        and: "The result matches expectation"
+        result == expected
 
         where:
-        value << ["", null]
+        value | expected
+        "abc" | false
+        "def" | true
+        ""    | true
+        null  | true
     }
 }

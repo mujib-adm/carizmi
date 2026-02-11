@@ -12,10 +12,10 @@ import spock.lang.Subject
 
 class UserControllerSpec extends BaseSpecification {
 
-    User userService = Mock()
+    User user = Mock()
 
     @Subject
-    UserController userController = new UserController(userService)
+    UserController userController = new UserController(user)
 
     def "test - getAllUsers: Should delegate to user service"() {
         given: "A request for all users"
@@ -29,7 +29,7 @@ class UserControllerSpec extends BaseSpecification {
         ResponseEntity<GlobalResponse<List<UserResponseDto>>> result = userController.getAllUsers()
 
         then: "The expected calls are made"
-        1 * userService.getAllUsers() >> expectedResponse
+        1 * user.getAllUsers() >> expectedResponse
         0 * _
 
         and: "The expected result"
@@ -40,7 +40,7 @@ class UserControllerSpec extends BaseSpecification {
     }
 
     def "test - updateRole: Should delegate to user service"() {
-        given: "A user ID and role update request"
+        given: "A userVO ID and role update request"
         Integer id = 1
         String role = "ADMIN"
         UserRoleUpdateRequestDto request = new UserRoleUpdateRequestDto(role: role)
@@ -50,7 +50,7 @@ class UserControllerSpec extends BaseSpecification {
         ResponseEntity<GlobalResponse<Void>> result = userController.updateRole(id, request)
 
         then: "The expected calls are made"
-        1 * userService.updateUserRole(id, role) >> expectedResponse
+        1 * user.updateUserRole(id, role) >> expectedResponse
         0 * _
 
         and: "The expected result"
@@ -60,7 +60,7 @@ class UserControllerSpec extends BaseSpecification {
     }
 
     def "test - toggleStatus: Should delegate to user service"() {
-        given: "A user ID and status update request"
+        given: "A userVO ID and status update request"
         Integer id = 1
         Boolean active = true
         UserStatusUpdateRequestDto request = new UserStatusUpdateRequestDto(active: active)
@@ -70,7 +70,7 @@ class UserControllerSpec extends BaseSpecification {
         ResponseEntity<GlobalResponse<Void>> result = userController.toggleStatus(id, request)
 
         then: "The expected calls are made"
-        1 * userService.toggleUserStatus(id, active) >> expectedResponse
+        1 * user.toggleUserStatus(id, active) >> expectedResponse
         0 * _
 
         and: "The expected result"

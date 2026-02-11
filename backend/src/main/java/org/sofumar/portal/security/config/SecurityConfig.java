@@ -1,13 +1,20 @@
-package org.sofumar.portal.security;
+package org.sofumar.portal.security.config;
 
 import org.sofumar.portal.constants.Role;
+import org.sofumar.portal.security.RestAuthenticationFailureHandler;
+import org.sofumar.portal.security.RestAuthenticationSuccessHandler;
+import org.sofumar.portal.security.filters.JsonAuthenticationFilter;
+import org.sofumar.portal.security.filters.JwtAuthenticationFilter;
+import org.sofumar.portal.security.filters.RequestsRateLimitFilter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -32,7 +39,24 @@ public class SecurityConfig {
     private String[] allowedOrigins;
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthFilter jwt) throws Exception {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
+    }
+
+    @Bean
+    public JsonAuthenticationFilter jsonAuthenticationFilter(AuthenticationManager authenticationManager,
+                                                             RestAuthenticationSuccessHandler successHandler,
+                                                             RestAuthenticationFailureHandler failureHandler) {
+        JsonAuthenticationFilter filter = new JsonAuthenticationFilter();
+        filter.setAuthenticationManager(authenticationManager);
+        filter.setAuthenticationSuccessHandler(successHandler);
+        filter.setAuthenticationFailureHandler(failureHandler);
+        filter.setFilterProcessesUrl("/auth/login");
+        return filter;
+    }
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter, RequestsRateLimitFilter requestsRateLimitFilter, JsonAuthenticationFilter jsonAuthenticationFilter) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 // integrate with the CorsConfigurationSource bean; global CorsFilter still ensures headers on errors
@@ -62,11 +86,13 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/members/**", "/payments/**", "/expenses/**", "/dashboard/**", "/references/**", "/settings/**").hasAnyRole(Role.ADMIN.name(), Role.MANAGER.name(), Role.MEMBER.name())
                         .anyRequest().authenticated()
                 )
-                // ensure JWT filter does not block preflight; JwtAuthFilter should skip OPTIONS
-                .addFilterBefore(jwt, UsernamePasswordAuthenticationFilter.class)
+                // ensure JWT filter does not block preflight; JwtAuthenticationFilter should skip OPTIONS
+                .addFilterBefore(requestsRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jsonAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .headers(h -> h.contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'")))
                 .httpBasic(Customizer.withDefaults())
-                .exceptionHandling(e -> e.authenticationEntryPoint(new JsonAuthEntryPoint()));
+                .exceptionHandling(e -> e.authenticationEntryPoint(new JsonAuthenticationEntryPoint()));
         return http.build();
     }
 

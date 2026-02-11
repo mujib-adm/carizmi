@@ -9,7 +9,12 @@ import org.springframework.lang.NonNull;
 public class UserSpecifications {
     @NonNull
     public static Specification<UserVO> hasUsername(String username) {
-        return (root, query, cb) -> cb.equal(root.get(FieldConstants.USERNAME), username);
+        return (root, query, cb) -> {
+            if (username == null) {
+                return cb.disjunction();
+            }
+            return cb.equal(cb.lower(root.get(FieldConstants.USERNAME)), username.toLowerCase());
+        };
     }
 
     @NonNull

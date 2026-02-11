@@ -68,7 +68,8 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config;
     
     // Check if error is 401
-    if (error.response?.status === 401 && originalRequest) {
+    // Skip refresh logic for login requests
+    if (error.response?.status === 401 && originalRequest && !originalRequest.url?.includes(ApiEndpoints.AUTH.LOGIN)) {
         // console.warn("401 Detected. URL:", originalRequest.url, "Retry:", (originalRequest as any)._retry);
         
         // If already refreshing, queue the request
@@ -132,7 +133,8 @@ apiClient.interceptors.response.use(
     }
     
     // Global 401 handler: clear storage and redirect to login if unauthorized (and refresh failed or no token)
-    if (error.response?.status === 401) {
+    // EXCLUDE login endpoint (let the caller handle 401 for invalid credentials)
+    if (error.response?.status === 401 && !originalRequest?.url?.includes(ApiEndpoints.AUTH.LOGIN)) {
         // console.warn("Global 401 Handler triggered. Logging out.");
       if (unauthorizedCallback) {
         unauthorizedCallback();

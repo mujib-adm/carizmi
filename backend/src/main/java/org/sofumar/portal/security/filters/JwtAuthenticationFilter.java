@@ -1,16 +1,17 @@
-package org.sofumar.portal.security;
+package org.sofumar.portal.security.filters;
 
-import java.io.IOException;
-import java.util.Base64;
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
-
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sofumar.portal.framework.service.TokenBlacklistService;
+import org.sofumar.portal.security.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -22,18 +23,14 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtException;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
-public class JwtAuthFilter extends OncePerRequestFilter {
-    private static final Logger logger = LoggerFactory.getLogger(JwtAuthFilter.class);
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
+    private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
     private static final List<String> EXCLUDED_PATHS = List.of(
             "/auth/login",
             "/auth/register",
@@ -42,20 +39,19 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     );
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
-    @Value("${jwt.secret}")
-    private String secret;
-
     private final TokenBlacklistService blacklistService;
     private final BearerTokenResolver bearerTokenResolver;
+    private final JwtService jwtService;
 
     @Autowired
-    public JwtAuthFilter(TokenBlacklistService blacklistService, BearerTokenResolver bearerTokenResolver) {
+    public JwtAuthenticationFilter(TokenBlacklistService blacklistService, BearerTokenResolver bearerTokenResolver, JwtService jwtService) {
         this.blacklistService = blacklistService;
         this.bearerTokenResolver = bearerTokenResolver;
+        this.jwtService = jwtService;
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain chain)
             throws IOException, ServletException {
 
         // allow CORS preflight requests to pass through immediately
@@ -76,27 +72,22 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         if (token != null) {
             try {
                 if (blacklistService.isTokenRevoked(token)) {
-                    logger.debug("Token has been revoked.");
+                    logger.info("Token has been revoked.");
                     SecurityContextHolder.clearContext();
                 } else {
-                    Claims claims = Jwts.parserBuilder()
-                            .setSigningKey(Keys.hmacShaKeyFor(Base64.getDecoder().decode(secret)))
-                            .build()
-                            .parseClaimsJws(token)
-                            .getBody();
-
+                    Claims claims = jwtService.getClaims(token);
                     String username = claims.getSubject();
                     @SuppressWarnings("unchecked")
                     List<String> roles = (List<String>) claims.get("roles");
                     Collection<GrantedAuthority> auths = roles.stream().map(r -> new SimpleGrantedAuthority("ROLE_" + r)).collect(Collectors.toSet());
-                    
+
                     UserDetails principal = new User(username, "", auths);
                     UsernamePasswordAuthenticationToken auth =
                             new UsernamePasswordAuthenticationToken(principal, null, auths);
                     SecurityContextHolder.getContext().setAuthentication(auth);
                 }
             } catch (JwtException e) {
-                logger.debug("Invalid or expired JWT: {}", e.getMessage());
+                logger.info("Invalid or expired JWT: {}", e.getMessage());
                 SecurityContextHolder.clearContext();
             }
         }

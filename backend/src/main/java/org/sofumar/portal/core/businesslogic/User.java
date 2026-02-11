@@ -14,8 +14,6 @@ import org.springframework.lang.NonNull;
 public interface User extends BusinessLogic<UserVO> {
     ResponseEntity<GlobalResponse<Void>> register(UserDto requestDto);
 
-    ResponseEntity<?> login(String username, String password);
-
     void logout(String accessToken, String refreshToken);
 
     ResponseEntity<?> refreshToken(String refreshToken);
@@ -32,4 +30,26 @@ public interface User extends BusinessLogic<UserVO> {
 
     boolean adminUserExists();
 
+    /**
+     * Finds a user by username for authentication purposes.
+     * Used by UserDetailsService.
+     *
+     * @param username The username to search for.
+     * @return The UserVO if found, or null/empty.
+     */
+    UserVO findUserForAuthentication(String username);
+
+    /**
+     * Handles logic after a successful login (e.g., resetting failed attempts).
+     *
+     * @param username The username of the logged-in user.
+     */
+    void onLoginSuccess(String username);
+
+    /**
+     * Handles logic after a failed login (e.g., incrementing failed attempts, locking account).
+     *
+     * @param username The username of the user who failed to login.
+     */
+    void onLoginFailure(String username);
 }

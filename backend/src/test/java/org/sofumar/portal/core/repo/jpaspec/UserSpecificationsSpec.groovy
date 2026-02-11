@@ -22,12 +22,20 @@ class UserSpecificationsSpec extends BaseSpecification {
         0 * _
 
         and: "The expected filters and values are captured"
-        inspection.filters.contains(FieldConstants.USERNAME)
-        inspection.values.contains(testUsername)
+        if (username != null) {
+            inspection.filters.contains(FieldConstants.USERNAME)
+            inspection.values.contains(expectedValue)
+        } else {
+            inspection.filters.isEmpty()
+            inspection.values.isEmpty()
+        }
         noExceptionThrown()
 
         where:
-        username << ["user1", null]
+        username | expectedValue
+        "user1"  | "user1"
+        "USER1"  | "user1"
+        null     | null
     }
 
     @Unroll

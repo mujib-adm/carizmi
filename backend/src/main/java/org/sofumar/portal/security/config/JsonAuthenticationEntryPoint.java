@@ -1,4 +1,4 @@
-package org.sofumar.portal.security;
+package org.sofumar.portal.security.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
@@ -10,8 +10,9 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 
 import java.io.IOException;
 
-public class JsonAuthEntryPoint implements AuthenticationEntryPoint {
+public class JsonAuthenticationEntryPoint implements AuthenticationEntryPoint {
     private static final ObjectMapper objectMapper = new ObjectMapper();
+
     @Override
     public void commence(HttpServletRequest req, HttpServletResponse res, AuthenticationException ex) throws IOException {
         res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);

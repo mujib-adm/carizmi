@@ -2,7 +2,6 @@ package org.sofumar.portal.controller
 
 import org.sofumar.portal.core.businesslogic.User
 import org.sofumar.portal.data.dto.UserDto
-import org.sofumar.portal.data.dto.request.LoginRequest
 import org.sofumar.portal.data.dto.request.PasswordUpdateRequestDto
 import org.sofumar.portal.data.dto.response.UserProfileDto
 import org.sofumar.portal.framework.data.response.GlobalResponse
@@ -15,14 +14,14 @@ import spock.lang.Unroll
 
 class AuthControllerSpec extends BaseSpecification {
 
-    User userService = Mock()
+    User user = Mock()
 
     @Subject
-    AuthController authController = new AuthController(userService)
+    AuthController authController = new AuthController(user)
 
     def "test - register: Should delegate to user service"() {
         given: "A registration request"
-        String username = "user"
+        String username = "Test"
         UserDto requestDto = new UserDto(username: username)
         ResponseEntity<GlobalResponse<Void>> expectedResponse = new ResponseEntity<>(HttpStatus.OK)
 
@@ -30,27 +29,7 @@ class AuthControllerSpec extends BaseSpecification {
         ResponseEntity<GlobalResponse<Void>> result = authController.register(requestDto)
 
         then: "The expected calls are made"
-        1 * userService.register(requestDto) >> expectedResponse
-        0 * _
-
-        and: "The expected result"
-        result == expectedResponse
-        result.statusCode == HttpStatus.OK
-        noExceptionThrown()
-    }
-
-    def "test - login: Should delegate to user service"() {
-        given: "A login request"
-        String username = "user"
-        String password = "pass"
-        LoginRequest request = new LoginRequest(username, password)
-        ResponseEntity<?> expectedResponse = new ResponseEntity<>(HttpStatus.OK)
-
-        when: "The target method executed"
-        ResponseEntity<?> result = authController.login(request)
-
-        then: "The expected calls are made"
-        1 * userService.login(username, password) >> expectedResponse
+        1 * user.register(requestDto) >> expectedResponse
         0 * _
 
         and: "The expected result"
@@ -72,7 +51,7 @@ class AuthControllerSpec extends BaseSpecification {
         ResponseEntity<?> result = authController.logout(header, body)
 
         then: "The expected calls are made"
-        1 * userService.logout(expectedAccessToken, refreshBody)
+        1 * user.logout(expectedAccessToken, refreshBody)
         0 * _
 
         and: "The expected result"
@@ -100,7 +79,7 @@ class AuthControllerSpec extends BaseSpecification {
 
         then: "The expected calls are made"
         if (token) {
-            1 * userService.refreshToken(token) >> serviceResponse
+            1 * user.refreshToken(token) >> serviceResponse
         }
         0 * _
 
@@ -120,7 +99,7 @@ class AuthControllerSpec extends BaseSpecification {
     @Unroll
     def "test - getCurrentUser: Handling userDetails state [details: #details, expectedStatus: #expectedStatus]"() {
         given: "A profile request"
-        String username = "user"
+        String username = "Test"
         UserDetails userDetails = null
         if (details) {
             userDetails = Mock(UserDetails)
@@ -134,7 +113,7 @@ class AuthControllerSpec extends BaseSpecification {
         then: "The expected calls are made"
         if (details) {
             1 * userDetails.getUsername() >> username
-            1 * userService.getProfile(username) >> serviceResponse
+            1 * user.getProfile(username) >> serviceResponse
         }
         0 * _
 
@@ -154,7 +133,7 @@ class AuthControllerSpec extends BaseSpecification {
     @Unroll
     def "test - updatePassword: Handling userDetails and header [details: #details, header: #header, expectedStatus: #expectedStatus]"() {
         given: "A password update request"
-        String username = "user"
+        String username = "Test"
         UserDetails userDetails = null
         if (details) {
             userDetails = Mock(UserDetails)
@@ -172,7 +151,7 @@ class AuthControllerSpec extends BaseSpecification {
         then: "The expected calls are made"
         if (details) {
             1 * userDetails.getUsername() >> username
-            1 * userService.updatePassword(username, expectedToken, requestDto) >> serviceResponse
+            1 * user.updatePassword(username, expectedToken, requestDto) >> serviceResponse
         }
         0 * _
 
