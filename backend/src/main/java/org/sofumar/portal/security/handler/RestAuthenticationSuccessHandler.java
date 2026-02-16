@@ -1,13 +1,14 @@
-package org.sofumar.portal.security;
+package org.sofumar.portal.security.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.sofumar.portal.core.businesslogic.User;
 import org.sofumar.portal.framework.service.RefreshTokenService;
 import org.sofumar.portal.framework.util.ResponseUtils;
+import org.sofumar.portal.security.JwtService;
+import org.sofumar.portal.security.SofumarUserDetails;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;

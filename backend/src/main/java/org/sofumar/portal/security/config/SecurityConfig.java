@@ -1,11 +1,12 @@
 package org.sofumar.portal.security.config;
 
 import org.sofumar.portal.constants.Role;
-import org.sofumar.portal.security.RestAuthenticationFailureHandler;
-import org.sofumar.portal.security.RestAuthenticationSuccessHandler;
+import org.sofumar.portal.security.handler.RestAuthenticationFailureHandler;
+import org.sofumar.portal.security.handler.RestAuthenticationSuccessHandler;
 import org.sofumar.portal.security.filters.JsonAuthenticationFilter;
 import org.sofumar.portal.security.filters.JwtAuthenticationFilter;
 import org.sofumar.portal.security.filters.RequestsRateLimitFilter;
+import org.sofumar.portal.security.handler.RestAccessDeniedHandler;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -39,24 +40,11 @@ public class SecurityConfig {
     private String[] allowedOrigins;
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
-        return authenticationConfiguration.getAuthenticationManager();
-    }
-
-    @Bean
-    public JsonAuthenticationFilter jsonAuthenticationFilter(AuthenticationManager authenticationManager,
-                                                             RestAuthenticationSuccessHandler successHandler,
-                                                             RestAuthenticationFailureHandler failureHandler) {
-        JsonAuthenticationFilter filter = new JsonAuthenticationFilter();
-        filter.setAuthenticationManager(authenticationManager);
-        filter.setAuthenticationSuccessHandler(successHandler);
-        filter.setAuthenticationFailureHandler(failureHandler);
-        filter.setFilterProcessesUrl("/auth/login");
-        return filter;
-    }
-
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter, RequestsRateLimitFilter requestsRateLimitFilter, JsonAuthenticationFilter jsonAuthenticationFilter) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http,
+                                           JwtAuthenticationFilter jwtAuthenticationFilter,
+                                           RequestsRateLimitFilter requestsRateLimitFilter,
+                                           JsonAuthenticationFilter jsonAuthenticationFilter,
+                                           RestAccessDeniedHandler accessDeniedHandler) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 // integrate with the CorsConfigurationSource bean; global CorsFilter still ensures headers on errors
@@ -92,7 +80,10 @@ public class SecurityConfig {
                 .addFilterBefore(jsonAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .headers(h -> h.contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'")))
                 .httpBasic(Customizer.withDefaults())
-                .exceptionHandling(e -> e.authenticationEntryPoint(new JsonAuthenticationEntryPoint()));
+                .exceptionHandling(e -> e
+                        .authenticationEntryPoint(new JsonAuthenticationEntryPoint())
+                        .accessDeniedHandler(accessDeniedHandler)
+                );
         return http.build();
     }
 
@@ -119,6 +110,28 @@ public class SecurityConfig {
         return source;
     }
 
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
+    }
+
+    @Bean
+    public JsonAuthenticationFilter jsonAuthenticationFilter(AuthenticationManager authenticationManager,
+                                                             RestAuthenticationSuccessHandler successHandler,
+                                                             RestAuthenticationFailureHandler failureHandler) {
+        JsonAuthenticationFilter filter = new JsonAuthenticationFilter();
+        filter.setAuthenticationManager(authenticationManager);
+        filter.setAuthenticationSuccessHandler(successHandler);
+        filter.setAuthenticationFailureHandler(failureHandler);
+        filter.setFilterProcessesUrl("/auth/login");
+        return filter;
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
     private CorsConfiguration buildCorsConfiguration() {
         CorsConfiguration config = new CorsConfiguration();
 
@@ -133,10 +146,5 @@ public class SecurityConfig {
         config.setMaxAge(3600L);
 
         return config;
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
     }
 }

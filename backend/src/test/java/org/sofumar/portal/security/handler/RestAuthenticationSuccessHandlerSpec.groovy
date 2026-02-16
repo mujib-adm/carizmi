@@ -1,4 +1,4 @@
-package org.sofumar.portal.security
+package org.sofumar.portal.security.handler
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import jakarta.servlet.http.HttpServletRequest
@@ -8,9 +8,9 @@ import org.sofumar.portal.core.businesslogic.User
 import org.sofumar.portal.core.vo.UserVO
 import org.sofumar.portal.framework.service.RefreshTokenService
 import org.sofumar.portal.security.JwtService
+import org.sofumar.portal.security.SofumarUserDetails
 import org.springframework.http.MediaType
 import org.springframework.security.core.Authentication
-import org.springframework.test.util.ReflectionTestUtils
 import spock.lang.Specification
 
 class RestAuthenticationSuccessHandlerSpec extends Specification {
