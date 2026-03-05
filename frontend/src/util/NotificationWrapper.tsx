@@ -1,13 +1,18 @@
-import { Modal } from "antd";
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Modal } from 'antd';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export function useNotificationWrapper() {
   const navigate = useNavigate();
-  const [modal, setModal] = useState<{ open: boolean; title: string; description?: string; redirectUrl?: string }>({
+  const [modal, setModal] = useState<{
+    open: boolean;
+    title: string;
+    description?: string;
+    redirectUrl?: string;
+  }>({
     open: false,
-    title: "",
-    description: "",
+    title: '',
+    description: '',
     redirectUrl: undefined,
   });
 
@@ -38,6 +43,6 @@ export function useNotificationWrapper() {
       showModal(config.message, config.description, redirectUrl),
     warning: (config: { message: string; description?: string }, redirectUrl?: string) =>
       showModal(config.message, config.description, redirectUrl),
-    ModalComponent
+    ModalComponent,
   };
 }

@@ -3,8 +3,7 @@ package org.sofumar.portal.service.validation
 import org.sofumar.portal.constants.FieldConstants
 import org.sofumar.portal.constants.ReferenceConstants
 import org.sofumar.portal.core.vo.ExpenseVO
-import org.sofumar.portal.framework.exception.ValidationException
-import org.sofumar.portal.testsupport.BaseSpecification
+import org.sofumar.portal.testbase.BaseSpecification
 import spock.lang.Subject
 import spock.lang.Unroll
 import java.time.LocalDate
@@ -39,7 +38,7 @@ class ExpenseValidatorSpec extends BaseSpecification {
         noExceptionThrown()
     }
 
-    def "test - validate: Should throw ValidationException when errors exist"() {
+    def "test - validate: With errors"() {
         given: "An invalid ExpenseVO (missing description)"
         String category = ReferenceConstants.EXPENSE_CATEGORY.OFFICE_SUPPLIES
         ExpenseVO vo = new ExpenseVO(dateOfExpense: LocalDate.now(), category: category, amount: 50.0)
@@ -54,10 +53,10 @@ class ExpenseValidatorSpec extends BaseSpecification {
         1 * referenceValidator.validate(vo, fieldName, referenceName, category)
         0 * _
 
-        and: "The expected result"
-        thrown(ValidationException)
+        and: "VO has validation errors"
         vo.hasErrors()
         vo.getFieldMessages().containsKey(FieldConstants.DESCRIPTION)
+        noExceptionThrown()
     }
 
     @Unroll
@@ -75,11 +74,7 @@ class ExpenseValidatorSpec extends BaseSpecification {
         String referenceName = ReferenceConstants.EXPENSE_CATEGORY.NAME
 
         when: "The target method executed"
-        try {
-            expenseValidator.validate(vo)
-        } catch (ValidationException e) {
-            // expected
-        }
+        expenseValidator.validate(vo)
 
         then: "The expected calls are made"
         if (field != fieldName || value) {
@@ -145,7 +140,7 @@ class ExpenseValidatorSpec extends BaseSpecification {
         0 * _
 
         and: "The expected result"
-        thrown(ValidationException)
+        noExceptionThrown()
         vo.hasErrors()
         vo.getFieldMessages().containsKey(FieldConstants.EXPENSE_ID)
     }

@@ -6,8 +6,9 @@ import org.sofumar.portal.data.dto.SystemSettingsDto;
 import org.sofumar.portal.data.dto.request.SystemSettingsSearchRequestDto;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
 import org.sofumar.portal.core.businesslogic.SystemSetting;
+import org.sofumar.portal.security.annotation.IsAdmin;
+import org.sofumar.portal.security.annotation.IsAuthenticated;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -31,19 +33,21 @@ public class SystemSettingsController {
 
     @GetMapping("/get/{id}")
     @Operation(summary = "Get system setting by ID")
+    @IsAuthenticated
     public ResponseEntity<GlobalResponse<SystemSettingsDto>> getSystemSetting(@PathVariable Integer id) {
         return systemSetting.getSystemSetting(id);
     }
 
     @PutMapping("/update")
     @Operation(summary = "Update an existing system setting")
-    @PreAuthorize("hasRole(T(org.sofumar.portal.constants.Role).ADMIN.name())")
-    public ResponseEntity<GlobalResponse<Void>> updateSystemSetting(@RequestBody SystemSettingsDto dto) {
+    @IsAdmin
+    public ResponseEntity<GlobalResponse<Void>> updateSystemSetting(@Valid @RequestBody SystemSettingsDto dto) {
         return systemSetting.updateSystemSetting(dto);
     }
 
     @PostMapping("/search")
     @Operation(summary = "Search system settings")
+    @IsAuthenticated
     public ResponseEntity<GlobalResponse<List<SystemSettingsDto>>> searchSystemSettings(
             @RequestBody SystemSettingsSearchRequestDto request) {
         return systemSetting.searchSystemSettings(request);
@@ -51,6 +55,7 @@ public class SystemSettingsController {
 
     @GetMapping("/by-key/{key}")
     @Operation(summary = "Get settings by key (e.g. Fee, Payment)")
+    @IsAuthenticated
     public ResponseEntity<GlobalResponse<List<SystemSettingsDto>>> getSettingsByKey(@PathVariable String key) {
         return systemSetting.getSettingsByKey(key);
     }

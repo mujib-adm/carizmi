@@ -4,13 +4,14 @@ services:
     image: mysql:8.0
     container_name: sofumar-db
     environment:
-      MYSQL_DATABASE: sofumar
+      MYSQL_DATABASE: ${DB_NAME}
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASS}
-      MYSQL_ROOT_PASSWORD: root_pwd
-    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASS}
+    command: --host-cache-size=0 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     volumes:
       - db_data:/var/lib/mysql
+      - /usr/share/zoneinfo:/usr/share/zoneinfo:ro
     ports:
       - "127.0.0.1:3306:3306" # Localhost only for security
     restart: always
@@ -21,7 +22,7 @@ services:
       retries: 10
 
   redis:
-    image: 'redis:latest'
+    image: 'redis:7.4-alpine'
     container_name: sofumar-redis
     ports:
       - "127.0.0.1:6379:6379" # Localhost only for security
@@ -33,6 +34,8 @@ services:
       retries: 10
     volumes:
       - redis_data:/data
+      - ./infra/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
 
   backend:
     platform: linux/amd64
@@ -48,9 +51,17 @@ services:
       db:
         condition: service_healthy
     environment:
-      SPRING_PROFILES_ACTIVE: dev
-      SPRING_DATA_REDIS_HOST: redis
-      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      ADMIN_DEFAULT_FIRSTNAME: ${ADMIN_DEFAULT_FIRSTNAME}
+      ADMIN_DEFAULT_LASTNAME: ${ADMIN_DEFAULT_LASTNAME}
+      ADMIN_DEFAULT_EMAIL: ${ADMIN_DEFAULT_EMAIL}
+      ADMIN_DEFAULT_USERNAME: ${ADMIN_DEFAULT_USERNAME}
+      JAVA_OPTS: ${JAVA_OPTS}
+    secrets:
+      - source: admin_password
+        target: admin.default.password
     ports:
       - "8080:8080"
 
@@ -72,3 +83,7 @@ services:
 volumes:
   db_data:
   redis_data:
+
+secrets:
+  admin_password:
+    file: ./secrets/admin_password.txt

@@ -16,7 +16,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer
 import org.springframework.security.config.annotation.web.configurers.ExceptionHandlingConfigurer
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer
-import org.springframework.security.config.annotation.web.configurers.HttpBasicConfigurer
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.DefaultSecurityFilterChain
@@ -32,7 +31,7 @@ class SecurityConfigSpec extends Specification {
 
     SecurityConfig securityConfig = new SecurityConfig()
 
-    def "test - filterChain: should configure http security with requestMatchers, roles, exception handling and build successfully"() {
+    def "test - filterChain: should configure http security with perimeter requestMatchers and build successfully"() {
         given: "Mocked HttpSecurity and dependencies"
         HttpSecurity http = Mock(HttpSecurity)
         JwtAuthenticationFilter jwtFilter = Mock()
@@ -43,27 +42,19 @@ class SecurityConfigSpec extends Specification {
         DefaultSecurityFilterChain expectedChain = new DefaultSecurityFilterChain(requestMatcher, [])
         AuthorizeHttpRequestsConfigurer.AuthorizationManagerRequestMatcherRegistry registry = Mock()
         ExceptionHandlingConfigurer exceptionConfig = Mock()
+        
         // Create distinct AuthorizedUrl mocks to verify correct associations
         AuthorizeHttpRequestsConfigurer.AuthorizedUrl urlPermitAll = Mock()
-        AuthorizeHttpRequestsConfigurer.AuthorizedUrl urlAuthenticated = Mock()
-        AuthorizeHttpRequestsConfigurer.AuthorizedUrl urlAdmin = Mock()
-        AuthorizeHttpRequestsConfigurer.AuthorizedUrl urlAdminManager = Mock()
-        AuthorizeHttpRequestsConfigurer.AuthorizedUrl urlRead = Mock()
         AuthorizeHttpRequestsConfigurer.AuthorizedUrl urlAnyRequest = Mock()
 
         // Stub methods to return registry for chaining
         urlPermitAll.permitAll() >> registry
-        urlAuthenticated.authenticated() >> registry
-        urlAdmin.hasRole(_ as String) >> registry
-        urlAdminManager.hasAnyRole(_ as String) >> registry
-        urlRead.hasAnyRole(_ as String) >> registry
         urlAnyRequest.authenticated() >> registry
-        // Stub fluent chain - no stubs here, moved to then
 
         when: "The target method executed"
         SecurityFilterChain result = securityConfig.filterChain(http, jwtFilter, rateLimitFilter, jsonFilter, accessDeniedHandler)
 
-        then: "The request matchers are incorrectly configured"
+        then: "The request matchers are correctly configured for perimeter security"
         // Verify configuration methods and return values to support chaining
         1 * http.csrf(_) >> http
         1 * http.cors(_) >> http
@@ -77,7 +68,6 @@ class SecurityConfigSpec extends Specification {
         }
         3 * http.addFilterBefore(_ as Filter, _ as Class<? extends Filter>) >> http
         1 * http.headers(_ as Customizer<HeadersConfigurer<HttpSecurity>>) >> http
-        1 * http.httpBasic(_ as Customizer<HttpBasicConfigurer<HttpSecurity>>) >> http
         1 * exceptionConfig.authenticationEntryPoint(_ as JsonAuthenticationEntryPoint) >> exceptionConfig
         1 * exceptionConfig.accessDeniedHandler(accessDeniedHandler)
         // 1. Preflight -> permitAll
@@ -85,7 +75,6 @@ class SecurityConfigSpec extends Specification {
         // 2. Public endpoints -> permitAll
         1 * registry.requestMatchers(
                 "/auth/login",
-                "/auth/register",
                 "/auth/refresh",
                 "/v3/api-docs/**",
                 "/swagger-ui/**",
@@ -93,48 +82,10 @@ class SecurityConfigSpec extends Specification {
         ) >> urlPermitAll
 
         2 * urlPermitAll.permitAll() >> registry
-        // 3. Authenticated endpoints -> authenticated
-        1 * registry.requestMatchers(
-                "/auth/profile",
-                "/auth/password-update",
-                "/auth/logout"
-        ) >> urlAuthenticated
-        1 * urlAuthenticated.authenticated() >> registry
-        // 4. ADMIN only -> hasRole("ADMIN")
-        1 * registry.requestMatchers("/users/**") >> urlAdmin
-        1 * registry.requestMatchers(HttpMethod.PUT, "/settings/**") >> urlAdmin
-        2 * urlAdmin.hasRole("ADMIN") >> registry
-        // 5. ADMIN or MANAGER -> hasAnyRole("ADMIN", "MANAGER")
-        // POST
-        1 * registry.requestMatchers(HttpMethod.POST,
-                "/members/**",
-                "/payments/**",
-                "/expenses/**"
-        ) >> urlAdminManager
-        // PUT
-        1 * registry.requestMatchers(HttpMethod.PUT,
-                "/members/**",
-                "/payments/**",
-                "/expenses/**"
-        ) >> urlAdminManager
-        // DELETE
-        1 * registry.requestMatchers(HttpMethod.DELETE,
-                "/members/**",
-                "/expenses/**"
-        ) >> urlAdminManager
-        3 * urlAdminManager.hasAnyRole("ADMIN", "MANAGER") >> registry
-        // 6. READ (GET) -> hasAnyRole("ADMIN", "MANAGER", "MEMBER")
-        1 * registry.requestMatchers(HttpMethod.GET,
-                "/members/**",
-                "/payments/**",
-                "/expenses/**",
-                "/dashboard/**",
-                "/references/**",
-                "/settings/**"
-        ) >> urlRead
-        1 * urlRead.hasAnyRole("ADMIN", "MANAGER", "MEMBER") >> registry
+        // 3. Catch-all: Any other request must be authenticated
         1 * registry.anyRequest() >> urlAnyRequest
         1 * urlAnyRequest.authenticated() >> registry
+
         1 * http.exceptionHandling(_) >> { args ->
             Customizer<ExceptionHandlingConfigurer<HttpSecurity>> customizer = args[0] as Customizer<ExceptionHandlingConfigurer<HttpSecurity>>
             customizer.customize(exceptionConfig)
@@ -253,6 +204,37 @@ class SecurityConfigSpec extends Specification {
         and: "The expected result"
         filter != null
         filter.getClass() == CorsFilter
+        noExceptionThrown()
+    }
+
+    def "test - logCorsConfiguration: should handle empty or null origins without throwing exception"() {
+        given: "Empty or null origins"
+        securityConfig.@allowedOrigins = origins as String[]
+
+        when: "The target method executed"
+        securityConfig.logCorsConfiguration()
+
+        then: "No exceptions"
+        0 * _
+
+        and:
+        noExceptionThrown()
+
+        where:
+        origins << [null, []]
+    }
+
+    def "test - logCorsConfiguration: should handle valid origins without throwing exception"() {
+        given: "Valid origins"
+        securityConfig.@allowedOrigins = ["http://localhost:3000"] as String[]
+
+        when: "The target method executed"
+        securityConfig.logCorsConfiguration()
+
+        then: "No exceptions"
+        0 * _
+
+        and:
         noExceptionThrown()
     }
 }

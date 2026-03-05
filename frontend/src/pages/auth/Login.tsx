@@ -1,14 +1,14 @@
-import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
-import "../../themes/css/auth-form.css";
+import { useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import '../../themes/css/auth-form.css';
 
-import apiClient from "../../apiclient/ApiClient";
-import { FormField } from "../../component/FormField";
-import { MessageBanner } from "../../component/MessageBanner";
-import { ApiEndpoints } from "../../constants/endpoints";
-import { GlobalResponse, LoginData, LoginForm, MessageType } from "../../constants/types";
-import { useApiMessages } from "../../hook/ApiResponseHandler";
+import apiClient from '../../apiclient/ApiClient';
+import { FormField } from '../../component/FormField';
+import { MessageBanner } from '../../component/MessageBanner';
+import { ApiEndpoints } from '../../constants/endpoints';
+import { GlobalResponse, LoginForm, MessageType } from '../../constants/types';
+import { useApiMessages } from '../../hook/ApiResponseHandler';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -21,21 +21,23 @@ export default function Login() {
     // clear old messages from MessageBanner before starting new call
     resetMessages();
     try {
-      const response = await apiClient.post<GlobalResponse<LoginData>>(ApiEndpoints.AUTH.LOGIN, formValues);
+      const response = await apiClient.post<GlobalResponse>(ApiEndpoints.AUTH.LOGIN, formValues);
       const responseBody = response.data;
 
-      if (responseBody?.map?.token && responseBody?.map?.role) {
-        login(responseBody.map.token, responseBody.map.refreshToken, responseBody.map.role, responseBody.map.firstName || '');
-        navigate("/dashboard");
+      if (responseBody?.map?.role) {
+        login(responseBody.map.role, responseBody.map.firstName || '');
+        navigate('/dashboard');
       } else if (responseBody.globalMessages?.length > 0) {
         handleResponse(responseBody);
       } else {
         handleResponse({
-             statusCode: 500,
-             statusDesc: "Error",
-             globalMessages: [{ type: MessageType.ERROR, message: "Login failed. Invalid server response (missing token)." }],
-             fieldMessages: [],
-             map: {}
+          statusCode: 500,
+          statusDesc: 'Error',
+          globalMessages: [
+            { type: MessageType.ERROR, message: 'Login failed. Invalid server response.' },
+          ],
+          fieldMessages: [],
+          map: {},
         });
       }
     } catch (error: any) {
@@ -55,7 +57,7 @@ export default function Login() {
           <FormField
             type="text"
             placeholder="Enter username..."
-            registerProps={register("username", { required: "Username is required" })}
+            registerProps={register('username', { required: 'Username is required' })}
             error={errors.username}
           />
 
@@ -66,7 +68,7 @@ export default function Login() {
             <FormField
               type="password"
               placeholder="Enter password..."
-              registerProps={register("password", { required: "Password is required" })}
+              registerProps={register('password', { required: 'Password is required' })}
               error={errors.password}
             />
           </div>

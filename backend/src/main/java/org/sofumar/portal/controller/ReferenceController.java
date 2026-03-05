@@ -8,6 +8,7 @@ import org.sofumar.portal.data.dto.ReferenceDto;
 import org.sofumar.portal.data.dto.request.ReferenceSearchRequestDto;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
 import org.sofumar.portal.core.businesslogic.Reference;
+import org.sofumar.portal.security.annotation.IsAuthenticated;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,12 +29,14 @@ public class ReferenceController {
 
     @GetMapping("/get/{referenceID}")
     @Operation(summary = "Get reference by ID")
+    @IsAuthenticated
     public ResponseEntity<GlobalResponse<ReferenceDto>> getReference(@PathVariable Integer referenceID) {
         return reference.getReference(referenceID);
     }
 
     @PostMapping("/search")
     @Operation(summary = "Search references")
+    @IsAuthenticated
     public ResponseEntity<GlobalResponse<List<ReferenceDto>>> searchReferences(
             @RequestBody ReferenceSearchRequestDto request) {
         return reference.searchReferences(request);
@@ -41,6 +44,7 @@ public class ReferenceController {
 
     @GetMapping("/list/{referenceName}")
     @Operation(summary = "Get list of references by name (e.g. feeType)")
+    @IsAuthenticated
     public ResponseEntity<GlobalResponse<List<ReferenceDataDto>>> getReferencesByName(
             @PathVariable String referenceName) {
         return reference.getReferencesByName(referenceName);

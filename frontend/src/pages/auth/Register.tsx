@@ -1,22 +1,28 @@
-import { useForm } from "react-hook-form";
-import { Navigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
-import "../../themes/css/auth-form.css";
+import { useForm } from 'react-hook-form';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import '../../themes/css/auth-form.css';
 
-import apiClient from "../../apiclient/ApiClient";
-import { FormField } from "../../component/FormField";
-import { MessageBanner } from "../../component/MessageBanner";
-import { ApiEndpoints } from "../../constants/endpoints";
-import { GlobalResponse, MessageType, RegisterForm } from "../../constants/types";
-import { useNotification } from "../../context/NotificationContext";
-import { useApiMessages } from "../../hook/ApiResponseHandler";
+import apiClient from '../../apiclient/ApiClient';
+import { FormField } from '../../component/FormField';
+import { MessageBanner } from '../../component/MessageBanner';
+import { ApiEndpoints } from '../../constants/endpoints';
+import { GlobalResponse, MessageType, RegisterForm } from '../../constants/types';
+import { useNotification } from '../../context/NotificationContext';
+import { useApiMessages } from '../../hook/ApiResponseHandler';
 
 export default function Register() {
-  const { token, isLoading } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const notify = useNotification();
 
-  const { register, handleSubmit, setError, formState: { errors } } = useForm<RegisterForm>();
-  const { globalMessages, handleResponse, handleError, resetMessages } = useApiMessages<RegisterForm>(setError);
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors },
+  } = useForm<RegisterForm>();
+  const { globalMessages, handleResponse, handleError, resetMessages } =
+    useApiMessages<RegisterForm>(setError);
 
   const onSubmit = async (formValues: RegisterForm) => {
     try {
@@ -28,7 +34,7 @@ export default function Register() {
       if (responseBody.globalMessages?.length > 0) {
         const msg = responseBody.globalMessages[0];
         if (msg.type === MessageType.SUCCESS) {
-          notify.success({ message: "Success", description: msg.message }, "/login");
+          notify.success({ message: 'Success', description: msg.message }, '/login');
         } else {
           handleResponse(responseBody);
         }
@@ -38,7 +44,7 @@ export default function Register() {
     }
   };
 
-  if (!isLoading && token) return <Navigate to="/" />;
+  if (!isLoading && isAuthenticated) return <Navigate to="/" />;
 
   return (
     <div className="modern-login-container">
@@ -52,7 +58,7 @@ export default function Register() {
           <FormField
             type="text"
             placeholder="Enter first name..."
-            registerProps={register("firstName", { required: "First Name is required" })}
+            registerProps={register('firstName', { required: 'First Name is required' })}
             error={errors.firstName}
           />
 
@@ -63,7 +69,7 @@ export default function Register() {
             <FormField
               type="text"
               placeholder="Enter last name..."
-              registerProps={register("lastName", { required: "Last Name is required" })}
+              registerProps={register('lastName', { required: 'Last Name is required' })}
               error={errors.lastName}
             />
           </div>
@@ -75,7 +81,7 @@ export default function Register() {
             <FormField
               type="email"
               placeholder="Enter email..."
-              registerProps={register("email", { required: "Email is required" })}
+              registerProps={register('email', { required: 'Email is required' })}
               error={errors.email}
             />
           </div>
@@ -87,7 +93,7 @@ export default function Register() {
             <FormField
               type="text"
               placeholder="Enter username..."
-              registerProps={register("username", { required: "Username is required" })}
+              registerProps={register('username', { required: 'Username is required' })}
               error={errors.username}
             />
           </div>
@@ -99,7 +105,7 @@ export default function Register() {
             <FormField
               type="password"
               placeholder="Enter password..."
-              registerProps={register("password", { required: "Password is required" })}
+              registerProps={register('password', { required: 'Password is required' })}
               error={errors.password}
             />
           </div>

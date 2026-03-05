@@ -12,7 +12,7 @@ import org.sofumar.portal.core.businesslogic.Member
 import org.sofumar.portal.core.businesslogic.Payment
 import org.sofumar.portal.data.dto.response.PaymentSummary
 import org.sofumar.portal.service.helper.BaselineService
-import org.sofumar.portal.testsupport.BaseSpecification
+import org.sofumar.portal.testbase.BaseSpecification
 import org.springframework.data.jpa.domain.Specification as JpaSpecification
 import org.springframework.http.ResponseEntity
 import spock.lang.Subject

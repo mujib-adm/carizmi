@@ -12,7 +12,7 @@ import org.sofumar.portal.framework.exception.RecordNotFoundException
 import org.sofumar.portal.framework.util.MySQLConstraintResolver
 import org.sofumar.portal.core.repo.ExpenseRepository
 import org.sofumar.portal.service.validation.ExpenseValidator
-import org.sofumar.portal.testsupport.BaseSpecification
+import org.sofumar.portal.testbase.BaseSpecification
 import org.springframework.dao.DataAccessException
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.data.domain.Page
@@ -33,10 +33,10 @@ class ExpenseSpec extends BaseSpecification {
     MySQLConstraintResolver constraintResolver = Mock()
 
     @Subject
-    ExpenseImpl expenseService = new ExpenseImpl(expenseRepo, voTransformer, dtoTransformer, validator)
+    ExpenseImpl expenseImpl = new ExpenseImpl(expenseRepo, voTransformer, dtoTransformer, validator)
 
     void setup() {
-        ReflectionTestUtils.setField(expenseService, "constraintResolver", constraintResolver)
+        ReflectionTestUtils.setField(expenseImpl, "constraintResolver", constraintResolver)
     }
 
     def "test - addExpense: Should transform, validate, and save expense"() {
@@ -51,7 +51,7 @@ class ExpenseSpec extends BaseSpecification {
         ResponseEntity<GlobalResponse<Integer>> response
 
         when: "The target method executed"
-        response = expenseService.addExpense(requestDto)
+        response = expenseImpl.addExpense(requestDto)
 
         then: "The expected calls are made"
         1 * voTransformer.transform(_) >> { ExpenseDto dto -> capturedDto = dto; transformedVo }
@@ -73,7 +73,7 @@ class ExpenseSpec extends BaseSpecification {
         ExpenseVO transformedVo = new ExpenseVO(amount: amount)
 
         when: "The target method executed"
-        expenseService.addExpense(requestDto)
+        expenseImpl.addExpense(requestDto)
 
         then: "The expected calls are made"
         1 * voTransformer.transform(_) >> transformedVo
@@ -93,7 +93,7 @@ class ExpenseSpec extends BaseSpecification {
         ExpenseVO vo = new ExpenseVO(amount: amount)
 
         when: "The target method executed"
-        expenseService.addExpense(requestDto)
+        expenseImpl.addExpense(requestDto)
 
         then: "The expected calls are made"
         1 * voTransformer.transform(_) >> vo
@@ -115,7 +115,7 @@ class ExpenseSpec extends BaseSpecification {
         ResponseEntity<GlobalResponse<Void>> response
 
         when: "The target method executed"
-        response = expenseService.updateExpense(dto)
+        response = expenseImpl.updateExpense(dto)
 
         then: "The expected calls are made"
         1 * expenseRepo.findById(1) >> Optional.of(existingVo)
@@ -135,7 +135,7 @@ class ExpenseSpec extends BaseSpecification {
         ExpenseDto dto = new ExpenseDto(expenseID: id)
 
         when: "The target method executed"
-        expenseService.updateExpense(dto)
+        expenseImpl.updateExpense(dto)
 
         then: "The expected calls are made"
         1 * expenseRepo.findById(99) >> Optional.empty()
@@ -151,7 +151,7 @@ class ExpenseSpec extends BaseSpecification {
         ExpenseVO vo = new ExpenseVO(expenseID: id)
 
         when: "The target method executed"
-        expenseService.deleteExpense(id)
+        expenseImpl.deleteExpense(id)
 
         then: "The expected calls are made"
         1 * expenseRepo.findById(1) >> Optional.of(vo)
@@ -167,7 +167,7 @@ class ExpenseSpec extends BaseSpecification {
         Integer id = 99
 
         when: "The target method executed"
-        expenseService.deleteExpense(id)
+        expenseImpl.deleteExpense(id)
 
         then: "The expected calls are made"
         1 * expenseRepo.findById(99) >> Optional.empty()
@@ -183,7 +183,7 @@ class ExpenseSpec extends BaseSpecification {
         ExpenseVO vo = new ExpenseVO(expenseID: id)
 
         when: "The target method executed"
-        expenseService.deleteExpense(id)
+        expenseImpl.deleteExpense(id)
 
         then: "The expected calls are made"
         1 * expenseRepo.findById(1) >> Optional.of(vo)
@@ -203,7 +203,7 @@ class ExpenseSpec extends BaseSpecification {
         ResponseEntity<GlobalResponse<ExpenseDto>> response
 
         when: "The target method executed"
-        response = expenseService.getExpense(id)
+        response = expenseImpl.getExpense(id)
 
         then: "The expected calls are made"
         1 * expenseRepo.findById(1) >> Optional.of(vo)
@@ -220,7 +220,7 @@ class ExpenseSpec extends BaseSpecification {
         Integer id = 99
 
         when: "The target method executed"
-        expenseService.getExpense(id)
+        expenseImpl.getExpense(id)
 
         then: "The expected calls are made"
         1 * expenseRepo.findById(99) >> Optional.empty()
@@ -239,14 +239,14 @@ class ExpenseSpec extends BaseSpecification {
         ExpenseSearchRequestDto request1 = new ExpenseSearchRequestDto()
         request1.setPage(0)
         request1.setSize(10)
-        expenseService.searchExpenses(request1)
+        expenseImpl.searchExpenses(request1)
 
         ExpenseSearchRequestDto request2 = new ExpenseSearchRequestDto(category: "Transportation", dateFrom: LocalDate.now(), dateTo: LocalDate.now())
         request2.setPage(0)
         request2.setSize(10)
         request2.setSortField(FieldConstants.AMOUNT)
         request2.setSortOrder("DESC")
-        expenseService.searchExpenses(request2)
+        expenseImpl.searchExpenses(request2)
 
         then: "The expected calls are made"
         2 * expenseRepo.findAll(_ as JpaSpecification, _ as PageRequest) >> mockPage
@@ -268,7 +268,7 @@ class ExpenseSpec extends BaseSpecification {
         List<ExpenseVO> vos = [new ExpenseVO(expenseID: id)]
 
         when: "The target method executed"
-        expenseService.delete(vos)
+        expenseImpl.delete(vos)
 
         then: "The expected calls are made"
         1 * expenseRepo.deleteAll(vos)
@@ -282,7 +282,7 @@ class ExpenseSpec extends BaseSpecification {
         given: "An empty list"
 
         when: "The target method executed"
-        expenseService.delete([])
+        expenseImpl.delete([])
 
         then: "The expected calls are made"
         0 * _
@@ -297,7 +297,7 @@ class ExpenseSpec extends BaseSpecification {
         BigDecimal expectedSum = new BigDecimal("100.00")
 
         when: "The target method executed"
-        BigDecimal result = expenseService.sumAmountByDateOfExpenseBefore(date)
+        BigDecimal result = expenseImpl.sumAmountByDateOfExpenseBefore(date)
 
         then: "The expected calls are made"
         1 * expenseRepo.sumAmountByDateOfExpenseBefore(date) >> expectedSum
@@ -315,7 +315,7 @@ class ExpenseSpec extends BaseSpecification {
         BigDecimal expectedSum = new BigDecimal("200.00")
 
         when: "The target method executed"
-        BigDecimal result = expenseService.sumAmountByDateOfExpenseBetween(start, end)
+        BigDecimal result = expenseImpl.sumAmountByDateOfExpenseBetween(start, end)
 
         then: "The expected calls are made"
         1 * expenseRepo.sumAmountByDateOfExpenseBetween(start, end) >> expectedSum

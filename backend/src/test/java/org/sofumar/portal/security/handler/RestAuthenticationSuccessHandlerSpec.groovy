@@ -9,6 +9,7 @@ import org.sofumar.portal.core.vo.UserVO
 import org.sofumar.portal.framework.service.RefreshTokenService
 import org.sofumar.portal.security.JwtService
 import org.sofumar.portal.security.SofumarUserDetails
+import org.sofumar.portal.security.CookieService
 import org.springframework.http.MediaType
 import org.springframework.security.core.Authentication
 import spock.lang.Specification
@@ -19,7 +20,8 @@ class RestAuthenticationSuccessHandlerSpec extends Specification {
     ObjectMapper objectMapper = new ObjectMapper()
     User user = Mock()
     JwtService jwtService = Mock()
-    RestAuthenticationSuccessHandler handler = new RestAuthenticationSuccessHandler(refreshTokenService, objectMapper, user, jwtService)
+    CookieService cookieService = Mock()
+    RestAuthenticationSuccessHandler handler = new RestAuthenticationSuccessHandler(refreshTokenService, objectMapper, user, jwtService, cookieService)
 
     HttpServletRequest request = Mock()
     HttpServletResponse response = Mock()
@@ -42,6 +44,8 @@ class RestAuthenticationSuccessHandlerSpec extends Specification {
         1 * jwtService.generateAccessToken(userDetails) >> "generated-access-token"
         1 * user.onLoginSuccess(username)
         1 * refreshTokenService.createRefreshToken(username) >> "refreshToken"
+        1 * cookieService.addAccessTokenCookie(response, "generated-access-token")
+        1 * cookieService.addRefreshTokenCookie(response, "refreshToken")
         1 * response.setStatus(HttpServletResponse.SC_OK)
         1 * response.setContentType(MediaType.APPLICATION_JSON_VALUE)
         1 * response.getWriter() >> writer
@@ -51,8 +55,9 @@ class RestAuthenticationSuccessHandlerSpec extends Specification {
         String jsonResponse = stringWriter.toString()
         jsonResponse.contains("\"statusCode\":200")
         jsonResponse.contains("\"statusDesc\":\"OK\"")
-        jsonResponse.contains("\"token\":\"generated-access-token\"")
-        jsonResponse.contains("\"refreshToken\":\"refreshToken\"")
+        // Non-sensitive metadata in response
+        !jsonResponse.contains("\"token\"")
+        !jsonResponse.contains("\"refreshToken\"")
         jsonResponse.contains("\"firstName\":\"Test\"")
         jsonResponse.contains("\"role\":\"MEMBER\"")
     }

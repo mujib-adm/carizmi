@@ -3,8 +3,7 @@ package org.sofumar.portal.service.validation
 import org.sofumar.portal.constants.FieldConstants
 import org.sofumar.portal.constants.ReferenceConstants
 import org.sofumar.portal.core.vo.MemberVO
-import org.sofumar.portal.framework.exception.ValidationException
-import org.sofumar.portal.testsupport.BaseSpecification
+import org.sofumar.portal.testbase.BaseSpecification
 import spock.lang.Subject
 import spock.lang.Unroll
 
@@ -57,11 +56,7 @@ class MemberValidatorSpec extends BaseSpecification {
         String referenceName = ReferenceConstants.MEMBER_STATUS.NAME
 
         when: "The target method executed"
-        try {
-            memberValidator.validate(vo)
-        } catch (ValidationException e) {
-            // expected
-        }
+        memberValidator.validate(vo)
 
         then: "The expected calls are made"
         if (field != fieldName || value) {
@@ -102,11 +97,7 @@ class MemberValidatorSpec extends BaseSpecification {
         String referenceName = ReferenceConstants.MEMBER_STATUS.NAME
 
         when: "The target method executed"
-        try {
-            memberValidator.validate(vo)
-        } catch (ValidationException e) {
-            // expected
-        }
+        memberValidator.validate(vo)
 
         then: "The expected calls are made"
         1 * referenceValidator.validate(vo, fieldName, referenceName, defaultStatus)
@@ -171,7 +162,7 @@ class MemberValidatorSpec extends BaseSpecification {
         0 * _
 
         and: "The expected result"
-        thrown(ValidationException)
+        noExceptionThrown()
         vo.hasErrors()
         vo.getFieldMessages().containsKey(FieldConstants.MEMBER_ID)
     }

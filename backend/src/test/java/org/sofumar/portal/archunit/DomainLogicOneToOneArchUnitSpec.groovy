@@ -43,10 +43,10 @@ class DomainLogicOneToOneArchUnitSpec extends Specification {
         Map<String, List<String>> mapping = [:]
         importedClasses.each { javaClass ->
             javaClass.annotations.each { annotation ->
-                if (annotation.rawType.name == DomainLogicFor.class.name) {
+                if (annotation.rawType.name == "org.sofumar.portal.framework.annotation.DomainLogicFor") {
                     // In ArchUnit, the 'value' property of an annotation is accessed this way
                     String voClass = annotation.getProperties().get("value").toString()
-                    // Strip class suffix if present (e.g., "class org.sofumar.portal.core.vo.MemberVO")
+                    // Strip class suffix if present
                     voClass = voClass.replace("class ", "")
                     mapping.computeIfAbsent(voClass, { k -> [] }).add(javaClass.name)
                 }
@@ -54,14 +54,14 @@ class DomainLogicOneToOneArchUnitSpec extends Specification {
         }
 
         then: "The imported classes should not be empty"
-        assert importedClasses.size() > 0: "No classes were imported by ArchUnit"
+        assert importedClasses.size() > 0 : "No classes were imported by ArchUnit"
 
         and: "The mapping should not be empty"
-        assert !mapping.isEmpty(): "No classes with @DomainLogicFor were found among ${importedClasses.size()} classes. Packages found: ${importedClasses.collect { it.packageName }.unique().sort()}"
+        assert !mapping.isEmpty() : "No classes with @DomainLogicFor were found among ${importedClasses.size()} classes."
 
         and: "Each Value Object should have exactly one implementation"
         mapping.each { vo, impls ->
-            assert impls.size() == 1: "Expected exactly 1 Domain Logic implementation for ${vo}, but found ${impls.size()}: ${impls}"
+            assert impls.size() == 1 : "Expected exactly 1 Domain Logic implementation for ${vo}, but found ${impls.size()}: ${impls}"
         }
     }
 }

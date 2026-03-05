@@ -2,7 +2,7 @@ package org.sofumar.portal.data.transformer
 
 import org.sofumar.portal.core.vo.PaymentVO
 import org.sofumar.portal.data.dto.PaymentDto
-import org.sofumar.portal.testsupport.BaseSpecification
+import org.sofumar.portal.testbase.BaseSpecification
 import spock.lang.Unroll
 
 import java.time.LocalDate

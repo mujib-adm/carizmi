@@ -1,5 +1,7 @@
 package org.sofumar.portal.security.filters
 
+import com.github.benmanes.caffeine.cache.Cache
+import io.github.bucket4j.Bucket
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -8,6 +10,7 @@ import org.springframework.test.util.ReflectionTestUtils
 import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
+
 
 import java.time.Duration
 
@@ -135,6 +138,28 @@ class RequestsRateLimitFilterSpec extends Specification {
         1 * request.getRemoteAddr() >> ip2
         1 * chain.doFilter(request, response)
         0 * _
+
+        and: "No exception occurred"
+        noExceptionThrown()
+    }
+
+    def "test - cache: Should use bounded Caffeine cache"() {
+        given: "A request from an IP and the filter's cache field"
+        Cache<String, Bucket> cacheField = (Cache<String, Bucket>) ReflectionTestUtils.getField(filter, "cache")
+        String ip = "10.0.0.1"
+
+        when: "The filter is executed and a bucket entry is created"
+        filter.doFilterInternal(request, response, chain)
+
+        then: "IP is resolved via remote address"
+        1 * request.getHeader("X-Forwarded-For") >> null
+        1 * request.getRemoteAddr() >> ip
+        1 * chain.doFilter(request, response)
+        0 * _
+
+        and: "Cache is a bounded Caffeine Cache"
+        cacheField instanceof Cache
+        cacheField.estimatedSize() >= 1
 
         and: "No exception occurred"
         noExceptionThrown()

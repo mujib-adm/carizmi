@@ -2,7 +2,7 @@ package org.sofumar.portal.data.transformer
 
 import org.sofumar.portal.core.vo.MemberVO
 import org.sofumar.portal.data.dto.MemberDto
-import org.sofumar.portal.testsupport.BaseSpecification
+import org.sofumar.portal.testbase.BaseSpecification
 
 import java.time.LocalDate
 

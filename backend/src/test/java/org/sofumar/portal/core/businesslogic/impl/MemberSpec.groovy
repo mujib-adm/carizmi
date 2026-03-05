@@ -19,7 +19,7 @@ import org.sofumar.portal.framework.exception.DuplicateRecordException
 import org.sofumar.portal.framework.exception.RecordNotFoundException
 import org.sofumar.portal.framework.util.MySQLConstraintResolver
 import org.sofumar.portal.service.validation.MemberValidator
-import org.sofumar.portal.testsupport.BaseSpecification
+import org.sofumar.portal.testbase.BaseSpecification
 import org.springframework.dao.DataAccessException
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.data.domain.Page
@@ -44,10 +44,10 @@ class MemberSpec extends BaseSpecification {
     MySQLConstraintResolver constraintResolver = Mock()
 
     @Subject
-    MemberImpl memberService = new MemberImpl(memberRepo, payment, voTransformer, dtoTransformer, validator)
+    MemberImpl memberImpl = new MemberImpl(memberRepo, payment, voTransformer, dtoTransformer, validator)
 
     void setup() {
-        ReflectionTestUtils.setField(memberService, "constraintResolver", constraintResolver)
+        ReflectionTestUtils.setField(memberImpl, "constraintResolver", constraintResolver)
     }
 
     def "test - addMember: Should transform, validate, and save member"() {
@@ -62,7 +62,7 @@ class MemberSpec extends BaseSpecification {
         ResponseEntity<GlobalResponse<Integer>> response
 
         when: "The target method executed"
-        response = memberService.addMember(requestDto)
+        response = memberImpl.addMember(requestDto)
 
         then: "The expected calls are made"
         1 * voTransformer.transform(_) >> { MemberDto dto -> capturedDto = dto; transformedVo }
@@ -84,7 +84,7 @@ class MemberSpec extends BaseSpecification {
         MemberDto requestDto = new MemberDto()
 
         when: "The target method executed"
-        memberService.addMember(requestDto)
+        memberImpl.addMember(requestDto)
 
         then: "The expected calls are made"
         1 * voTransformer.transform(_) >> vo
@@ -103,7 +103,7 @@ class MemberSpec extends BaseSpecification {
         MemberDto requestDto = new MemberDto()
 
         when: "The target method executed"
-        memberService.addMember(requestDto)
+        memberImpl.addMember(requestDto)
 
         then: "The expected calls are made"
         1 * voTransformer.transform(_) >> vo
@@ -125,7 +125,7 @@ class MemberSpec extends BaseSpecification {
         ResponseEntity<GlobalResponse<Void>> response
 
         when: "The target method executed"
-        response = memberService.updateMember(dto)
+        response = memberImpl.updateMember(dto)
 
         then: "The expected calls are made"
         1 * memberRepo.findById(1) >> Optional.of(vo)
@@ -146,7 +146,7 @@ class MemberSpec extends BaseSpecification {
         MemberVO vo = new MemberVO(memberID: id)
 
         when: "The target method executed"
-        memberService.updateMember(dto)
+        memberImpl.updateMember(dto)
 
         then: "The expected calls are made"
         1 * memberRepo.findById(1) >> Optional.of(vo)
@@ -166,13 +166,13 @@ class MemberSpec extends BaseSpecification {
         MemberDto dto = new MemberDto(memberID: id)
 
         when: "The target method executed"
-        memberService.updateMember(dto)
+        memberImpl.updateMember(dto)
 
         then: "The expected calls are made"
         1 * memberRepo.findById(99) >> Optional.empty()
         0 * _
 
-        and: "The expected result"
+        and: "The expected result - RecordNotFoundException is thrown"
         thrown(RecordNotFoundException)
     }
 
@@ -181,14 +181,14 @@ class MemberSpec extends BaseSpecification {
         ResponseEntity<GlobalResponse<Void>> response
 
         when: "The target method executed"
-        response = memberService.updateMember(new MemberDto())
+        response = memberImpl.updateMember(new MemberDto())
 
         then: "The expected calls are made"
+        1 * memberRepo.findById(null) >> Optional.empty()
         0 * _
 
-        and: "The expected result"
-        response.statusCode.value() == 400
-        noExceptionThrown()
+        and: "The expected result - RecordNotFoundException is thrown"
+        thrown(RecordNotFoundException)
     }
 
     def "test - deleteMember: Success"() {
@@ -198,7 +198,7 @@ class MemberSpec extends BaseSpecification {
         ResponseEntity<GlobalResponse<Void>> response
 
         when: "The target method executed"
-        response = memberService.deleteMember(id)
+        response = memberImpl.deleteMember(id)
 
         then: "The expected calls are made"
         1 * memberRepo.findById(1) >> Optional.of(vo)
@@ -216,7 +216,7 @@ class MemberSpec extends BaseSpecification {
         MemberVO vo = new MemberVO(memberID: id)
 
         when: "The target method executed"
-        memberService.deleteMember(id)
+        memberImpl.deleteMember(id)
 
         then: "The expected calls are made"
         1 * memberRepo.findById(1) >> Optional.of(vo)
@@ -233,7 +233,7 @@ class MemberSpec extends BaseSpecification {
         Integer memberID = 0
 
         when: "The target method executed"
-        memberService.deleteMember(memberID)
+        memberImpl.deleteMember(memberID)
 
         then: "The expected calls are made"
         1 * memberRepo.findById(memberID) >> Optional.empty()
@@ -252,7 +252,7 @@ class MemberSpec extends BaseSpecification {
         request.setSize(10)
 
         when: "The target method executed"
-        memberService.searchMembers(request)
+        memberImpl.searchMembers(request)
 
         then: "The expected calls are made"
         1 * memberRepo.findAll(_, _ as PageRequest) >> mockPage
@@ -281,7 +281,7 @@ class MemberSpec extends BaseSpecification {
         ResponseEntity<GlobalResponse<MemberDto>> response
 
         when: "The target method executed"
-        response = memberService.getMember(id)
+        response = memberImpl.getMember(id)
 
         then: "The expected calls are made"
         1 * memberRepo.findById(1) >> Optional.of(vo)
@@ -298,7 +298,7 @@ class MemberSpec extends BaseSpecification {
         Integer id = 99
 
         when: "The target method executed"
-        memberService.getMember(id)
+        memberImpl.getMember(id)
 
         then: "The expected calls are made"
         1 * memberRepo.findById(99) >> Optional.empty()
@@ -320,7 +320,7 @@ class MemberSpec extends BaseSpecification {
         ResponseEntity<GlobalResponse<List<MemberLookupDto>>> response
 
         when: "The target method executed"
-        response = memberService.lookupMembers(query)
+        response = memberImpl.lookupMembers(query)
 
         then: "The expected calls are made"
         1 * memberRepo.findAll(_ as JpaSpecification, _ as PageRequest) >> mockPage
@@ -356,7 +356,7 @@ class MemberSpec extends BaseSpecification {
         ResponseEntity<GlobalResponse<MemberSummaryDto>> response
 
         when: "The target method executed"
-        response = memberService.getMemberSummary(id)
+        response = memberImpl.getMemberSummary(id)
 
         then: "The expected calls are made"
         1 * memberRepo.findById(id) >> (found ? Optional.of(member) : Optional.empty())
@@ -404,7 +404,7 @@ class MemberSpec extends BaseSpecification {
         JpaSpecification capturedSpec = null
 
         when: "The target method executed"
-        long result = memberService.countActiveMembers()
+        long result = memberImpl.countActiveMembers()
 
         then: "The expected calls are made"
         1 * memberRepo.count(_ as JpaSpecification) >> { JpaSpecification spec -> capturedSpec = spec; expectedCount }
@@ -427,7 +427,7 @@ class MemberSpec extends BaseSpecification {
         JpaSpecification capturedSpec = null
 
         when: "The target method executed"
-        List<MemberVO> result = memberService.findAllActiveMembers()
+        List<MemberVO> result = memberImpl.findAllActiveMembers()
 
         then: "The expected calls are made"
         1 * memberRepo.findAll(_ as JpaSpecification) >> { JpaSpecification spec -> capturedSpec = spec; expectedList }

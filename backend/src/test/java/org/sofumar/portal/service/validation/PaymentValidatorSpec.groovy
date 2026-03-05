@@ -4,8 +4,7 @@ import org.sofumar.portal.constants.FieldConstants
 import org.sofumar.portal.constants.ReferenceConstants
 import org.sofumar.portal.core.vo.MemberVO
 import org.sofumar.portal.core.vo.PaymentVO
-import org.sofumar.portal.framework.exception.ValidationException
-import org.sofumar.portal.testsupport.BaseSpecification
+import org.sofumar.portal.testbase.BaseSpecification
 import spock.lang.Subject
 import spock.lang.Unroll
 
@@ -101,11 +100,7 @@ class PaymentValidatorSpec extends BaseSpecification {
         String methodName = ReferenceConstants.PAYMENT_METHOD.NAME
 
         when: "The target method executed"
-        try {
-            paymentValidator.validate(vo)
-        } catch (ValidationException e) {
-            // expected
-        }
+        paymentValidator.validate(vo)
 
         then: "The expected calls are made"
         if (!(field == feeTypeField && (value == null || value == ""))) {
@@ -146,11 +141,7 @@ class PaymentValidatorSpec extends BaseSpecification {
         String methodName = ReferenceConstants.PAYMENT_METHOD.NAME
 
         when: "The target method executed"
-        try {
-            paymentValidator.validate(vo)
-        } catch (ValidationException e) {
-            // expected
-        }
+        paymentValidator.validate(vo)
 
         then: "The expected calls are made"
         1 * referenceValidator.validate(vo, feeTypeField, feeTypeName, testFeeType)
@@ -177,11 +168,7 @@ class PaymentValidatorSpec extends BaseSpecification {
         String methodName = ReferenceConstants.PAYMENT_METHOD.NAME
 
         when: "The target method executed"
-        try {
-            paymentValidator.validate(vo)
-        } catch (ValidationException e) {
-            // expected
-        }
+        paymentValidator.validate(vo)
 
         then: "The expected calls are made"
         1 * referenceValidator.validate(vo, feeTypeField, feeTypeName, feeType)
@@ -250,7 +237,7 @@ class PaymentValidatorSpec extends BaseSpecification {
         0 * _
 
         and: "The expected result"
-        thrown(ValidationException)
+        noExceptionThrown()
         vo.hasErrors()
         vo.getFieldMessages().containsKey(FieldConstants.PAYMENT_ID)
     }

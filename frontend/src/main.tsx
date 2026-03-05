@@ -1,24 +1,24 @@
-import { ConfigProvider, theme } from "antd";
-import { LoadingProvider } from "./context/LoadingContext.tsx";
-import ReactDOM from "react-dom/client";
-import "./themes/main-styles.css";
-import "./themes/style.min.css";
-import "./themes/modern-ui.css";
-import App from "./App";
+import { ConfigProvider, theme } from 'antd';
+import { LoadingProvider } from './context/LoadingContext.tsx';
+import ReactDOM from 'react-dom/client';
+import './themes/main-styles.css';
+import './themes/style.min.css';
+import './themes/modern-ui.css';
+import App from './App';
 
 const sofumarTheme = {
   token: {
-    colorPrimary: "#1E5631",       // Deep forest green
-    colorSuccess: "#5C9013",       // Olive green
-    colorWarning: "#AEDF88",       // Light green
-    colorError: "#c62828",         // Alert red
-    colorBgBase: "#f0fdf4",        // Soft green background
-    fontFamily: "Poppins, sans-serif",
+    colorPrimary: '#1E5631', // Deep forest green
+    colorSuccess: '#5C9013', // Olive green
+    colorWarning: '#AEDF88', // Light green
+    colorError: '#c62828', // Alert red
+    colorBgBase: '#f0fdf4', // Soft green background
+    fontFamily: 'Poppins, sans-serif',
     borderRadius: 8,
   },
 };
 
-const rootElement = document.getElementById("root");
+const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error('Root element with id "root" not found');
 }

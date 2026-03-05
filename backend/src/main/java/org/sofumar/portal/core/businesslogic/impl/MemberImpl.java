@@ -20,7 +20,6 @@ import org.sofumar.portal.data.transformer.MemberVOTransformer;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
 import org.sofumar.portal.framework.data.response.PaginationMeta;
 import org.sofumar.portal.framework.exception.RecordNotFoundException;
-import org.sofumar.portal.framework.util.LabelUtils;
 import org.sofumar.portal.framework.util.ResponseUtils;
 import org.sofumar.portal.service.validation.MemberValidator;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,10 +41,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.sofumar.portal.constants.MessagesConstants.RECORD_ADDED;
-import static org.sofumar.portal.constants.MessagesConstants.RECORD_DELETED;
-import static org.sofumar.portal.constants.MessagesConstants.RECORD_UPDATED;
-import static org.sofumar.portal.constants.MessagesConstants.REQUIRED_FIELD;
+import static org.sofumar.portal.message.ValidationMessages.RECORD_ADDED;
+import static org.sofumar.portal.message.ValidationMessages.RECORD_DELETED;
+import static org.sofumar.portal.message.ValidationMessages.RECORD_UPDATED;
 
 @Service
 public non-sealed class MemberImpl extends MemberAbstractBL implements Member {
@@ -73,10 +71,18 @@ public non-sealed class MemberImpl extends MemberAbstractBL implements Member {
     }
 
     @Override
+    protected void performDomainValidation(MemberVO vo, boolean isUpdate) {
+        if (isUpdate) {
+            validator.validateForUpdate(vo);
+        } else {
+            validator.validate(vo);
+        }
+    }
+
+    @Override
     @Transactional
     public ResponseEntity<GlobalResponse<Integer>> addMember(MemberDto requestDto) {
         MemberVO memberVO = voTransformer.transform(requestDto);
-        validator.validate(memberVO);
         MemberVO savedMember = add(memberVO);
         logger.info("Member added successfully with ID: {}", savedMember.getMemberID());
         return ResponseUtils.okWithData(savedMember.getMemberID(), RECORD_ADDED.addMessageArgs("Member").getMessageString());
@@ -85,15 +91,10 @@ public non-sealed class MemberImpl extends MemberAbstractBL implements Member {
     @Override
     @Transactional
     public ResponseEntity<GlobalResponse<Void>> updateMember(MemberDto requestDto) {
-        if (requestDto.getMemberID() == null) {
-            return ResponseUtils.badRequest(REQUIRED_FIELD.addMessageArgs(LabelUtils.toLabel(FieldConstants.MEMBER_ID)).getMessageString());
-        }
-
         MemberVO existingMember = getRepo().findById(requestDto.getMemberID())
                 .orElseThrow(() -> new RecordNotFoundException("Member not found with ID: " + requestDto.getMemberID()));
 
         MemberVO updatedMember = voTransformer.transformForUpdate(requestDto, existingMember);
-        validator.validateForUpdate(updatedMember);
         MemberVO savedMember = update(updatedMember);
         logger.info("Member updated successfully, memberID: {}", savedMember.getMemberID());
         return ResponseUtils.ok(RECORD_UPDATED.addMessageArgs("Member").getMessageString());
@@ -102,10 +103,6 @@ public non-sealed class MemberImpl extends MemberAbstractBL implements Member {
     @Override
     @Transactional
     public ResponseEntity<GlobalResponse<Void>> deleteMember(Integer memberID) {
-        if (memberID == null) {
-            return ResponseUtils.badRequest(REQUIRED_FIELD.addMessageArgs(LabelUtils.toLabel(FieldConstants.MEMBER_ID)).getMessageString());
-        }
-
         MemberVO existingMember = getRepo().findById(memberID)
                 .orElseThrow(() -> new RecordNotFoundException("Member not found with ID: " + memberID));
 
@@ -115,6 +112,7 @@ public non-sealed class MemberImpl extends MemberAbstractBL implements Member {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ResponseEntity<GlobalResponse<List<MemberDto>>> searchMembers(MemberSearchRequestDto request) {
         List<Specification<MemberVO>> specList = new ArrayList<>();
         if (StringUtils.isNotBlank(request.getFirstName()))
@@ -133,11 +131,8 @@ public non-sealed class MemberImpl extends MemberAbstractBL implements Member {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ResponseEntity<GlobalResponse<MemberDto>> getMember(Integer memberID) {
-        if (memberID == null) {
-            return ResponseUtils.badRequestWithData(REQUIRED_FIELD.addMessageArgs(LabelUtils.toLabel(FieldConstants.MEMBER_ID)).getMessageString());
-        }
-
         MemberVO member = getRepo().findById(memberID)
                 .orElseThrow(() -> new RecordNotFoundException("Member not found with ID: " + memberID));
 
@@ -145,6 +140,7 @@ public non-sealed class MemberImpl extends MemberAbstractBL implements Member {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ResponseEntity<GlobalResponse<List<MemberLookupDto>>> lookupMembers(String query) {
         Specification<MemberVO> spec = MemberSpecifications.lookup(query);
         PageRequest pageRequest = PageRequest.of(0, 10, Sort.by(FieldConstants.FIRST_NAME, FieldConstants.LAST_NAME));
@@ -163,6 +159,7 @@ public non-sealed class MemberImpl extends MemberAbstractBL implements Member {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ResponseEntity<GlobalResponse<MemberSummaryDto>> getMemberSummary(@NonNull Integer memberID) {
 
         Optional<MemberVO> memberOpt = getRepo().findById(memberID);
@@ -231,11 +228,13 @@ public non-sealed class MemberImpl extends MemberAbstractBL implements Member {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public long countActiveMembers() {
         return getRepo().count(MemberSpecifications.hasStatus(ReferenceConstants.MEMBER_STATUS.ACTIVE));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<MemberVO> findAllActiveMembers() {
         return getRepo().findAll(MemberSpecifications.hasStatus(ReferenceConstants.MEMBER_STATUS.ACTIVE));
     }

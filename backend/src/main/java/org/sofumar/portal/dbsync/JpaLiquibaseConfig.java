@@ -13,6 +13,8 @@ import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import javax.sql.DataSource;
 import java.util.Properties;
 
+import static java.util.Objects.requireNonNull;
+
 @Configuration
 @Profile("liquibase-diff")
 @EntityScan(basePackages = "org.sofumar.portal.core.vo")
@@ -57,8 +59,7 @@ public class JpaLiquibaseConfig {
 
     @Bean
     public JpaTransactionManager transactionManager(LocalContainerEntityManagerFactoryBean emf) {
-        assert emf.getObject() != null;
-        return new JpaTransactionManager(emf.getObject());
+        return new JpaTransactionManager(requireNonNull(emf.getObject()));
     }
 
 }

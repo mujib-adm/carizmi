@@ -1,9 +1,9 @@
-import { Form, Modal } from "antd";
-import { useEffect } from "react";
-import { SystemSetting } from "../constants/types";
-import { useApiMessages } from "../hook/ApiResponseHandler";
-import { AntdFormItem } from "../component/AntdFormItem";
-import { MessageBanner } from "../component/MessageBanner";
+import { Form, Modal } from 'antd';
+import { useEffect } from 'react';
+import { SystemSetting } from '../constants/types';
+import { useApiMessages } from '../hook/ApiResponseHandler';
+import { AntdFormItem } from '../component/AntdFormItem';
+import { MessageBanner } from '../component/MessageBanner';
 
 type Props = {
   open: boolean;
@@ -37,7 +37,7 @@ export function SystemSettingsModal({ open, onCancel, onSubmit, initial }: Props
     try {
       resetMessages();
       const values = await form.validateFields();
-      
+
       const payload = {
         ...initial,
         ...values,
@@ -67,25 +67,15 @@ export function SystemSettingsModal({ open, onCancel, onSubmit, initial }: Props
       width={450}
     >
       <Form form={form} layout="vertical" className="member-form" requiredMark={false}>
-        <AntdFormItem 
-          name="settingName" 
-          label="Name"
-          placeholder="Name"
-          disabled 
-        />
-        
-        <AntdFormItem 
-          name="settingKey" 
-          label="Key" 
-          placeholder="Key" 
-          disabled 
-        />
-        
-        <AntdFormItem 
-          name="settingValue" 
-          label="Value" 
-          rules={[{ required: true, message: "Value is required" }]} 
-          placeholder="Value" 
+        <AntdFormItem name="settingName" label="Name" placeholder="Name" disabled />
+
+        <AntdFormItem name="settingKey" label="Key" placeholder="Key" disabled />
+
+        <AntdFormItem
+          name="settingValue"
+          label="Value"
+          rules={[{ required: true, message: 'Value is required' }]}
+          placeholder="Value"
         />
 
         {globalMessages && <MessageBanner messages={globalMessages} />}

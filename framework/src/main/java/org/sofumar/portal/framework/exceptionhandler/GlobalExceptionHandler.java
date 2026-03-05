@@ -5,18 +5,36 @@ import org.slf4j.LoggerFactory;
 import org.sofumar.portal.framework.exception.DuplicateRecordException;
 import org.sofumar.portal.framework.exception.RecordNotFoundException;
 import org.sofumar.portal.framework.exception.ValidationException;
-import org.sofumar.portal.framework.data.msg.Message;
+import org.sofumar.portal.framework.message.Message;
+import org.sofumar.portal.framework.data.response.FieldMsg;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
 import org.sofumar.portal.framework.util.ResponseUtils;
 import org.sofumar.portal.framework.vo.ValueObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.List;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<GlobalResponse<Void>> handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
+        List<FieldMsg> fieldMessages = ex.getBindingResult().getFieldErrors().stream()
+                .map(fe -> new FieldMsg(Message.Type.ERROR, fe.getField(), fe.getDefaultMessage()))
+                .toList();
+
+        GlobalResponse<Void> response = GlobalResponse.getInstance();
+        response.setStatusCode(HttpStatus.BAD_REQUEST.value());
+        response.setStatusDesc(HttpStatus.BAD_REQUEST.getReasonPhrase());
+        response.setFieldMessages(fieldMessages);
+
+        return ResponseEntity.badRequest().body(response);
+    }
 
     @ExceptionHandler(DuplicateRecordException.class)
     public ResponseEntity<GlobalResponse<Void>> handleDuplicate(DuplicateRecordException ex) {

@@ -4,7 +4,7 @@ import org.sofumar.portal.core.businesslogic.Expense
 import org.sofumar.portal.data.dto.ExpenseDto
 import org.sofumar.portal.data.dto.request.ExpenseSearchRequestDto
 import org.sofumar.portal.framework.data.response.GlobalResponse
-import org.sofumar.portal.testsupport.BaseSpecification
+import org.sofumar.portal.testbase.BaseSpecification
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import spock.lang.Subject

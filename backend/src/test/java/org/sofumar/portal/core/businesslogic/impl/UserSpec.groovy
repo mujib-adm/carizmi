@@ -1,7 +1,6 @@
 package org.sofumar.portal.core.businesslogic.impl
 
 import org.sofumar.portal.constants.FieldConstants
-import org.sofumar.portal.constants.MessagesConstants
 import org.sofumar.portal.constants.Role
 import org.sofumar.portal.core.repo.UserRepository
 import org.sofumar.portal.core.vo.UserVO
@@ -9,20 +8,17 @@ import org.sofumar.portal.data.dto.UserDto
 import org.sofumar.portal.data.dto.request.PasswordUpdateRequestDto
 import org.sofumar.portal.data.dto.response.UserProfileDto
 import org.sofumar.portal.data.dto.response.UserResponseDto
-import org.sofumar.portal.security.JwtService
-import org.sofumar.portal.security.SofumarUserDetails
 import org.sofumar.portal.data.transformer.UserResponseDtoTransformer
 import org.sofumar.portal.data.transformer.UserVOTransformer
 import org.sofumar.portal.framework.data.response.GlobalResponse
-import org.sofumar.portal.framework.exception.DuplicateRecordException
-import org.sofumar.portal.framework.exception.RecordNotFoundException
+import org.sofumar.portal.framework.exception.ValidationException
 import org.sofumar.portal.framework.service.RefreshTokenService
 import org.sofumar.portal.framework.service.TokenBlacklistService
 import org.sofumar.portal.framework.util.MySQLConstraintResolver
+import org.sofumar.portal.security.JwtService
+import org.sofumar.portal.security.SofumarUserDetails
 import org.sofumar.portal.service.validation.UserValidator
-import org.sofumar.portal.testsupport.BaseSpecification
-import org.springframework.dao.DataAccessException
-import org.springframework.dao.DataIntegrityViolationException
+import org.sofumar.portal.testbase.BaseSpecification
 import org.springframework.data.jpa.domain.Specification as JpaSpecification
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -53,12 +49,16 @@ class UserSpec extends BaseSpecification {
         ReflectionTestUtils.setField(userImpl, "constraintResolver", constraintResolver)
     }
 
-    def "test - register: Should save user"() {
-        given: "A registration request and capture variables"
-        String username = "Test"
-        String password = "p"
-        UserDto request = new UserDto(username: username, password: password)
-        UserVO vo = new UserVO(username: username, password: password)
+    private UserVO createUserVO(Integer id = null) {
+        def vo = new UserVO(userID: id, username: "user", email: "user@test.com", role: Role.MEMBER, active: true, password: "encodedPassword")
+        vo.postLoad()
+        return vo
+    }
+
+    def "test - register: Success"() {
+        given: "A valid registration request"
+        UserDto request = new UserDto(username: 'user', password: 'password', email: 'email@example.com')
+        UserVO vo = new UserVO(username: 'user', password: 'password', email: 'email@example.com')
         UserVO savedVo = null
 
         when: "The target method executed"
@@ -66,570 +66,450 @@ class UserSpec extends BaseSpecification {
 
         then: "The expected calls are made"
         1 * voTransformer.transform(request) >> vo
+        1 * validator.validatePassword(vo)
+        1 * encoder.encode('password') >> 'encodedPassword'
         1 * validator.validate(vo)
-        1 * encoder.encode("p") >> "enc"
-        1 * userRepo.save(vo) >> { UserVO u -> savedVo = u; vo }
+        2 * userRepo.exists(_ as JpaSpecification) >> false
+        1 * userRepo.save(vo) >> {
+            savedVo = it[0] as UserVO
+            savedVo.userID = 1
+            savedVo.postLoad()
+            return savedVo
+        }
         0 * _
 
         and: "The expected result"
-        savedVo.role == Role.ANONYMOUS
-        savedVo.active
+        savedVo.password == 'encodedPassword'
         noExceptionThrown()
     }
 
-    def "test - register: Duplicate Handling"() {
-        given: "A duplicate registration scenario"
-        UserDto request = new UserDto(username: "u")
-        UserVO vo = new UserVO(username: "u")
+    def "test - register: Validation failure (Username exists)"() {
+        given: "A registration request with existing username"
+        UserDto request = new UserDto(username: 'user', password: 'password', email: 'email@example.com')
+        UserVO vo = new UserVO(username: 'user', password: 'password', email: 'email@example.com')
 
         when: "The target method executed"
         userImpl.register(request)
 
         then: "The expected calls are made"
-        1 * voTransformer.transform(_) >> vo
-        1 * validator.validate(_)
-        1 * encoder.encode(_) >> "enc"
-        1 * userRepo.save(_) >> { throw new DataIntegrityViolationException("Dup", new RuntimeException("Duplicate entry 'u' for key 'UK_username'")) }
-        1 * constraintResolver.resolveFields(_) >> [FieldConstants.USERNAME]
+        1 * voTransformer.transform(request) >> vo
+        1 * validator.validatePassword(vo)
+        1 * encoder.encode('password') >> 'encodedPassword'
+        1 * validator.validate(vo)
+        2 * userRepo.exists(_ as JpaSpecification) >> { JpaSpecification spec -> true }
         0 * _
 
-        and: "The expected result"
-        thrown(DuplicateRecordException)
-    }
-
-    def "test - register: General DB Error"() {
-        given: "A DB error scenario during registration"
-        UserDto request = new UserDto(username: "u")
-        UserVO vo = new UserVO(username: "u")
-
-        when: "The target method executed"
-        userImpl.register(request)
-
-        then: "The expected calls are made"
-        1 * voTransformer.transform(_) >> vo
-        1 * validator.validate(_)
-        1 * encoder.encode(_) >> "enc"
-        1 * userRepo.save(_) >> { throw new DataAccessException("error", new RuntimeException("root")) {} }
-        0 * _
-
-        and: "The expected result"
+        and: "VO has validation errors"
         vo.hasErrors()
-        noExceptionThrown()
+        thrown(ValidationException)
     }
 
-    def "test - findUserForAuthentication: Should find user by username"() {
-        given: "A username"
-        String username = "Test"
-        UserVO userVO = new UserVO(username: username)
+    def "test - logout: Success (Revokes tokens if present)"() {
+        given: "Active tokens"
+        String accessToken = "access"
+        String refreshToken = "refresh"
 
         when: "The target method executed"
-        UserVO result = userImpl.findUserForAuthentication(username)
+        userImpl.logout(accessToken, refreshToken)
 
         then: "The expected calls are made"
-        1 * userRepo.findOne(_ as JpaSpecification) >> Optional.of(userVO)
-        0 * _
-
-        and: "The expected result"
-        result == userVO
-    }
-
-    @Unroll
-    def "test - onLoginSuccess: Should reset state if needed [attempts: #attempts, locked: #locked -> shouldUpdate: #shouldUpdate]"() {
-        given: "A userVO with some failed state"
-        String username = "Test"
-        LocalDateTime lockoutTime = locked ? LocalDateTime.now() : null
-        UserVO userVO = new UserVO(username: username, failedLoginAttempts: attempts, lockoutTime: lockoutTime)
-
-        when: "The target method executed"
-        userImpl.onLoginSuccess(username)
-
-        then: "The expected calls are made"
-        1 * userRepo.findOne(_ as JpaSpecification) >> Optional.of(userVO)
-        if (shouldUpdate) {
-            1 * userRepo.save(userVO) >> userVO
-        }
-        0 * _
-
-        and: "The expected result"
-        userVO.failedLoginAttempts == 0
-        userVO.lockoutTime == null
-
-        where:
-        attempts | locked | shouldUpdate
-        3        | true   | true
-        3        | false  | true
-        0        | true   | true
-        0        | false  | false
-    }
-
-    def "test - onLoginFailure: Should increment attempts"() {
-        given: "A userVO with 0 failures"
-        String username = "Test"
-        UserVO userVO = new UserVO(username: username, failedLoginAttempts: 0)
-
-        when: "The target method executed"
-        userImpl.onLoginFailure(username)
-
-        then: "The expected calls are made"
-        1 * userRepo.findOne(_ as JpaSpecification) >> Optional.of(userVO)
-        1 * userRepo.save(userVO) >> userVO
-        0 * _
-
-        and: "The expected result"
-        userVO.failedLoginAttempts == 1
-        userVO.lockoutTime == null
-    }
-
-    def "test - onLoginFailure: Should lock account on 5th failure"() {
-        given: "A userVO with 4 failures"
-        String username = "Test"
-        UserVO userVO = new UserVO(username: username, failedLoginAttempts: 4)
-
-        when: "The target method executed"
-        userImpl.onLoginFailure(username)
-
-        then: "The expected calls are made"
-        1 * userRepo.findOne(_ as JpaSpecification) >> Optional.of(userVO)
-        1 * userRepo.save(userVO) >> userVO
-        0 * _
-
-        and: "The expected result"
-        userVO.failedLoginAttempts == 5
-        userVO.lockoutTime != null
-    }
-
-    @Unroll
-    def "test - logout: Covering JWT exceptions and null tokens [access: #access, refresh: #refresh]"() {
-        given: "Logout tokens"
-
-        when: "The target method executed"
-        userImpl.logout(access, refresh)
-
-        then: "The expected calls are made"
-        if (access != null) {
-            1 * jwtService.getRemainingExpirationSeconds(access) >> 0
-        }
-        if (refresh != null) {
-            1 * refreshTokenService.deleteRefreshToken(refresh)
-        }
-        0 * _
-
-        and: "The expected result"
-        noExceptionThrown()
-
-        where:
-        access                                          | refresh
-        null                                            | "ref"
-        "invalid"                                       | "ref"
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.t-x9" | null
-    }
-
-    def "test - logout: Valid token should be blacklisted"() {
-        given: "A valid generated token"
-        String validToken = "valid-token"
-        String refreshToken = "refresh-token"
-
-        when: "The target method executed"
-        userImpl.logout(validToken, refreshToken)
-
-        then: "The expected calls are made"
-        1 * jwtService.getRemainingExpirationSeconds(validToken) >> 3600
-        1 * blacklistService.revokeToken(validToken, 3600L)
+        1 * jwtService.getRemainingExpirationSeconds(accessToken) >> 300L
+        1 * blacklistService.revokeToken(accessToken, 300L)
         1 * refreshTokenService.deleteRefreshToken(refreshToken)
         0 * _
+    }
 
-        and: "The expected result"
-        noExceptionThrown()
+    def "test - logout: Success (Handles null tokens)"() {
+        when: "The target method executed with nulls"
+        userImpl.logout(null, null)
+
+        then: "No revokes called"
+        0 * _
+    }
+
+    def "test - refreshToken: Success"() {
+        given: "A valid refresh token"
+        String token = "validRefresh"
+        String rotatedToken = "rotatedToken"
+        String username = "testuser"
+        UserVO userVO = new UserVO(username: username, active: true, role: Role.MEMBER)
+        String newAccess = "newAccess"
+
+        when: "The target method executed"
+        ResponseEntity<GlobalResponse<Void>> response = userImpl.refreshToken(token)
+
+        then: "The expected calls are made"
+        1 * refreshTokenService.rotateRefreshToken(token) >> rotatedToken
+        1 * refreshTokenService.validateRefreshToken(rotatedToken) >> Optional.of(username)
+        1 * userRepo.findOne(_ as JpaSpecification) >> Optional.of(userVO)
+        1 * jwtService.generateAccessToken(_ as SofumarUserDetails) >> newAccess
+        0 * _
+
+        and: "Response contains new tokens in the map"
+        response.statusCode == HttpStatus.OK
+        response.body.map.token == newAccess
+        response.body.map.refreshToken == rotatedToken
     }
 
     @Unroll
-    def "test - refreshToken: Handling rotation and user state [isValid: #isValid, userActive: #userActive, isLocked: #isLocked, expectedStatus: #expectedStatus]"() {
-        given: "A refresh token scenario"
-        String oldToken = "old-token"
-        String newToken = "new-token"
-        String username = "Test"
-        UserVO userVO = new UserVO(
-                username: username,
-                active: userActive,
-                role: Role.ADMIN,
-                firstName: "F",
-                lockoutTime: isLocked ? LocalDateTime.now() : null
-        )
-        ResponseEntity<?> response
+    def "test - refreshToken: Failure scenarios [reason: #reason]"() {
+        given: "A refresh token"
+        String token = "refreshToken"
 
         when: "The target method executed"
-        response = userImpl.refreshToken(oldToken)
+        ResponseEntity<?> response = userImpl.refreshToken(token)
 
-        then: "The expected calls are made"
-        1 * refreshTokenService.rotateRefreshToken(oldToken) >> { if (isValid) return newToken; else throw new IllegalArgumentException() }
-        if (isValid) {
-            1 * refreshTokenService.validateRefreshToken(newToken) >> Optional.of(username)
-            1 * userRepo.findOne(_) >> Optional.of(userVO)
-            if (!userActive || isLocked) {
-                1 * refreshTokenService.deleteRefreshToken(newToken)
-            } else {
-                1 * jwtService.generateAccessToken(_ as SofumarUserDetails) >> "new-access-token"
-            }
+        then: "The expected calls"
+        if (reason == "Invalid") {
+            1 * refreshTokenService.rotateRefreshToken(token) >> { throw new IllegalArgumentException() }
+        } else if (reason == "NotFound") {
+            1 * refreshTokenService.rotateRefreshToken(token) >> "rotated"
+            1 * refreshTokenService.validateRefreshToken("rotated") >> Optional.of("u")
+            1 * userRepo.findOne(_) >> Optional.empty()
+        } else if (reason == "Inactive") {
+            1 * refreshTokenService.rotateRefreshToken(token) >> "rotated"
+            1 * refreshTokenService.validateRefreshToken("rotated") >> Optional.of("u")
+            1 * userRepo.findOne(_) >> Optional.of(new UserVO(active: false, role: Role.MEMBER))
+            1 * refreshTokenService.deleteRefreshToken("rotated")
+        } else if (reason == "Locked") {
+            1 * refreshTokenService.rotateRefreshToken(token) >> "rotated"
+            1 * refreshTokenService.validateRefreshToken("rotated") >> Optional.of("u")
+            UserVO lockedVO = new UserVO(active: true, role: Role.MEMBER, lockoutTime: LocalDateTime.now().plusHours(1))
+            1 * userRepo.findOne(_) >> Optional.of(lockedVO)
+            1 * refreshTokenService.deleteRefreshToken("rotated")
         }
-        0 * _
 
-        and: "The expected result"
-        response.statusCode == expectedStatus
-        noExceptionThrown()
+        and: "UNAUTHORIZED response"
+        response.statusCode == HttpStatus.UNAUTHORIZED
 
         where:
-        isValid | userActive | isLocked | expectedStatus
-        false   | _          | _        | HttpStatus.UNAUTHORIZED
-        true    | false      | _        | HttpStatus.UNAUTHORIZED
-        true    | true       | true     | HttpStatus.UNAUTHORIZED
-        true    | true       | false    | HttpStatus.OK
-    }
+        reason << ["Invalid", "NotFound", "Inactive", "Locked"]
 
-    def "test - getProfile: Handling missing user"() {
-        given: "A missing username"
-        String username = "missing"
-        ResponseEntity<GlobalResponse<UserProfileDto>> response
-
-        when: "The target method executed"
-        response = userImpl.getProfile(username)
-
-        then: "The expected calls are made"
-        1 * userRepo.findOne(_) >> Optional.empty()
-        0 * _
-
-        and: "The expected result"
-        response.statusCode == HttpStatus.UNAUTHORIZED
-        noExceptionThrown()
     }
 
     def "test - getProfile: Success"() {
-        given: "A valid userVO"
-        String username = "Test"
-        Role role = Role.ADMIN
-        String firstName = "First"
-        String lastName = "Last"
-        String email = "test@example.com"
-        UserVO userVO = new UserVO(username: username, role: role, firstName: firstName, lastName: lastName, email: email)
-        ResponseEntity<GlobalResponse<UserProfileDto>> response
+        given: "A valid username"
+        String username = "u"
+        UserVO vo = new UserVO(username: username, role: Role.ADMIN, firstName: "F", lastName: "L", email: "E")
 
         when: "The target method executed"
-        response = userImpl.getProfile(username)
+        ResponseEntity<GlobalResponse<UserProfileDto>> response = userImpl.getProfile(username)
 
         then: "The expected calls are made"
-        1 * userRepo.findOne(_) >> Optional.of(userVO)
+        1 * userRepo.findOne(_ as JpaSpecification) >> Optional.of(vo)
         0 * _
 
-        and: "The expected result"
-        response.statusCode == HttpStatus.OK
+        and: "Profile data is correct"
         response.body.responseData.username == username
-        response.body.responseData.role == role.name()
-        response.body.responseData.firstName == firstName
-        noExceptionThrown()
+        response.body.responseData.role == "ADMIN"
     }
 
-    @Unroll
-    def "test - updatePassword: Validation failures [matchOld: #matchOld, conf: #conf, token: #token, expectedStatus: #expectedStatus]"() {
-        given: "Password update request and existing userVO"
-        String username = "Test"
-        String oldPass = "old"
-        String newPass = "new"
-        String oldEnc = "oldEnc"
-        String newEnc = "newEnc"
-        UserVO userVO = new UserVO(username: username, password: oldEnc)
-        PasswordUpdateRequestDto req = new PasswordUpdateRequestDto(oldPassword: oldPass, newPassword: newPass, confirmPassword: conf)
-        ResponseEntity<GlobalResponse<Void>> response
+    def "test - getProfile: Not Found"() {
+        given: "An unknown username"
+        String username = "u"
 
         when: "The target method executed"
-        response = userImpl.updatePassword(username, token, req)
+        ResponseEntity<GlobalResponse<UserProfileDto>> response = userImpl.getProfile(username)
 
-        then: "The expected calls are made"
-        1 * userRepo.findOne(_) >> Optional.of(userVO)
-        if (matchOld) {
-            1 * encoder.matches(oldPass, oldEnc) >> true
-            if (req.newPassword == req.confirmPassword) {
-                1 * validator.validate(userVO)
-                1 * encoder.encode(newPass) >> newEnc
-                if (token != null) {
-                    1 * blacklistService.revokeToken(token, _)
-                }
-                1 * userRepo.save(userVO) >> userVO
-            }
-        } else {
-            1 * encoder.matches(oldPass, oldEnc) >> false
-        }
-        0 * _
-
-        and: "The expected result"
-        response.statusCode == expectedStatus
-        noExceptionThrown()
-
-        where:
-        matchOld | conf  | token | expectedStatus
-        false    | "new" | "t"   | HttpStatus.BAD_REQUEST
-        true     | "bad" | "t"   | HttpStatus.BAD_REQUEST
-        true     | "new" | "t"   | HttpStatus.OK
-        true     | "new" | null  | HttpStatus.OK
-    }
-
-    def "test - updatePassword: DB Error"() {
-        given: "A DB error scenario"
-        String username = "Test"
-        UserVO userVO = new UserVO(username: username, password: "old")
-        PasswordUpdateRequestDto req = new PasswordUpdateRequestDto(oldPassword: "old", newPassword: "new", confirmPassword: "new")
-
-        when: "The target method executed"
-        userImpl.updatePassword(username, null, req)
-
-        then: "The expected calls are made"
-        1 * userRepo.findOne(_) >> Optional.of(userVO)
-        1 * encoder.matches(_, _) >> true
-        1 * validator.validate(_)
-        1 * encoder.encode(_) >> "enc"
-        1 * userRepo.save(_) >> { throw new DataAccessException("error", new RuntimeException("root")) {} }
-        0 * _
-
-        and: "The expected result"
-        userVO.hasErrors()
-        noExceptionThrown()
-    }
-
-    @Unroll
-    def "test - updateUserRole: Invalid role validation New Role: #newRole"() {
-        given: "A userVO and an invalid role"
-        Integer userId = 1
-        UserVO userVO = new UserVO(userID: userId, role: Role.MEMBER)
-        ResponseEntity<GlobalResponse<Void>> response
-
-        when: "The target method executed"
-        response = userImpl.updateUserRole(userId, newRole)
-
-        then: "The expected calls are made"
-        1 * userRepo.findById(userId) >> Optional.of(userVO)
-        1 * validator.isInvalidRole(newRole) >> true
-        0 * _
-
-        and: "The expected result"
-        response.statusCode == HttpStatus.BAD_REQUEST
-        response.body.globalMessages[0].message.contains(MessagesConstants.INVALID_ROLE.getMessageString())
-        noExceptionThrown()
-
-        where:
-        newRole << ["", "   ", "INVALID_ROLE", null]
-    }
-
-    @Unroll
-    def "test - updateUserRole: Protecting last active admin [role: #currentRole -> #targetRole, active: #active, onlyOne: #onlyOne, expectedStatus: #expectedStatus]"() {
-        given: "A userVO setup"
-        Integer userId = 1
-        UserVO userVO = new UserVO(userID: userId, role: currentRole, active: active)
-        ResponseEntity<GlobalResponse<Void>> response
-        JpaSpecification capturedSpec
-        int countCalls = (currentRole == Role.ADMIN && active && targetRole != Role.ADMIN.name()) ? 1 : 0
-        int saveCalls = (expectedStatus == HttpStatus.OK) ? 1 : 0
-
-        when: "The target method executed"
-        response = userImpl.updateUserRole(userId, targetRole)
-
-        then: "The expected calls are made"
-        1 * userRepo.findById(userId) >> Optional.of(userVO)
-        1 * validator.isInvalidRole(targetRole) >> false
-        countCalls * userRepo.count(_ as JpaSpecification) >> { JpaSpecification spec ->
-            capturedSpec = spec
-            return (onlyOne ? 1 : 2)
-        }
-        saveCalls * userRepo.save(userVO) >> userVO
-        0 * _
-
-        and: "The expected result"
-        response.statusCode == expectedStatus
-        if (expectedStatus == HttpStatus.BAD_REQUEST) {
-            assert response.body.globalMessages.any { it.message.contains("Cannot update role for the last active") }
-        }
-        if (countCalls > 0) {
-            capturedSpec != null
-            Map<String, List> inspection = inspectSpecification(capturedSpec)
-            inspection.filters.containsAll([FieldConstants.ROLE, FieldConstants.ACTIVE])
-            inspection.values.containsAll([Role.ADMIN, true])
-        }
-        noExceptionThrown()
-
-        where:
-        currentRole | active | onlyOne | targetRole         | expectedStatus
-        Role.ADMIN  | true   | true    | Role.MEMBER.name() | HttpStatus.BAD_REQUEST   // Blocked: Last active admin
-        Role.ADMIN  | true   | false   | Role.MEMBER.name() | HttpStatus.OK            // Allowed: Not the last one
-        Role.ADMIN  | false  | true    | Role.MEMBER.name() | HttpStatus.OK            // Allowed: User is not active anyway
-        Role.ADMIN  | true   | true    | Role.ADMIN.name()  | HttpStatus.OK            // Allowed: Role didn't actually change
-        Role.MEMBER | true   | true    | Role.ADMIN.name()  | HttpStatus.OK            // Allowed: Upgrading to admin
-    }
-
-    @Unroll
-    def "test - toggleUserStatus: Protecting last active admin [role: #role, active: #active -> #targetActive, onlyOne: #onlyOne, expectedStatus: #expectedStatus]"() {
-        given: "A userVO setup"
-        Integer userId = 1
-        UserVO userVO = new UserVO(userID: userId, role: role, active: active)
-        ResponseEntity<GlobalResponse<Void>> response
-        int countCalls = (role == Role.ADMIN && !targetActive) ? 1 : 0
-        int saveCalls = (expectedStatus == HttpStatus.OK) ? 1 : 0
-
-        when: "The target method executed"
-        response = userImpl.toggleUserStatus(userId, targetActive)
-
-        then: "The expected calls are made"
-        1 * userRepo.findById(userId) >> Optional.of(userVO)
-
-        countCalls * userRepo.count(_ as JpaSpecification) >> { onlyOne ? 1 : 2 }
-
-        saveCalls * userRepo.save(userVO) >> userVO
-        0 * _
-
-        and: "The expected result"
-        response.statusCode == expectedStatus
-        if (expectedStatus == HttpStatus.BAD_REQUEST) {
-            assert response.body.globalMessages.any { it.message.contains("Cannot deactivate the last active ADMIN") }
-        }
-        noExceptionThrown()
-
-        where:
-        role        | active | targetActive | onlyOne | expectedStatus
-        Role.ADMIN  | true   | false        | true    | HttpStatus.BAD_REQUEST   // Blocked: Last active admin
-        Role.ADMIN  | true   | false        | false   | HttpStatus.OK            // Allowed: Not the last one
-        Role.ADMIN  | false  | true         | true    | HttpStatus.OK            // Allowed: Activating an admin
-        Role.MEMBER | true   | false        | true    | HttpStatus.OK            // Allowed: Not an admin
-    }
-
-    def "test - updateUserRole: DB Error"() {
-        given: "A DB error scenario"
-        Integer id = 1
-        String newRole = Role.MEMBER.name()
-        UserVO userVO = new UserVO(userID: id, role: Role.ADMIN, active: true)
-        JpaSpecification capturedSpec
-
-        when: "The target method executed"
-        userImpl.updateUserRole(id, newRole)
-
-        then: "The expected calls are made"
-        1 * userRepo.findById(id) >> Optional.of(userVO)
-        1 * validator.isInvalidRole(newRole) >> false
-        1 * userRepo.count(_ as JpaSpecification) >> { JpaSpecification spec -> capturedSpec = spec; 2 }
-        1 * userRepo.save(_) >> { throw new DataAccessException("error", new RuntimeException("root")) {} }
-        0 * _
-
-        and: "The expected result"
-        userVO.hasErrors()
-        noExceptionThrown()
-        capturedSpec != null
-        Map<String, List> inspection = inspectSpecification(capturedSpec)
-        inspection.filters.containsAll([FieldConstants.ROLE, FieldConstants.ACTIVE])
-        inspection.values.containsAll([Role.ADMIN, true])
-    }
-
-    def "test - toggleUserStatus: DB Error"() {
-        given: "A DB error scenario"
-        Integer id = 1
-        UserVO userVO = new UserVO(userID: id, role: Role.ADMIN, active: true)
-        JpaSpecification capturedSpec
-
-        when: "The target method executed"
-        userImpl.toggleUserStatus(id, false)
-
-        then: "The expected calls are made"
-        1 * userRepo.findById(id) >> Optional.of(userVO)
-        1 * userRepo.count(_ as JpaSpecification) >> { JpaSpecification spec -> capturedSpec = spec; 2 }
-        1 * userRepo.save(_) >> { throw new DataAccessException("error", new RuntimeException("root")) {} }
-        0 * _
-
-        and: "The expected result"
-        userVO.hasErrors()
-        noExceptionThrown()
-        capturedSpec != null
-    }
-
-    def "test - updatePassword: User not found"() {
-        given: "A missing password update username"
-        String username = "missing"
-        String token = "token"
-
-        when: "The target method executed"
-        userImpl.updatePassword(username, token, new PasswordUpdateRequestDto())
-
-        then: "The expected calls are made"
+        then: "The expected calls"
         1 * userRepo.findOne(_) >> Optional.empty()
         0 * _
 
-        and: "The expected result"
-        thrown(RecordNotFoundException)
+        and: "UNAUTHORIZED response"
+        response.statusCode == HttpStatus.UNAUTHORIZED
+    }
+
+    def "test - updatePassword: Success"() {
+        given: "A valid request"
+        String username = "u"; String token = "t"
+        PasswordUpdateRequestDto request = new PasswordUpdateRequestDto(oldPassword: 'o', newPassword: 'n', confirmPassword: 'n')
+        UserVO vo = createUserVO(1)
+        vo.username = username
+        vo.password = 'encodedOld'
+        vo.postLoad()
+
+        when: "The target method executed"
+        userImpl.updatePassword(username, token, request)
+
+        then: "The expected calls are made"
+        1 * userRepo.findOne(_) >> Optional.of(vo)
+        1 * encoder.matches('o', 'encodedOld') >> true
+        1 * validator.validatePassword(vo)
+        1 * encoder.encode('n') >> 'encodedNew'
+        1 * userRepo.findById(1) >> Optional.of(vo)
+        1 * validator.validate(vo)
+        2 * userRepo.exists(_ as JpaSpecification) >> false
+        1 * userRepo.save(vo) >> vo
+        1 * blacklistService.revokeToken(token, 3600L)
+        0 * _
     }
 
     @Unroll
-    def "test - updateUserRole/Status: User not found [op: #op]"() {
-        given: "A missing userVO ID for role/status change"
-        Integer userId = 99
+    def "test - updatePassword: Validation failure [case: #failCase]"() {
+        given: "A request"
+        PasswordUpdateRequestDto request = new PasswordUpdateRequestDto(oldPassword: 'o', newPassword: 'n', confirmPassword: confirm)
+        UserVO vo = new UserVO(userID: 1, password: 'encodedOld')
 
         when: "The target method executed"
-        if (op == "role") userImpl.updateUserRole(userId, "ROLE")
-        else userImpl.toggleUserStatus(userId, true)
+        ResponseEntity<GlobalResponse<Void>> response = userImpl.updatePassword("u", "t", request)
 
-        then: "The expected calls are made"
-        1 * userRepo.findById(userId) >> Optional.empty()
+        then: "The expected calls"
+        1 * userRepo.findOne(_) >> Optional.of(vo)
+        1 * encoder.matches('o', 'encodedOld') >> (failCase != "WrongOld")
         0 * _
 
-        and: "The expected result"
-        thrown(RecordNotFoundException)
+        and: "Bad Request"
+        response.statusCode == HttpStatus.BAD_REQUEST
 
         where:
-        op << ["role", "status"]
+        failCase   | confirm
+        "WrongOld" | 'n'
+        "Mismatch" | 'x'
     }
 
-    def "test - getAllUsers: Should return all users"() {
-        given: "A list of users"
-        String username1 = "user1"
-        String username2 = "user2"
-        UserVO userVO1 = new UserVO(username: username1, role: Role.ADMIN)
-        UserVO userVO2 = new UserVO(username: username2, role: Role.MEMBER)
-        List<UserVO> userList = [userVO1, userVO2]
-
-        UserResponseDto dto1 = UserResponseDto.builder().username(username1).role(Role.ADMIN.name()).build()
-        UserResponseDto dto2 = UserResponseDto.builder().username(username2).role(Role.MEMBER.name()).build()
-        List<UserResponseDto> dtoList = [dto1, dto2]
-
-        ResponseEntity<GlobalResponse<List<UserResponseDto>>> response
+    def "test - getAllUsers: Success"() {
+        given: "Users in repo"
+        List<UserVO> users = [new UserVO(username: 'u1')]
+        List<UserResponseDto> dtos = [UserResponseDto.builder().username('u1').build()]
 
         when: "The target method executed"
-        response = userImpl.getAllUsers()
+        ResponseEntity<GlobalResponse<List<UserResponseDto>>> response = userImpl.getAllUsers()
 
-        then: "The expected calls are made"
-        1 * userRepo.findAll() >> userList
-        1 * dtoTransformer.transformList(userList) >> dtoList
+        then: "The expected calls"
+        1 * userRepo.findAll() >> users
+        1 * dtoTransformer.transformList(users) >> dtos
         0 * _
 
-        and: "The expected result"
-        response.statusCode == HttpStatus.OK
-        response.body.responseData.size() == 2
-        response.body.responseData[0].username == username1
-        response.body.responseData[1].username == username2
-        noExceptionThrown()
+        and: "Result is correct"
+        response.body.responseData == dtos
     }
 
     @Unroll
-    def "test - adminUserExists: Should check for admin existence [exists: #exists]"() {
-        given: "A repository state"
-        JpaSpecification capturedSpec
+    def "test - updateUserRole: Success [from: #from, to: #to]"() {
+        given: "A user VO"
+        Integer userId = 1
+        UserVO vo = createUserVO(userId)
+        vo.role = from
 
-        when: "The target method executed"
-        boolean result = userImpl.adminUserExists()
+        when: "Role is updated"
+        userImpl.updateUserRole(userId, to.name())
 
         then: "The expected calls are made"
-        1 * userRepo.exists(_ as JpaSpecification) >> { JpaSpecification spec -> capturedSpec = spec; exists }
+        1 * userRepo.findById(userId) >> Optional.of(vo)
+        1 * userRepo.findById(userId) >> Optional.of(new UserVO(userID: userId, role: from, active: true))
+        if (from == Role.ADMIN && to != Role.ADMIN) {
+            1 * userRepo.count(_ as JpaSpecification) >> 2
+        } else {
+            0 * userRepo.count(_)
+        }
+        1 * validator.validate(vo)
+        2 * userRepo.exists(_ as JpaSpecification) >> false
+        1 * userRepo.save(vo) >> vo
         0 * _
 
-        and: "The expected result"
-        result == exists
-        capturedSpec != null
-        Map<String, List> inspection = inspectSpecification(capturedSpec)
-        inspection.filters.containsAll([FieldConstants.ROLE])
-        inspection.values.containsAll([Role.ADMIN])
+        and: "Role is changed"
+        vo.role == to
 
         where:
-        exists << [true, false]
+        from        | to
+        Role.ADMIN  | Role.ADMIN
+        Role.MEMBER | Role.ADMIN
+        Role.ADMIN  | Role.MEMBER
     }
+
+    def "test - updateUserRole: Invalid Role"() {
+        given: "A user and an invalid role string"
+        Integer userId = 1
+        UserVO vo = createUserVO(userId)
+
+        when: "updateUserRole is called with invalid role"
+        userImpl.updateUserRole(userId, "INVALID_ROLE")
+
+        then: "Initial find successfully returns VO, but update fails due to invalid role"
+        1 * userRepo.findById(userId) >> Optional.of(vo)
+        thrown(ValidationException)
+        0 * _
+
+        and: "VO has validation error"
+        vo.hasErrors()
+        vo.fieldMessages.containsKey(FieldConstants.ROLE)
+    }
+
+    def "test - updateUserRole: Last Admin Protection"() {
+        given: "The last active admin"
+        Integer userId = 1
+        UserVO vo = createUserVO(userId)
+        vo.role = Role.ADMIN
+
+        when: "Trying to demote"
+        userImpl.updateUserRole(userId, Role.MEMBER.name())
+
+        then: "ValidationException is thrown"
+        1 * userRepo.findById(userId) >> Optional.of(vo)
+        1 * userRepo.findById(userId) >> Optional.of(new UserVO(userID: userId, role: Role.ADMIN, active: true))
+        1 * userRepo.count(_ as JpaSpecification) >> 1
+        1 * validator.validate(vo)
+        2 * userRepo.exists(_ as JpaSpecification) >> false
+        thrown(ValidationException)
+        0 * _
+
+        and: "VO has validation errors"
+        vo.hasErrors()
+    }
+
+    @Unroll
+    def "test - toggleUserStatus: Success [active: #active -> #target]"() {
+        given: "A user VO"
+        Integer userId = 1
+        UserVO vo = createUserVO(userId)
+        vo.role = Role.ADMIN
+        vo.active = active
+
+        when: "Status is toggled"
+        userImpl.toggleUserStatus(userId, target)
+
+        then: "The expected calls are made"
+        1 * userRepo.findById(userId) >> Optional.of(vo)
+        1 * userRepo.findById(userId) >> Optional.of(new UserVO(userID: userId, role: Role.ADMIN, active: active))
+        if (active && !target) {
+            1 * userRepo.count(_ as JpaSpecification) >> 2
+        } else {
+            0 * userRepo.count(_)
+        }
+        1 * validator.validate(vo)
+        2 * userRepo.exists(_ as JpaSpecification) >> false
+        1 * userRepo.save(vo) >> vo
+        0 * _
+
+        and: "Status is changed"
+        vo.active == target
+
+        where:
+        active | target
+        false  | true
+        true   | false
+    }
+
+    def "test - toggleUserStatus: Last Admin Deactivation Protection"() {
+        given: "The last active admin"
+        Integer userId = 1
+        UserVO vo = createUserVO(userId)
+        vo.role = Role.ADMIN
+        vo.active = true
+
+        when: "Trying to deactivate"
+        userImpl.toggleUserStatus(userId, false)
+
+        then: "ValidationException is thrown"
+        1 * userRepo.findById(userId) >> Optional.of(vo)
+        1 * userRepo.findById(userId) >> Optional.of(new UserVO(userID: userId, role: Role.ADMIN, active: true))
+        1 * userRepo.count(_ as JpaSpecification) >> 1
+        1 * validator.validate(vo)
+        2 * userRepo.exists(_ as JpaSpecification) >> false
+        thrown(ValidationException)
+        0 * _
+
+        and: "VO has validation errors"
+        vo.hasErrors()
+    }
+
+    def "test - adminUserExists: Should check repo"() {
+        when: "The target method executed"
+        userImpl.adminUserExists()
+
+        then: "The expected calls"
+        1 * userRepo.exists(_ as JpaSpecification) >> true
+        0 * _
+    }
+
+    def "test - findUserForAuthentication: Success"() {
+        given: "A username"
+        UserVO vo = new UserVO(username: "u")
+
+        when: "Searching"
+        UserVO result = userImpl.findUserForAuthentication("u")
+
+        then: "The expected calls"
+        1 * userRepo.findOne(_ as JpaSpecification) >> Optional.of(vo)
+        0 * _
+
+        and: "User is returned"
+        result == vo
+    }
+
+    @Unroll
+    def "test - onLoginSuccess: Resets state if needed [failures: #fail, locked: #locked]"() {
+        given: "A user with some failed state"
+        UserVO vo = createUserVO(1)
+        vo.failedLoginAttempts = fail
+        vo.lockoutTime = locked ? LocalDateTime.now() : null
+
+        when: "Login succeeds"
+        userImpl.onLoginSuccess("u")
+
+        then: "The expected calls are made"
+        1 * userRepo.findOne(_) >> Optional.of(vo)
+        if (fail > 0 || locked) {
+            1 * userRepo.findById(1) >> Optional.of(new UserVO(userID: 1, username: "u", email: "e", role: Role.MEMBER, active: true))
+            1 * validator.validate(vo)
+            2 * userRepo.exists(_ as JpaSpecification) >> false
+            1 * userRepo.save(vo) >> vo
+        }
+        0 * _
+
+        and: "State is reset"
+        vo.failedLoginAttempts == 0
+        vo.lockoutTime == null
+
+        where:
+        fail | locked
+        3    | true
+        0    | true
+        3    | false
+        0    | false
+    }
+
+    @Unroll
+    def "test - onLoginFailure: State update [failCount: #count -> locked: #isLocked]"() {
+        given: "A user"
+        UserVO vo = createUserVO(1)
+        vo.failedLoginAttempts = count
+
+        when: "Login fails"
+        userImpl.onLoginFailure("u")
+
+        then: "The expected calls are made"
+        1 * userRepo.findOne(_) >> Optional.of(vo)
+        1 * userRepo.findById(1) >> Optional.of(new UserVO(userID: 1, username: "u", email: "e", role: Role.MEMBER, active: true))
+        1 * validator.validate(vo)
+        2 * userRepo.exists(_ as JpaSpecification) >> false
+        1 * userRepo.save(vo) >> vo
+        0 * _
+
+        and: "State updated correctly"
+        vo.failedLoginAttempts == count + 1
+        (vo.lockoutTime != null) == isLocked
+
+        where:
+        count | isLocked
+        0     | false
+        4     | true
+    }
+
+    def "test - beforeUpdate: Password hashing"() {
+        given: "A user VO with a new password"
+        UserVO vo = new UserVO(password: "newPass", persistedPassword: "old")
+
+        when: "Reflectively calling beforeUpdate"
+        userImpl.beforeUpdate(vo)
+
+        then: "The expected calls"
+        1 * encoder.encode("newPass") >> "hashed"
+        0 * _
+
+        and: "Password is hashed and update time set"
+        vo.password == "hashed"
+        vo.passwordUpdatedAt != null
+    }
+
 }

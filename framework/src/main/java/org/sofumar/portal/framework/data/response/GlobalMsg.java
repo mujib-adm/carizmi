@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.sofumar.portal.framework.data.msg.Message;
+import org.sofumar.portal.framework.message.Message;
 
 @Getter
 @Setter

@@ -1,9 +1,9 @@
-import { Navigate, Route, Routes } from "react-router-dom";
-import Login from "./auth/Login";
-import Logout from "./auth/Logout";
-import ProfilePage from "./auth/ProfilePage";
-import Register from "./auth/Register";
-import Dashboard from "./dashboard/Dashboard";
+import { Navigate, Route, Routes } from 'react-router-dom';
+import Login from './auth/Login';
+import Logout from './auth/Logout';
+import ProfilePage from './auth/ProfilePage';
+import Register from './auth/Register';
+import Dashboard from './dashboard/Dashboard';
 // import MembersList from "./pages/MembersList";
 // import PaymentsList from "./pages/PaymentsList";
 // import ExpensesList from "./pages/ExpensesList";
@@ -12,22 +12,22 @@ import Dashboard from "./dashboard/Dashboard";
 // import Users from "./pages/Users";
 // import NotFound from "./pages/NotFound";
 // import Unauthorized from "./pages/Unauthorized";
-import { useAuth } from "../context/AuthContext";
-import ExpensePage from "./expense/ExpensePage";
-import MemberDetailsPage from "./member/MemberDetailsPage";
-import MemberPage from "./member/MemberPage";
-import PaymentPage from "./payment/PaymentPage";
-import ReferencePage from "./reference/ReferencePage";
-import SystemSettingsPage from "./settings/SystemSettingsPage";
-import UsersPage from "./admin/UsersPage";
-import { RoleConstants } from "../constants/RoleConstants";
+import { useAuth } from '../context/AuthContext';
+import ExpensePage from './expense/ExpensePage';
+import MemberDetailsPage from './member/MemberDetailsPage';
+import MemberPage from './member/MemberPage';
+import PaymentPage from './payment/PaymentPage';
+import ReferencePage from './reference/ReferencePage';
+import SystemSettingsPage from './settings/SystemSettingsPage';
+import UsersPage from './admin/UsersPage';
+import { RoleConstants } from '../constants/RoleConstants';
 
 export default function Router() {
-  const { token, isLoading, role } = useAuth();
+  const { isAuthenticated, isLoading, role } = useAuth();
 
   if (isLoading) return <div>Loading...</div>;
 
-  if (!token) {
+  if (!isAuthenticated) {
     return (
       <Routes>
         <Route path="/login" element={<Login />} />
@@ -53,6 +53,6 @@ export default function Router() {
 
       <Route path="/logout" element={<Logout />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
-    </Routes >
+    </Routes>
   );
 }

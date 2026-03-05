@@ -1,5 +1,5 @@
-import React, { createContext, useContext } from "react";
-import { useNotificationWrapper } from "../util/NotificationWrapper";
+import React, { createContext, useContext } from 'react';
+import { useNotificationWrapper } from '../util/NotificationWrapper';
 
 const NotificationContext = createContext<any>(null);
 
@@ -12,6 +12,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       {notify.ModalComponent}
     </NotificationContext.Provider>
   );
-};
+}
 
 export const useNotification = () => useContext(NotificationContext);

@@ -1,6 +1,6 @@
-import { ApiEndpoints } from "../constants/endpoints";
-import { Expense, ExpenseSearchRequest, GlobalResponse } from "../constants/types";
-import apiClient from "./ApiClient";
+import { ApiEndpoints } from '../constants/endpoints';
+import { Expense, ExpenseSearchRequest, GlobalResponse } from '../constants/types';
+import apiClient from './ApiClient';
 
 export const addExpense = async (data: Omit<Expense, 'expenseID'>) => {
   const res = await apiClient.post<GlobalResponse<number>>(ApiEndpoints.EXPENSES.ADD, data);

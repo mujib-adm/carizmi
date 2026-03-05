@@ -7,10 +7,13 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PostLoad;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -72,6 +75,15 @@ public class UserVO extends ValueObject {
 
     @Column(name = "lockoutTime")
     private LocalDateTime lockoutTime;
+    
+    @Transient
+    @Setter(AccessLevel.NONE)
+    private String persistedPassword;
+
+    @PostLoad
+    protected void postLoad() {
+        this.persistedPassword = this.password;
+    }
 
     @Override
     public String getTableName() {

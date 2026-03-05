@@ -1,11 +1,14 @@
-package org.sofumar.portal.framework.data.msg;
+package org.sofumar.portal.framework.message;
 
 import lombok.Getter;
 
+/**
+ * Associates a field name with a message.
+ */
 @Getter
 public class FieldMessage {
-    public String field;
-    public Message message;
+    private final String field;
+    private final Message message;
 
     public FieldMessage(String field, Message message) {
         this.field = field;

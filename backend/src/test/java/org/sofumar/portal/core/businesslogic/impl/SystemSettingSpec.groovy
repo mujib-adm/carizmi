@@ -12,7 +12,7 @@ import org.sofumar.portal.framework.exception.RecordNotFoundException
 import org.sofumar.portal.framework.util.MySQLConstraintResolver
 import org.sofumar.portal.core.repo.SystemSettingRepository
 import org.sofumar.portal.service.validation.SystemSettingsValidator
-import org.sofumar.portal.testsupport.BaseSpecification
+import org.sofumar.portal.testbase.BaseSpecification
 import org.springframework.dao.DataAccessException
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.data.domain.Page

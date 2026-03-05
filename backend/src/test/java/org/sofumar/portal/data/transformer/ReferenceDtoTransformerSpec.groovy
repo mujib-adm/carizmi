@@ -3,7 +3,7 @@ package org.sofumar.portal.data.transformer
 import org.sofumar.portal.core.vo.ReferenceVO
 import org.sofumar.portal.data.dto.ReferenceDto
 import org.sofumar.portal.data.dto.response.ReferenceDataDto
-import org.sofumar.portal.testsupport.BaseSpecification
+import org.sofumar.portal.testbase.BaseSpecification
 
 class ReferenceDtoTransformerSpec extends BaseSpecification {
 

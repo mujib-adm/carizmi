@@ -4,8 +4,8 @@
   padding-left: 1rem;
   padding-top: 1px;
   padding-bottom: 4px;
-  background: linear-gradient(to right, #ffffff 0%, #AEDF88 50%, #1E5631 100%);
-  color: #1E5631;
+  background: linear-gradient(to right, #ffffff 0%, #aedf88 50%, #1e5631 100%);
+  color: #1e5631;
   font-size: 0.9rem;
   font-family: var(--fontSecondary);
 }
@@ -24,7 +24,7 @@
 .portal-footer {
   text-align: center;
   background-color: #f0fdf4;
-  color: #1E5631;
+  color: #1e5631;
   font-size: 0.9rem;
-  font-family: "Poppins", sans-serif;
+  font-family: 'Poppins', sans-serif;
 }

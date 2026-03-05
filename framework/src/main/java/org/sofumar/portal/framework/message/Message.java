@@ -1,8 +1,11 @@
-package org.sofumar.portal.framework.data.msg;
+package org.sofumar.portal.framework.message;
 
 import lombok.Getter;
 import java.text.MessageFormat;
 
+/**
+ * Base class for messages.
+ */
 @Getter
 public class Message {
 
@@ -27,22 +30,30 @@ public class Message {
         this.messageText = messageText;
     }
 
+    /**
+     * Creates a clone of this message.
+     * Override in subclasses to return the correct type.
+     */
+    protected Message createClone() {
+        return new Message(this);
+    }
+
     public Message addMessageArgs(Object... args) {
-        Message clone = new Message(this);
-        int currentArgsLength = (clone.messageArgs != null) ? clone.messageArgs.length : 0;
+        Message cloneMessage = createClone();
+        int currentArgsLength = (cloneMessage.messageArgs != null) ? cloneMessage.messageArgs.length : 0;
         int incomingArgsLength = (args != null) ? args.length : 0;
         Object[] newArgs = new Object[currentArgsLength + incomingArgsLength];
 
-        if (clone.messageArgs != null) {
-            System.arraycopy(clone.messageArgs, 0, newArgs, 0, clone.messageArgs.length);
+        if (cloneMessage.messageArgs != null) {
+            System.arraycopy(cloneMessage.messageArgs, 0, newArgs, 0, cloneMessage.messageArgs.length);
         }
 
         if (args != null) {
             System.arraycopy(args, 0, newArgs, currentArgsLength, incomingArgsLength);
         }
 
-        clone.messageArgs = newArgs;
-        return clone;
+        cloneMessage.messageArgs = newArgs;
+        return cloneMessage;
     }
 
     public String getMessageString() {

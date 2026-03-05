@@ -1,12 +1,14 @@
 package org.sofumar.portal.security.config;
 
-import org.sofumar.portal.constants.Role;
+import jakarta.annotation.PostConstruct;
 import org.sofumar.portal.security.handler.RestAuthenticationFailureHandler;
 import org.sofumar.portal.security.handler.RestAuthenticationSuccessHandler;
 import org.sofumar.portal.security.filters.JsonAuthenticationFilter;
 import org.sofumar.portal.security.filters.JwtAuthenticationFilter;
 import org.sofumar.portal.security.filters.RequestsRateLimitFilter;
 import org.sofumar.portal.security.handler.RestAccessDeniedHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,7 +16,6 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -35,9 +36,19 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    // Make allowed origins configurable via env or application.properties
-    @Value("${app.cors.allowed-origins:http://localhost:8081,http://localhost:5173}")
+    private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
+
+    @Value("${app.cors.allowed-origins:}")
     private String[] allowedOrigins;
+
+    @PostConstruct
+    public void logCorsConfiguration() {
+        if (allowedOrigins == null || allowedOrigins.length == 0) {
+            log.warn("CORS: No allowed origins configured. Frontend access may be blocked.");
+        } else {
+            log.info("CORS: Allowed origins initialized: {}", Arrays.toString(allowedOrigins));
+        }
+    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
@@ -54,32 +65,18 @@ public class SecurityConfig {
                         // permit preflight globally
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // public endpoints
-                        .requestMatchers("/auth/login", "/auth/register", "/auth/refresh", "/v3/api-docs/**", "/swagger-ui/**", "/actuator/health").permitAll()
-                        // authenticated endpoints
-                        .requestMatchers("/auth/profile", "/auth/password-update", "/auth/logout").authenticated()
-
-                        // role based
-
-                        // ADMIN only
-                        .requestMatchers("/users/**").hasRole(Role.ADMIN.name())
-                        // Write operations - ADMIN only
-                        .requestMatchers(HttpMethod.PUT, "/settings/**").hasRole(Role.ADMIN.name())
-
-                        // Write operations - ADMIN and MANAGER only
-                        .requestMatchers(HttpMethod.POST, "/members/**", "/payments/**", "/expenses/**").hasAnyRole(Role.ADMIN.name(), Role.MANAGER.name())
-                        .requestMatchers(HttpMethod.PUT, "/members/**", "/payments/**", "/expenses/**").hasAnyRole(Role.ADMIN.name(), Role.MANAGER.name())
-                        .requestMatchers(HttpMethod.DELETE, "/members/**", "/expenses/**").hasAnyRole(Role.ADMIN.name(), Role.MANAGER.name())
-
-                        // Read operations - all authenticated roles
-                        .requestMatchers(HttpMethod.GET, "/members/**", "/payments/**", "/expenses/**", "/dashboard/**", "/references/**", "/settings/**").hasAnyRole(Role.ADMIN.name(), Role.MANAGER.name(), Role.MEMBER.name())
+                        .requestMatchers("/auth/login", "/auth/refresh", "/v3/api-docs/**", "/swagger-ui/**", "/actuator/health").permitAll()
+                        // catch-all: any other request must be authenticated.
+                        // Fine-grained role checks are handled at the Method (Controller) level.
                         .anyRequest().authenticated()
                 )
                 // ensure JWT filter does not block preflight; JwtAuthenticationFilter should skip OPTIONS
                 .addFilterBefore(requestsRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jsonAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .headers(h -> h.contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'")))
-                .httpBasic(Customizer.withDefaults())
+                .headers(h -> h.contentSecurityPolicy(csp -> csp.policyDirectives(
+                        "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:"
+                )))
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint(new JsonAuthenticationEntryPoint())
                         .accessDeniedHandler(accessDeniedHandler)
@@ -139,7 +136,7 @@ public class SecurityConfig {
         config.setAllowedOrigins(Arrays.asList(allowedOrigins));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Requested-With"));
-        config.setExposedHeaders(List.of("Authorization", "Link")); // expose headers your client needs
+        config.setExposedHeaders(List.of("Authorization", "Link"));
         config.setAllowCredentials(true);
 
         // Cache preflight for 1 hour to reduce preflight traffic

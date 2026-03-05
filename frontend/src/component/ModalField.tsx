@@ -1,8 +1,8 @@
-import { ExclamationCircleOutlined } from "@ant-design/icons";
-import { DatePicker, Select, Tooltip } from "antd";
-import dayjs from "dayjs";
-import React from "react";
-import { Control, Controller, FieldError } from "react-hook-form";
+import { ExclamationCircleOutlined } from '@ant-design/icons';
+import { DatePicker, Select, Tooltip } from 'antd';
+import dayjs from 'dayjs';
+import React from 'react';
+import { Control, Controller, FieldError } from 'react-hook-form';
 
 interface FormFieldProps {
   // common
@@ -14,7 +14,7 @@ interface FormFieldProps {
   type?: string; // "text", "email", "password" etc.
   registerProps?: any; // from RHF's register("fieldName")
   // which element to render
-  as?: "input" | "textarea" | "select" | "date";
+  as?: 'input' | 'textarea' | 'select' | 'date';
   // select-only
   control?: Control<any>; // from useForm()
   options?: { value: string; label: string }[];
@@ -28,9 +28,9 @@ export function ModalField({
   label,
   placeholder,
   error,
-  type = "text",
+  type = 'text',
   registerProps,
-  as = "input",
+  as = 'input',
   control,
   options = [],
   allowClear = true,
@@ -42,48 +42,48 @@ export function ModalField({
 
   return (
     <Tooltip title={tooltipTitle} placement="right" open={showError}>
-      <div style={{ position: "relative", marginBottom: "1rem" }}>
+      <div style={{ position: 'relative', marginBottom: '1rem' }}>
         {label && (
-          <label htmlFor={name} style={{ display: "block" }}>
+          <label htmlFor={name} style={{ display: 'block' }}>
             {label}
           </label>
         )}
 
-        {as === "input" && (
+        {as === 'input' && (
           <input
             id={name}
             type={type}
             placeholder={placeholder}
-            className={`modals-form ${showError ? "error" : ""}`}
+            className={`modals-form ${showError ? 'error' : ''}`}
             {...registerProps}
-            style={{ width: "100%", ...(style || {}) }}
+            style={{ width: '100%', ...(style || {}) }}
             disabled={disabled}
           />
         )}
 
-        {as === "textarea" && (
+        {as === 'textarea' && (
           <textarea
             id={name}
             placeholder={placeholder}
-            className={`modals-form ${showError ? "error" : ""}`}
+            className={`modals-form ${showError ? 'error' : ''}`}
             {...registerProps}
-            style={{ width: "100%", minHeight: 96, ...(style || {}) }}
+            style={{ width: '100%', minHeight: 96, ...(style || {}) }}
             disabled={disabled}
           />
         )}
 
-        {as === "select" && control && (
+        {as === 'select' && control && (
           <Controller
             control={control}
             name={name}
             render={({ field }) => (
               <Select
                 {...field}
-                placeholder={placeholder || "Select an option"}
+                placeholder={placeholder || 'Select an option'}
                 options={options}
                 allowClear={allowClear}
                 disabled={disabled}
-                style={{ width: "100%", ...(style || {}) }}
+                style={{ width: '100%', ...(style || {}) }}
                 value={field.value}
                 onChange={(val) => field.onChange(val)}
                 onBlur={field.onBlur}
@@ -92,7 +92,7 @@ export function ModalField({
           />
         )}
 
-        {as === "date" && control && (
+        {as === 'date' && control && (
           <Controller
             control={control}
             name={name}
@@ -100,8 +100,8 @@ export function ModalField({
               <DatePicker
                 {...field}
                 format="MM/DD/YYYY"
-                placeholder={placeholder || "Select date"}
-                style={{ width: "100%", ...(style || {}) }}
+                placeholder={placeholder || 'Select date'}
+                style={{ width: '100%', ...(style || {}) }}
                 disabled={disabled}
                 value={field.value ? dayjs(field.value) : null}
                 onChange={(date) => field.onChange(date ? date.toISOString() : null)}
@@ -113,17 +113,17 @@ export function ModalField({
         {showError && (
           <ExclamationCircleOutlined
             style={{
-              position: "absolute",
+              position: 'absolute',
               right: 12,
-              top: "70%",
-              transform: "translateY(-50%)",
-              color: "#d93025",
+              top: '70%',
+              transform: 'translateY(-50%)',
+              color: '#d93025',
               fontSize: 18,
-              pointerEvents: "none",
+              pointerEvents: 'none',
             }}
           />
         )}
       </div>
     </Tooltip>
   );
-};
+}

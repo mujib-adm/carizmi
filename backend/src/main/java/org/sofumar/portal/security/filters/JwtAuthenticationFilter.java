@@ -4,6 +4,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
@@ -28,12 +29,14 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.sofumar.portal.security.CookieService.ACCESS_TOKEN_COOKIE;
+
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
     private static final List<String> EXCLUDED_PATHS = List.of(
             "/auth/login",
-            "/auth/register",
+            "/auth/refresh",
             "/swagger-ui/**",
             "/v3/api-docs/**"
     );
@@ -62,13 +65,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String path = request.getServletPath();
         // Skip excluded paths
-        boolean isExcluded = EXCLUDED_PATHS.stream().anyMatch(p -> pathMatcher.match(p, path));
+        boolean isExcluded = path != null && EXCLUDED_PATHS.stream().anyMatch(p -> pathMatcher.match(p, path));
         if (isExcluded) {
             chain.doFilter(request, response);
             return;
         }
 
-        String token = bearerTokenResolver.resolve(request);
+        // Read token from httpOnly cookie first, fallback to Authorization header (for Swagger/API testing)
+        String token = getTokenFromCookie(request);
+        if (token == null) {
+            token = bearerTokenResolver.resolve(request);
+        }
         if (token != null) {
             try {
                 if (blacklistService.isTokenRevoked(token)) {
@@ -92,5 +99,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
         chain.doFilter(request, response);
+    }
+
+    private String getTokenFromCookie(HttpServletRequest request) {
+        if (request.getCookies() == null) return null;
+        for (Cookie cookie : request.getCookies()) {
+            if (ACCESS_TOKEN_COOKIE.equals(cookie.getName())) {
+                String value = cookie.getValue();
+                return (value != null && !value.isEmpty()) ? value : null;
+            }
+        }
+        return null;
     }
 }

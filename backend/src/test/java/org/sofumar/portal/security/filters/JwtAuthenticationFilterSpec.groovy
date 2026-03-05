@@ -3,6 +3,7 @@ package org.sofumar.portal.security.filters
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.JwtException
 import jakarta.servlet.FilterChain
+import jakarta.servlet.http.Cookie
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.sofumar.portal.framework.service.TokenBlacklistService
@@ -68,7 +69,7 @@ class JwtAuthenticationFilterSpec extends Specification {
         noExceptionThrown()
 
         where:
-        path << ["/auth/login", "/auth/register", "/swagger-ui/index.html", "/v3/api-docs"]
+        path << ["/auth/login", "/auth/refresh", "/swagger-ui/index.html", "/v3/api-docs"]
     }
 
     def "test - doFilterInternal: Should authenticate with valid token"() {
@@ -87,6 +88,7 @@ class JwtAuthenticationFilterSpec extends Specification {
         then: "Token is resolved and validated"
         1 * request.getMethod() >> method
         1 * request.getServletPath() >> servletPath
+        1 * request.getCookies() >> null
         1 * bearerTokenResolver.resolve(request) >> token
         1 * blacklistService.isTokenRevoked(token) >> false
         1 * jwtService.getClaims(token) >> claims
@@ -103,6 +105,71 @@ class JwtAuthenticationFilterSpec extends Specification {
         noExceptionThrown()
     }
 
+    def "test - doFilterInternal: Should authenticate with valid token from cookie (cookie-first resolution)"() {
+        given: "A request with a valid token in cookie"
+        String method = "GET"
+        String servletPath = "/api/members"
+        String token = "cookie.jwt.token"
+
+        String username = "cookieuser"
+        List<String> roles = ["MEMBER"]
+        Claims claims = Mock(Claims)
+        Cookie accessCookie = new Cookie("access_token", token)
+
+        when: "The filter is executed"
+        filter.doFilterInternal(request, response, chain)
+
+        then: "Token is read from cookie — bearer resolver is NOT called"
+        1 * request.getMethod() >> method
+        1 * request.getServletPath() >> servletPath
+        2 * request.getCookies() >> ([accessCookie] as Cookie[])
+        0 * bearerTokenResolver.resolve(_)
+        1 * blacklistService.isTokenRevoked(token) >> false
+        1 * jwtService.getClaims(token) >> claims
+        1 * claims.getSubject() >> username
+        1 * claims.get("roles") >> roles
+        1 * chain.doFilter(request, response)
+        0 * _
+
+        and: "Security context is populated with correct principal"
+        SecurityContextHolder.getContext().getAuthentication() != null
+        UserDetails principal = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal()
+        principal.getUsername() == username
+        SecurityContextHolder.getContext().getAuthentication().getAuthorities().any { it.authority == "ROLE_MEMBER" }
+        noExceptionThrown()
+    }
+
+    def "test - doFilterInternal: Should fallback to bearer resolver when cookie has empty value"() {
+        given: "A request with an empty access_token cookie"
+        String method = "GET"
+        String servletPath = "/api/members"
+        String headerToken = "header.jwt.token"
+        Cookie emptyCookie = new Cookie("access_token", "")
+
+        String username = "headeruser"
+        List<String> roles = ["ADMIN"]
+        Claims claims = Mock(Claims)
+
+        when: "The filter is executed"
+        filter.doFilterInternal(request, response, chain)
+
+        then: "Cookie is empty, so bearer resolver is called as fallback"
+        1 * request.getMethod() >> method
+        1 * request.getServletPath() >> servletPath
+        2 * request.getCookies() >> ([emptyCookie] as Cookie[])
+        1 * bearerTokenResolver.resolve(request) >> headerToken
+        1 * blacklistService.isTokenRevoked(headerToken) >> false
+        1 * jwtService.getClaims(headerToken) >> claims
+        1 * claims.getSubject() >> username
+        1 * claims.get("roles") >> roles
+        1 * chain.doFilter(request, response)
+        0 * _
+
+        and: "Security context is populated from header token"
+        SecurityContextHolder.getContext().getAuthentication() != null
+        noExceptionThrown()
+    }
+
     def "test - doFilterInternal: Should clear context if token is revoked"() {
         given: "A request with a revoked token"
         String method = "GET"
@@ -115,6 +182,7 @@ class JwtAuthenticationFilterSpec extends Specification {
         then: "Blacklist check fails and context is cleared"
         1 * request.getMethod() >> method
         1 * request.getServletPath() >> servletPath
+        1 * request.getCookies() >> null
         1 * bearerTokenResolver.resolve(request) >> token
         1 * blacklistService.isTokenRevoked(token) >> true
         1 * chain.doFilter(request, response)
@@ -137,6 +205,7 @@ class JwtAuthenticationFilterSpec extends Specification {
         then: "Parsing throws JwtException"
         1 * request.getMethod() >> method
         1 * request.getServletPath() >> servletPath
+        1 * request.getCookies() >> null
         1 * bearerTokenResolver.resolve(request) >> token
         1 * blacklistService.isTokenRevoked(token) >> false
         1 * jwtService.getClaims(token) >> { throw new JwtException("Invalid token") }
@@ -159,6 +228,7 @@ class JwtAuthenticationFilterSpec extends Specification {
         then: "No token found, just continue"
         1 * request.getMethod() >> method
         1 * request.getServletPath() >> servletPath
+        1 * request.getCookies() >> null
         1 * bearerTokenResolver.resolve(request) >> null
         1 * chain.doFilter(request, response)
         0 * _
@@ -166,5 +236,36 @@ class JwtAuthenticationFilterSpec extends Specification {
         and: "Security context remains empty"
         SecurityContextHolder.getContext().getAuthentication() == null
         noExceptionThrown()
+    }
+
+    @Unroll
+    def "test - getTokenFromCookie: token extraction logic [hasCookies: #hasCookies, hasAccessToken: #hasAccessToken, tokenValue: #tokenValue, expectedResult: #expectedResult]"() {
+        given: "A request with certain cookies"
+        Cookie[] cookies = null
+        if (hasCookies) {
+            List<Cookie> cookieList = [new Cookie("other_cookie", "value")]
+            if (hasAccessToken) {
+                cookieList.add(new Cookie("access_token", tokenValue != null ? tokenValue : ""))
+            }
+            cookies = cookieList as Cookie[]
+        }
+
+        when: "The target method is executed"
+        String result = filter.getTokenFromCookie(request)
+
+        then: "The expected calls are made"
+        _ * request.getCookies() >> cookies
+        0 * _
+
+        and: "The result is correct"
+        result == expectedResult
+
+        where:
+        hasCookies | hasAccessToken | tokenValue      | expectedResult
+        false      | false          | null            | null
+        true       | false          | null            | null
+        true       | true           | ""              | null
+        true       | true           | null            | null
+        true       | true           | "my.test.token" | "my.test.token"
     }
 }

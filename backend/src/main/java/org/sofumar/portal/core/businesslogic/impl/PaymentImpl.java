@@ -3,7 +3,7 @@ package org.sofumar.portal.core.businesslogic.impl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sofumar.portal.constants.FieldConstants;
-import org.sofumar.portal.constants.MessagesConstants;
+import org.sofumar.portal.message.ValidationMessages;
 import org.sofumar.portal.constants.ReferenceConstants;
 import org.sofumar.portal.core.businesslogic.Payment;
 import org.sofumar.portal.core.repo.PaymentRepository;
@@ -18,7 +18,6 @@ import org.sofumar.portal.data.transformer.PaymentVOTransformer;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
 import org.sofumar.portal.framework.data.response.PaginationMeta;
 import org.sofumar.portal.framework.exception.RecordNotFoundException;
-import org.sofumar.portal.framework.exception.ValidationException;
 import org.sofumar.portal.framework.util.ResponseUtils;
 import org.sofumar.portal.service.validation.PaymentValidator;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,9 +35,9 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.sofumar.portal.constants.MessagesConstants.RECORD_ADDED;
-import static org.sofumar.portal.constants.MessagesConstants.RECORD_DELETED;
-import static org.sofumar.portal.constants.MessagesConstants.RECORD_UPDATED;
+import static org.sofumar.portal.message.ValidationMessages.RECORD_ADDED;
+import static org.sofumar.portal.message.ValidationMessages.RECORD_DELETED;
+import static org.sofumar.portal.message.ValidationMessages.RECORD_UPDATED;
 
 @Service
 public non-sealed class PaymentImpl extends PaymentAbstractBL implements Payment {
@@ -64,20 +63,25 @@ public non-sealed class PaymentImpl extends PaymentAbstractBL implements Payment
     }
 
     @Override
+    protected void performDomainValidation(PaymentVO vo, boolean isUpdate) {
+        if (isUpdate) {
+            validator.validateForUpdate(vo);
+        } else {
+            validator.validate(vo);
+            performStatefulValidation(vo);
+        }
+    }
+
+    @Override
     @Transactional
     public ResponseEntity<GlobalResponse<Integer>> addPayment(PaymentDto requestDto) {
-        // Duplicate Check logic
-        if (ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE.equalsIgnoreCase(requestDto.getFeeType())) {
-            validateDuplicate(requestDto);
-        }
-
         PaymentVO vo = voTransformer.transform(requestDto);
-        validator.validate(vo);
         PaymentVO savedPayment = add(vo);
         return ResponseUtils.okWithData(savedPayment.getPaymentID(), RECORD_ADDED.addMessageArgs("Payment").getMessageString());
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ResponseEntity<GlobalResponse<List<LatestPaymentDto>>> getLatestPayments(int limit) {
         logger.info("Fetching {} latest payments", limit);
         PageRequest pageRequest = PageRequest.of(0, limit,
@@ -102,29 +106,29 @@ public non-sealed class PaymentImpl extends PaymentAbstractBL implements Payment
     public ResponseEntity<GlobalResponse<Void>> updatePayment(PaymentDto requestDto) {
         logger.info("Updating payment: {}", requestDto.getPaymentID());
 
-        PaymentVO existing = getRepo().findById(requestDto.getPaymentID())
+        PaymentVO existingVO = getRepo().findById(requestDto.getPaymentID())
                 .orElseThrow(() -> new RecordNotFoundException("Payment not found: " + requestDto.getPaymentID()));
 
-        PaymentVO updated = voTransformer.transformForUpdate(requestDto, existing);
-        validator.validateForUpdate(updated);
-        update(updated);
+        PaymentVO updatedVO = voTransformer.transformForUpdate(requestDto, existingVO);
+        update(updatedVO);
         return ResponseUtils.ok(RECORD_UPDATED.addMessageArgs("Payment").getMessageString());
     }
 
     @Override
     @Transactional
     public ResponseEntity<GlobalResponse<Void>> deletePayment(@NonNull Integer paymentID) {
-        PaymentVO existing = getRepo().findById(paymentID)
+        PaymentVO existingVO = getRepo().findById(paymentID)
                 .orElseThrow(() -> new RecordNotFoundException("Payment not found: " + paymentID));
-        delete(existing);
+        delete(existingVO);
         return ResponseUtils.ok(RECORD_DELETED.addMessageArgs("Payment").getMessageString());
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ResponseEntity<GlobalResponse<PaymentDto>> getPayment(@NonNull Integer paymentID) {
-        PaymentVO existing = getRepo().findById(paymentID)
+        PaymentVO existingVO = getRepo().findById(paymentID)
                 .orElseThrow(() -> new RecordNotFoundException("Payment not found: " + paymentID));
-        return ResponseUtils.okWithData(dtoTransformer.transform(existing));
+        return ResponseUtils.okWithData(dtoTransformer.transform(existingVO));
     }
 
     @Override
@@ -152,51 +156,60 @@ public non-sealed class PaymentImpl extends PaymentAbstractBL implements Payment
     }
 
     @Override
+    @Transactional(readOnly = true)
     public BigDecimal sumAmountByDateReceivedBetween(LocalDate start, LocalDate end) {
         return getRepo().sumAmountByDateReceivedBetween(start, end);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public BigDecimal sumAmountByYearAndQuarter(@NonNull Integer year, @NonNull Integer quarter) {
         return getRepo().sumAmountByYearAndQuarter(year, quarter);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public BigDecimal sumAmountByMemberID(@NonNull Integer memberID) {
         return getRepo().sumAmountByMemberID(memberID);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public BigDecimal sumAmountByMemberIDAndYearAndQuarter(@NonNull Integer memberID, @NonNull Integer year, @NonNull Integer quarter) {
         return getRepo().sumAmountByMemberIDAndYearAndQuarter(memberID, year, quarter);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<PaymentSummary> findMemberPaymentSummaries(@NonNull Integer memberID, String feeType) {
         return getRepo().findMemberPaymentSummaries(memberID, feeType);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<PaymentSummary> findPaymentSummaries(String feeType, @NonNull Integer year) {
         return getRepo().findPaymentSummaries(feeType, year);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<PaymentVO> findPaymentsByCriteria(Specification<PaymentVO> spec) {
         return getRepo().findAll(spec);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public BigDecimal sumAmountByDateReceivedBefore(LocalDate date) {
         return getRepo().sumAmountByDateReceivedBefore(date);
     }
 
-    private void validateDuplicate(PaymentDto dto) {
-        if (checkExists(dto.getMemberID(), dto.getFeeType(), dto.getYear(), dto.getQuarter())) {
-            PaymentVO vo = new PaymentVO();
-            vo.addFieldMessage(FieldConstants.QUARTER, MessagesConstants.ERR_PAYMENT_ALREADY_EXISTS.addMessageArgs(
-                    String.valueOf(dto.getYear()), dto.getQuarter()));
-            throw new ValidationException(vo);
+    private void performStatefulValidation(PaymentVO vo) {
+        // Duplicate Check logic for new payments
+        if (ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE.equals(vo.getFeeType())) {
+            if (checkExists(vo.getMember().getMemberID(), vo.getFeeType(), vo.getYear(), vo.getQuarter())) {
+                vo.addFieldMessage(FieldConstants.QUARTER, ValidationMessages.ERR_PAYMENT_ALREADY_EXISTS.addMessageArgs(
+                        String.valueOf(vo.getYear()), vo.getQuarter()));
+            }
         }
     }
 
@@ -210,6 +223,7 @@ public non-sealed class PaymentImpl extends PaymentAbstractBL implements Payment
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<PaymentVO> findPaymentsForMemberQuarter(@NonNull Integer memberID, @NonNull Integer year, @NonNull Integer quarter, String feeType) {
         Specification<PaymentVO> spec = Specification.allOf(
                 PaymentSpecifications.hasMemberID(memberID),

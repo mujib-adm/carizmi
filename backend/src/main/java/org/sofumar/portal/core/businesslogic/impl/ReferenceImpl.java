@@ -45,6 +45,11 @@ public non-sealed class ReferenceImpl extends ReferenceAbstractBL implements Ref
     protected Logger getLogger() {
         return logger;
     }
+    
+    @Override
+    protected void performDomainValidation(ReferenceVO vo, boolean isUpdate) {
+        // No domain validation implementation for reference data currently
+    }
 
     @Override
     public ResponseEntity<GlobalResponse<ReferenceDto>> getReference(Integer referenceID) {

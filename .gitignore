@@ -65,13 +65,14 @@ generated-changelog.xml
 build/
 
 # Spring Boot environment files
-application-*.yml
-application-*.properties
 *.env
 
 # === Logs ===
 *.log
 logs/
 
-# === docs ===
-docs/
+# === temp docs ===
+docs/design
+
+# === secrets ===
+/secrets/

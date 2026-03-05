@@ -9,8 +9,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.sofumar.portal.framework.constants.AuditFieldConstants;
-import org.sofumar.portal.framework.data.msg.FieldMessage;
-import org.sofumar.portal.framework.data.msg.Message;
+import org.sofumar.portal.framework.message.FieldMessage;
+import org.sofumar.portal.framework.message.Message;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -105,7 +105,9 @@ public abstract class ValueObject {
         if (fieldMsgs != null) {
             fieldMsgs.add(message);
         } else {
-            fieldMsgMap.put(field, List.of(message));
+            List<FieldMessage> list = new ArrayList<>();
+            list.add(message);
+            fieldMsgMap.put(field, list);
         }
         setFlags(message);
     }
@@ -114,13 +116,15 @@ public abstract class ValueObject {
         if (isErrorWarningFlagsSet()) {
             return;
         }
-        setErrorWarningFlags(fieldMessage.message.getType());
+        setErrorWarningFlags(fieldMessage.getMessage().getType());
     }
 
     private void setErrorWarningFlags(Message.Type type) {
+        if (type == null) return;
         switch (type) {
             case ERROR -> this.errorExists = true;
             case WARNING -> this.warningExists = true;
+            default -> {}
         }
     }
 

@@ -6,8 +6,10 @@ import org.sofumar.portal.data.dto.ExpenseDto;
 import org.sofumar.portal.data.dto.request.ExpenseSearchRequestDto;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
 import org.sofumar.portal.core.businesslogic.Expense;
+import org.sofumar.portal.security.annotation.IsAuthenticated;
+import org.sofumar.portal.security.annotation.IsAdminOrManager;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -31,33 +34,35 @@ public class ExpenseController {
 
     @PostMapping("/add")
     @Operation(summary = "Add a new expense")
-    @PreAuthorize("hasRole(T(org.sofumar.portal.constants.Role).ADMIN.name()) or hasRole(T(org.sofumar.portal.constants.Role).MANAGER.name())")
-    public ResponseEntity<GlobalResponse<Integer>> addExpense(@RequestBody ExpenseDto requestDto) {
+    @IsAdminOrManager
+    public ResponseEntity<GlobalResponse<Integer>> addExpense(@Valid @RequestBody ExpenseDto requestDto) {
         return expense.addExpense(requestDto);
     }
 
     @PutMapping("/update")
     @Operation(summary = "Update an existing expense")
-    @PreAuthorize("hasRole(T(org.sofumar.portal.constants.Role).ADMIN.name()) or hasRole(T(org.sofumar.portal.constants.Role).MANAGER.name())")
-    public ResponseEntity<GlobalResponse<Void>> updateExpense(@RequestBody ExpenseDto requestDto) {
+    @IsAdminOrManager
+    public ResponseEntity<GlobalResponse<Void>> updateExpense(@Valid @RequestBody ExpenseDto requestDto) {
         return expense.updateExpense(requestDto);
     }
 
     @DeleteMapping("/delete/{expenseID}")
     @Operation(summary = "Delete expense by ID")
-    @PreAuthorize("hasRole(T(org.sofumar.portal.constants.Role).ADMIN.name()) or hasRole(T(org.sofumar.portal.constants.Role).MANAGER.name())")
-    public ResponseEntity<GlobalResponse<Void>> deleteExpense(@PathVariable Integer expenseID) {
+    @IsAdminOrManager
+    public ResponseEntity<GlobalResponse<Void>> deleteExpense(@PathVariable @NonNull Integer expenseID) {
         return expense.deleteExpense(expenseID);
     }
 
     @GetMapping("/get/{expenseID}")
     @Operation(summary = "Get expense by ID")
-    public ResponseEntity<GlobalResponse<ExpenseDto>> getExpense(@PathVariable Integer expenseID) {
+    @IsAuthenticated
+    public ResponseEntity<GlobalResponse<ExpenseDto>> getExpense(@PathVariable @NonNull Integer expenseID) {
         return expense.getExpense(expenseID);
     }
 
     @PostMapping("/search")
     @Operation(summary = "Search expenses")
+    @IsAuthenticated
     public ResponseEntity<GlobalResponse<List<ExpenseDto>>> searchExpenses(@RequestBody ExpenseSearchRequestDto request) {
         return expense.searchExpenses(request);
     }

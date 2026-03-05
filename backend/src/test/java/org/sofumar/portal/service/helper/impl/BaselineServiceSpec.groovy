@@ -7,7 +7,7 @@ import org.sofumar.portal.core.businesslogic.SystemSetting
 import org.sofumar.portal.core.vo.SystemSettingsVO
 import org.sofumar.portal.framework.exception.DuplicateRecordException
 
-import org.sofumar.portal.testsupport.BaseSpecification
+import org.sofumar.portal.testbase.BaseSpecification
 import spock.lang.Subject
 
 import java.time.LocalDate

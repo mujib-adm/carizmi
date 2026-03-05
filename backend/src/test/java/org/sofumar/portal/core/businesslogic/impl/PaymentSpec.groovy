@@ -11,13 +11,13 @@ import org.sofumar.portal.data.transformer.PaymentVOTransformer
 import org.sofumar.portal.core.vo.MemberVO
 import org.sofumar.portal.core.vo.PaymentVO
 import org.sofumar.portal.framework.data.response.GlobalResponse
-import org.sofumar.portal.framework.exception.RecordNotFoundException
 import org.sofumar.portal.framework.exception.DuplicateRecordException
 import org.sofumar.portal.framework.exception.ValidationException
+import org.sofumar.portal.framework.exception.RecordNotFoundException
 import org.sofumar.portal.framework.util.MySQLConstraintResolver
 import org.sofumar.portal.core.repo.PaymentRepository
 import org.sofumar.portal.service.validation.PaymentValidator
-import org.sofumar.portal.testsupport.BaseSpecification
+import org.sofumar.portal.testbase.BaseSpecification
 import org.springframework.dao.DataAccessException
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.data.domain.Page
@@ -41,10 +41,10 @@ class PaymentSpec extends BaseSpecification {
     MySQLConstraintResolver constraintResolver = Mock()
 
     @Subject
-    PaymentImpl paymentService = new PaymentImpl(paymentRepo, voTransformer, dtoTransformer, validator)
+    PaymentImpl paymentImpl = new PaymentImpl(paymentRepo, voTransformer, dtoTransformer, validator)
 
     void setup() {
-        ReflectionTestUtils.setField(paymentService, "constraintResolver", constraintResolver)
+        ReflectionTestUtils.setField(paymentImpl, "constraintResolver", constraintResolver)
     }
 
     def "test - addPayment: Success - Membership Fee"() {
@@ -55,17 +55,17 @@ class PaymentSpec extends BaseSpecification {
         int quarter = 1
         String feeType = ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE
         PaymentDto request = new PaymentDto(memberID: memberId, feeType: feeType, year: year, quarter: quarter)
-        PaymentVO vo = new PaymentVO(paymentID: paymentId)
+        PaymentVO vo = new PaymentVO(paymentID: paymentId, member: new MemberVO(memberID: memberId), feeType: feeType, year: year, quarter: quarter)
         ResponseEntity<GlobalResponse<Integer>> response
         JpaSpecification capturedSpec
 
         when: "The target method executed"
-        response = paymentService.addPayment(request)
+        response = paymentImpl.addPayment(request)
 
         then: "The expected calls are made"
-        1 * paymentRepo.exists(_ as JpaSpecification) >> { JpaSpecification spec -> capturedSpec = spec; false }
         1 * voTransformer.transform(request) >> vo
         1 * validator.validate(vo)
+        1 * paymentRepo.exists(_ as JpaSpecification) >> { JpaSpecification spec -> capturedSpec = spec; false }
         1 * paymentRepo.save(vo) >> vo
         0 * _
 
@@ -86,18 +86,25 @@ class PaymentSpec extends BaseSpecification {
         int quarter = 1
         String feeType = ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE
         PaymentDto request = new PaymentDto(memberID: memberId, feeType: feeType, year: year, quarter: quarter)
+        PaymentVO vo = new PaymentVO(member: new MemberVO(memberID: memberId), feeType: feeType, year: year, quarter: quarter)
         JpaSpecification capturedSpec
+        ResponseEntity<GlobalResponse<Integer>> response
 
         when: "The target method executed"
-        paymentService.addPayment(request)
+        paymentImpl.addPayment(request)
 
         then: "The expected calls are made"
+        1 * voTransformer.transform(request) >> vo
+        1 * validator.validate(vo)
         1 * paymentRepo.exists(_ as JpaSpecification) >> { JpaSpecification spec -> capturedSpec = spec; true }
         0 * _
 
-        and: "The expected result"
+        and: "VO has validation errors"
+        vo.hasErrors()
         thrown(ValidationException)
         capturedSpec != null
+
+        and: "The expected specification details"
         Map<String, List> inspection = inspectSpecification(capturedSpec)
         inspection.filters.containsAll([TableConstants.MEMBER_TABLE, FieldConstants.MEMBER_ID, FieldConstants.FEE_TYPE, FieldConstants.YEAR, FieldConstants.QUARTER])
         inspection.values.containsAll([memberId, feeType, year, quarter])
@@ -113,7 +120,7 @@ class PaymentSpec extends BaseSpecification {
         ResponseEntity<GlobalResponse<Integer>> response
 
         when: "The target method executed"
-        response = paymentService.addPayment(request)
+        response = paymentImpl.addPayment(request)
 
         then: "The expected calls are made"
         1 * voTransformer.transform(request) >> vo
@@ -132,7 +139,7 @@ class PaymentSpec extends BaseSpecification {
         PaymentDto request = new PaymentDto(feeType: "Other")
 
         when: "The target method executed"
-        paymentService.addPayment(request)
+        paymentImpl.addPayment(request)
 
         then: "The expected calls are made"
         1 * voTransformer.transform(_) >> vo
@@ -151,7 +158,7 @@ class PaymentSpec extends BaseSpecification {
         PaymentDto request = new PaymentDto(feeType: "Other")
 
         when: "The target method executed"
-        paymentService.addPayment(request)
+        paymentImpl.addPayment(request)
 
         then: "The expected calls are made"
         1 * voTransformer.transform(_) >> vo
@@ -186,7 +193,7 @@ class PaymentSpec extends BaseSpecification {
         ResponseEntity<GlobalResponse<List<LatestPaymentDto>>> response
 
         when: "The target method executed"
-        response = paymentService.getLatestPayments(5)
+        response = paymentImpl.getLatestPayments(5)
 
         then: "The expected calls are made"
         1 * paymentRepo.findAll(_ as PageRequest) >> mockPage
@@ -212,7 +219,7 @@ class PaymentSpec extends BaseSpecification {
         ResponseEntity<GlobalResponse<List<LatestPaymentDto>>> response
 
         when: "The target method executed"
-        response = paymentService.getLatestPayments(5)
+        response = paymentImpl.getLatestPayments(5)
 
         then: "The expected calls are made"
         1 * paymentRepo.findAll(_ as PageRequest) >> mockPage
@@ -231,7 +238,7 @@ class PaymentSpec extends BaseSpecification {
         ResponseEntity<GlobalResponse<Void>> response
 
         when: "The target method executed"
-        response = paymentService.updatePayment(new PaymentDto(paymentID: paymentId))
+        response = paymentImpl.updatePayment(new PaymentDto(paymentID: paymentId))
 
         then: "The expected calls are made"
         1 * paymentRepo.findById(1) >> Optional.of(vo)
@@ -252,7 +259,7 @@ class PaymentSpec extends BaseSpecification {
         PaymentVO vo = new PaymentVO(paymentID: id)
 
         when: "The target method executed"
-        paymentService.updatePayment(dto)
+        paymentImpl.updatePayment(dto)
 
         then: "The expected calls are made"
         1 * paymentRepo.findById(1) >> Optional.of(vo)
@@ -271,7 +278,7 @@ class PaymentSpec extends BaseSpecification {
         Integer paymentId = 99
 
         when: "The target method executed"
-        paymentService.updatePayment(new PaymentDto(paymentID: paymentId))
+        paymentImpl.updatePayment(new PaymentDto(paymentID: paymentId))
 
         then: "The expected calls are made"
         1 * paymentRepo.findById(99) >> Optional.empty()
@@ -288,7 +295,7 @@ class PaymentSpec extends BaseSpecification {
         ResponseEntity<GlobalResponse<Void>> response
 
         when: "The target method executed"
-        response = paymentService.deletePayment(paymentId)
+        response = paymentImpl.deletePayment(paymentId)
 
         then: "The expected calls are made"
         1 * paymentRepo.findById(1) >> Optional.of(vo)
@@ -306,7 +313,7 @@ class PaymentSpec extends BaseSpecification {
         PaymentVO vo = new PaymentVO(paymentID: id)
 
         when: "The target method executed"
-        paymentService.deletePayment(id)
+        paymentImpl.deletePayment(id)
 
         then: "The expected calls are made"
         1 * paymentRepo.findById(1) >> Optional.of(vo)
@@ -323,7 +330,7 @@ class PaymentSpec extends BaseSpecification {
         Integer paymentId = 99
 
         when: "The target method executed"
-        paymentService.deletePayment(paymentId)
+        paymentImpl.deletePayment(paymentId)
 
         then: "The expected calls are made"
         1 * paymentRepo.findById(99) >> Optional.empty()
@@ -341,7 +348,7 @@ class PaymentSpec extends BaseSpecification {
         ResponseEntity<GlobalResponse<PaymentDto>> response
 
         when: "The target method executed"
-        response = paymentService.getPayment(paymentId)
+        response = paymentImpl.getPayment(paymentId)
 
         then: "The expected calls are made"
         1 * paymentRepo.findById(1) >> Optional.of(vo)
@@ -358,7 +365,7 @@ class PaymentSpec extends BaseSpecification {
         Integer paymentId = 99
 
         when: "The target method executed"
-        paymentService.getPayment(paymentId)
+        paymentImpl.getPayment(paymentId)
 
         then: "The expected calls are made"
         1 * paymentRepo.findById(99) >> Optional.empty()
@@ -383,7 +390,7 @@ class PaymentSpec extends BaseSpecification {
         request.setSortOrder("DESC")
 
         when: "The target method executed"
-        paymentService.searchPayments(request)
+        paymentImpl.searchPayments(request)
 
         then: "The expected calls are made"
         1 * paymentRepo.findAll(_ as JpaSpecification, _ as PageRequest) >> { JpaSpecification spec, PageRequest page -> capturedSpec = spec; mockPage }
@@ -426,7 +433,7 @@ class PaymentSpec extends BaseSpecification {
         JpaSpecification capturedSpec = null
 
         when: "The target method executed"
-        List<PaymentVO> result = paymentService.findPaymentsForMemberQuarter(memberID, year, quarter, feeType)
+        List<PaymentVO> result = paymentImpl.findPaymentsForMemberQuarter(memberID, year, quarter, feeType)
 
         then: "The expected calls are made"
         1 * paymentRepo.findAll(_ as JpaSpecification) >> { JpaSpecification spec -> capturedSpec = spec; [vo] }
@@ -446,7 +453,7 @@ class PaymentSpec extends BaseSpecification {
         BigDecimal expectedSum = new BigDecimal("100.00")
 
         when: "The target method executed"
-        BigDecimal result = paymentService.sumAmountByDateReceivedBefore(date)
+        BigDecimal result = paymentImpl.sumAmountByDateReceivedBefore(date)
 
         then: "The expected calls are made"
         1 * paymentRepo.sumAmountByDateReceivedBefore(date) >> expectedSum
@@ -465,7 +472,7 @@ class PaymentSpec extends BaseSpecification {
         List<PaymentSummary> summaries = []
 
         when: "The target method executed"
-        List<PaymentSummary> result = paymentService.findPaymentSummaries(feeType, year)
+        List<PaymentSummary> result = paymentImpl.findPaymentSummaries(feeType, year)
 
         then: "The expected calls are made"
         1 * paymentRepo.findPaymentSummaries(feeType, year) >> summaries
@@ -483,7 +490,7 @@ class PaymentSpec extends BaseSpecification {
         BigDecimal expectedSum = new BigDecimal("150.00")
 
         when: "The target method executed"
-        BigDecimal result = paymentService.sumAmountByDateReceivedBetween(start, end)
+        BigDecimal result = paymentImpl.sumAmountByDateReceivedBetween(start, end)
 
         then: "The expected calls are made"
         1 * paymentRepo.sumAmountByDateReceivedBetween(start, end) >> expectedSum
@@ -502,7 +509,7 @@ class PaymentSpec extends BaseSpecification {
         BigDecimal expectedSum = new BigDecimal("200.00")
 
         when: "The target method executed"
-        BigDecimal result = paymentService.sumAmountByYearAndQuarter(year, quarter)
+        BigDecimal result = paymentImpl.sumAmountByYearAndQuarter(year, quarter)
 
         then: "The expected calls are made"
         1 * paymentRepo.sumAmountByYearAndQuarter(year, quarter) >> expectedSum
@@ -519,7 +526,7 @@ class PaymentSpec extends BaseSpecification {
         BigDecimal expectedSum = new BigDecimal("300.00")
 
         when: "The target method executed"
-        BigDecimal result = paymentService.sumAmountByMemberID(memberID)
+        BigDecimal result = paymentImpl.sumAmountByMemberID(memberID)
 
         then: "The expected calls are made"
         1 * paymentRepo.sumAmountByMemberID(memberID) >> expectedSum
@@ -539,7 +546,7 @@ class PaymentSpec extends BaseSpecification {
         BigDecimal expectedSum = new BigDecimal("400.00")
 
         when: "The target method executed"
-        BigDecimal result = paymentService.sumAmountByMemberIDAndYearAndQuarter(memberID, year, quarter)
+        BigDecimal result = paymentImpl.sumAmountByMemberIDAndYearAndQuarter(memberID, year, quarter)
 
         then: "The expected calls are made"
         1 * paymentRepo.sumAmountByMemberIDAndYearAndQuarter(memberID, year, quarter) >> expectedSum
@@ -557,7 +564,7 @@ class PaymentSpec extends BaseSpecification {
         String feeType = "FEE"
 
         when: "The target method executed"
-        List<PaymentSummary> result = paymentService.findMemberPaymentSummaries(memberID, feeType)
+        List<PaymentSummary> result = paymentImpl.findMemberPaymentSummaries(memberID, feeType)
 
         then: "The expected calls are made"
         1 * paymentRepo.findMemberPaymentSummaries(memberID, feeType) >> expectedList
@@ -582,7 +589,7 @@ class PaymentSpec extends BaseSpecification {
         JpaSpecification capturedSpec = null
 
         when: "The target method executed"
-        List<PaymentVO> result = paymentService.findPaymentsByCriteria(spec)
+        List<PaymentVO> result = paymentImpl.findPaymentsByCriteria(spec)
 
         then: "The expected calls are made"
         1 * paymentRepo.findAll(_ as JpaSpecification) >> { JpaSpecification s ->

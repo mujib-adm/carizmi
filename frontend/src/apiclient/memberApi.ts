@@ -1,6 +1,13 @@
-import { ApiEndpoints } from "../constants/endpoints";
-import { GlobalResponse, Member, MemberLookupResponse, MemberRequestDto, MemberSearchRequest, MemberSummary } from "../constants/types";
-import apiClient from "./ApiClient";
+import { ApiEndpoints } from '../constants/endpoints';
+import {
+  GlobalResponse,
+  Member,
+  MemberLookupResponse,
+  MemberRequestDto,
+  MemberSearchRequest,
+  MemberSummary,
+} from '../constants/types';
+import apiClient from './ApiClient';
 
 export const addMember = async (data: MemberRequestDto) => {
   const res = await apiClient.post<GlobalResponse<number>>(ApiEndpoints.MEMBERS.ADD, data);

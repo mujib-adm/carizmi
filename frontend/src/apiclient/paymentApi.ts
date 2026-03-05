@@ -1,6 +1,11 @@
-import { ApiEndpoints } from "../constants/endpoints";
-import { GlobalResponse, Payment, PaymentRequestDto, PaymentSearchRequest } from "../constants/types";
-import apiClient from "./ApiClient";
+import { ApiEndpoints } from '../constants/endpoints';
+import {
+  GlobalResponse,
+  Payment,
+  PaymentRequestDto,
+  PaymentSearchRequest,
+} from '../constants/types';
+import apiClient from './ApiClient';
 
 export const addPayment = async (data: PaymentRequestDto) => {
   const res = await apiClient.post<GlobalResponse<number>>(ApiEndpoints.PAYMENTS.ADD, data);

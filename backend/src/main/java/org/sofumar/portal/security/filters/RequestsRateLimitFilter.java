@@ -1,5 +1,7 @@
 package org.sofumar.portal.security.filters;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import jakarta.servlet.FilterChain;
@@ -14,17 +16,26 @@ import org.springframework.lang.NonNull;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Rate limiting filter using Bucket4j.
  * Limits requests based on IP address.
+ * Uses Caffeine cache to bound memory and auto-evict stale entries.
+ *
+ * <p><b>Note:</b> Rate-limit state is held in-memory and lost on restart.
+ * This is acceptable for single-instance deployments (e.g., Oracle Cloud "Always Free").
+ * For multi-instance deployments, consider Redis-backed rate limiting.</p>
  */
 @Component
 public class RequestsRateLimitFilter extends OncePerRequestFilter {
 
-    private final Map<String, Bucket> cache = new ConcurrentHashMap<>();
+    private static final int MAX_CACHE_SIZE = 10_000;
+    private static final Duration CACHE_EXPIRY = Duration.ofMinutes(10);
+
+    private final Cache<String, Bucket> cache = Caffeine.newBuilder()
+            .maximumSize(MAX_CACHE_SIZE)
+            .expireAfterAccess(CACHE_EXPIRY)
+            .build();
 
     @Value("${app.rate-limit.enabled:true}")
     private boolean enabled;
@@ -67,7 +78,7 @@ public class RequestsRateLimitFilter extends OncePerRequestFilter {
     }
 
     private Bucket resolveBucket(String ip) {
-        return cache.computeIfAbsent(ip, this::newBucket);
+        return cache.get(ip, this::newBucket);
     }
 
     private Bucket newBucket(String apiKey) {

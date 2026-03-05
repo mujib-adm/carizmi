@@ -1,0 +1,31 @@
+server:
+  servlet:
+    context-path: ""
+
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  flyway:
+    enabled: false
+
+jwt:
+  secret: YXNkZmFzZGZhc2RmYXNkZmFzZGZhc2RmYXNkZmFzZGZhc2RmYXNkZmFzZGZhc2RmYXNkZmFzZGZhc2RmYXNkZmFzZGZhc2RmYXNkZmFzZGY=
+
+admin:
+  default:
+    firstname: Integration
+    lastname: Test
+    email: test@test.com
+    username: test
+    password: Test123!
+
+testcontainers:
+  mysql:
+    image: mysql:8.0
+    db-name: sofumar
+    username: test
+    password: test
+  redis:
+    image: redis:7.4-alpine
+    port: 6379

@@ -9,6 +9,7 @@ import org.sofumar.portal.framework.service.RefreshTokenService;
 import org.sofumar.portal.framework.util.ResponseUtils;
 import org.sofumar.portal.security.JwtService;
 import org.sofumar.portal.security.SofumarUserDetails;
+import org.sofumar.portal.security.CookieService;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -25,6 +26,7 @@ public class RestAuthenticationSuccessHandler implements AuthenticationSuccessHa
     private final ObjectMapper objectMapper;
     private final User user;
     private final JwtService jwtService;
+    private final CookieService cookieService;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException {
@@ -36,12 +38,15 @@ public class RestAuthenticationSuccessHandler implements AuthenticationSuccessHa
         String accessToken = jwtService.generateAccessToken(userDetails);
         String refreshToken = refreshTokenService.createRefreshToken(userDetails.getUsername());
 
+        // Set tokens as httpOnly cookies
+        cookieService.addAccessTokenCookie(response, accessToken);
+        cookieService.addRefreshTokenCookie(response, refreshToken);
+
         response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
+        // Only return non-sensitive metadata in the JSON body (tokens are in cookies)
         Map<String, String> data = Map.of(
-                "token", accessToken,
-                "refreshToken", refreshToken,
                 "role", userDetails.getUserVO().getRole().name(),
                 "firstName", userDetails.getUserVO().getFirstName()
         );

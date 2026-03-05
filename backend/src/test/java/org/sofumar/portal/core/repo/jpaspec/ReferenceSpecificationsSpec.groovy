@@ -2,7 +2,7 @@ package org.sofumar.portal.core.repo.jpaspec
 
 import org.sofumar.portal.constants.FieldConstants
 import org.sofumar.portal.core.vo.ReferenceVO
-import org.sofumar.portal.testsupport.BaseSpecification
+import org.sofumar.portal.testbase.BaseSpecification
 import org.springframework.data.jpa.domain.Specification as JpaSpecification
 import spock.lang.Unroll
 

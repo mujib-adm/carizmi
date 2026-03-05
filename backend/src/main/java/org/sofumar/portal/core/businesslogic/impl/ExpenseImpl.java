@@ -28,9 +28,9 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import static org.sofumar.portal.constants.MessagesConstants.RECORD_ADDED;
-import static org.sofumar.portal.constants.MessagesConstants.RECORD_DELETED;
-import static org.sofumar.portal.constants.MessagesConstants.RECORD_UPDATED;
+import static org.sofumar.portal.message.ValidationMessages.RECORD_ADDED;
+import static org.sofumar.portal.message.ValidationMessages.RECORD_DELETED;
+import static org.sofumar.portal.message.ValidationMessages.RECORD_UPDATED;
 
 @Service
 public non-sealed class ExpenseImpl extends ExpenseAbstractBL implements Expense {
@@ -56,10 +56,18 @@ public non-sealed class ExpenseImpl extends ExpenseAbstractBL implements Expense
     }
 
     @Override
+    protected void performDomainValidation(ExpenseVO vo, boolean isUpdate) {
+        if (isUpdate) {
+            validator.validateForUpdate(vo);
+        } else {
+            validator.validate(vo);
+        }
+    }
+
+    @Override
     @Transactional
     public ResponseEntity<GlobalResponse<Integer>> addExpense(ExpenseDto requestDto) {
         ExpenseVO vo = voTransformer.transform(requestDto);
-        validator.validate(vo);
         ExpenseVO savedExpense = add(vo);
         return ResponseUtils.okWithData(savedExpense.getExpenseID(),
                 RECORD_ADDED.addMessageArgs("Expense").getMessageString());
@@ -74,7 +82,6 @@ public non-sealed class ExpenseImpl extends ExpenseAbstractBL implements Expense
                 .orElseThrow(() -> new RecordNotFoundException("Expense not found: " + requestDto.getExpenseID()));
 
         ExpenseVO updated = voTransformer.transformForUpdate(requestDto, existing);
-        validator.validateForUpdate(updated);
         update(updated);
         return ResponseUtils.ok(RECORD_UPDATED.addMessageArgs("Expense").getMessageString());
     }
@@ -89,6 +96,7 @@ public non-sealed class ExpenseImpl extends ExpenseAbstractBL implements Expense
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ResponseEntity<GlobalResponse<ExpenseDto>> getExpense(@NonNull Integer expenseID) {
         ExpenseVO existing = getRepo().findById(expenseID)
                 .orElseThrow(() -> new RecordNotFoundException("Expense not found: " + expenseID));
@@ -114,11 +122,13 @@ public non-sealed class ExpenseImpl extends ExpenseAbstractBL implements Expense
     }
 
     @Override
+    @Transactional(readOnly = true)
     public BigDecimal sumAmountByDateOfExpenseBetween(LocalDate start, LocalDate end) {
         return getRepo().sumAmountByDateOfExpenseBetween(start, end);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public BigDecimal sumAmountByDateOfExpenseBefore(LocalDate date) {
         return getRepo().sumAmountByDateOfExpenseBefore(date);
     }

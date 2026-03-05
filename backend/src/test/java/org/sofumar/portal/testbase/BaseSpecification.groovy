@@ -1,4 +1,4 @@
-package org.sofumar.portal.testsupport
+package org.sofumar.portal.testbase
 
 import jakarta.persistence.criteria.CriteriaBuilder
 import jakarta.persistence.criteria.CriteriaQuery

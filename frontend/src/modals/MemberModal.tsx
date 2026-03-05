@@ -1,12 +1,12 @@
-import { Col, Form, Modal, Row } from "antd";
-import dayjs from "dayjs";
-import { useEffect } from "react";
-import { ReferenceConstants } from "../constants/ReferenceConstants";
-import { Member, MemberRequestDto } from "../constants/types";
-import { useApiMessages } from "../hook/ApiResponseHandler";
-import "../themes/css/member.css";
-import { AntdFormItem } from "../component/AntdFormItem";
-import { MessageBanner } from "../component/MessageBanner";
+import { Col, Form, Modal, Row } from 'antd';
+import dayjs from 'dayjs';
+import { useEffect } from 'react';
+import { ReferenceConstants } from '../constants/ReferenceConstants';
+import { Member, MemberRequestDto } from '../constants/types';
+import { useApiMessages } from '../hook/ApiResponseHandler';
+import '../themes/css/member.css';
+import { AntdFormItem } from '../component/AntdFormItem';
+import { MessageBanner } from '../component/MessageBanner';
 
 type Props = {
   open: boolean;
@@ -18,7 +18,7 @@ type Props = {
 
 export function MemberModal({ open, onCancel, onSubmit, initial, statusOptions }: Props) {
   const [form] = Form.useForm();
-  
+
   const { globalMessages, handleError, resetMessages } = useApiMessages<MemberRequestDto>(
     undefined,
     (field, msg) => {
@@ -39,7 +39,7 @@ export function MemberModal({ open, onCancel, onSubmit, initial, statusOptions }
         form.setFieldsValue({
           status: ReferenceConstants.MEMBER_STATUS.ACTIVE,
           joinDate: dayjs(),
-          state: "MN",
+          state: 'MN',
         });
       }
     }
@@ -49,12 +49,12 @@ export function MemberModal({ open, onCancel, onSubmit, initial, statusOptions }
     try {
       resetMessages();
       const values = await form.validateFields();
-      
+
       const payload: MemberRequestDto = {
         ...values,
-        joinDate: values.joinDate ? values.joinDate.format("YYYY-MM-DD") : null,
+        joinDate: values.joinDate ? values.joinDate.format('YYYY-MM-DD') : null,
       };
-      
+
       await onSubmit(payload);
       onCancel();
     } catch (e: any) {
@@ -66,7 +66,7 @@ export function MemberModal({ open, onCancel, onSubmit, initial, statusOptions }
     }
   };
 
-  const title = initial?.memberID ? "Edit Member" : "Add Member";
+  const title = initial?.memberID ? 'Edit Member' : 'Add Member';
 
   return (
     <Modal
@@ -83,16 +83,32 @@ export function MemberModal({ open, onCancel, onSubmit, initial, statusOptions }
       <Form form={form} layout="vertical" className="member-form" requiredMark={false}>
         <Row gutter={12}>
           <Col span={12}>
-            <AntdFormItem name="firstName" label="First Name" rules={[{ required: true, message: "First Name is required" }]} placeholder="First Name" />
+            <AntdFormItem
+              name="firstName"
+              label="First Name"
+              rules={[{ required: true, message: 'First Name is required' }]}
+              placeholder="First Name"
+            />
           </Col>
           <Col span={12}>
-            <AntdFormItem name="lastName" label="Last Name" rules={[{ required: true, message: "Last Name is required" }]} placeholder="Last Name" />
+            <AntdFormItem
+              name="lastName"
+              label="Last Name"
+              rules={[{ required: true, message: 'Last Name is required' }]}
+              placeholder="Last Name"
+            />
           </Col>
         </Row>
 
         <Row gutter={12}>
           <Col span={12}>
-            <AntdFormItem name="phone" label="Phone" type="tel" rules={[{ required: true, message: "Phone is required" }]} placeholder="Phone" />
+            <AntdFormItem
+              name="phone"
+              label="Phone"
+              type="tel"
+              rules={[{ required: true, message: 'Phone is required' }]}
+              placeholder="Phone"
+            />
           </Col>
           <Col span={12}>
             <AntdFormItem name="email" label="Email" type="email" placeholder="Email" />
@@ -101,10 +117,23 @@ export function MemberModal({ open, onCancel, onSubmit, initial, statusOptions }
 
         <Row gutter={12}>
           <Col span={12}>
-            <AntdFormItem name="status" label="Status" type="select" options={statusOptions} rules={[{ required: true, message: "Status is required" }]} placeholder="Pick status" />
+            <AntdFormItem
+              name="status"
+              label="Status"
+              type="select"
+              options={statusOptions}
+              rules={[{ required: true, message: 'Status is required' }]}
+              placeholder="Pick status"
+            />
           </Col>
           <Col span={12}>
-            <AntdFormItem name="joinDate" label="Join Date" type="date" rules={[{ required: true, message: "Join Date is required" }]} placeholder="mm/dd/yyyy" />
+            <AntdFormItem
+              name="joinDate"
+              label="Join Date"
+              type="date"
+              rules={[{ required: true, message: 'Join Date is required' }]}
+              placeholder="mm/dd/yyyy"
+            />
           </Col>
         </Row>
 
@@ -116,7 +145,12 @@ export function MemberModal({ open, onCancel, onSubmit, initial, statusOptions }
             <AntdFormItem name="city" label="City" placeholder="City" />
           </Col>
           <Col span={5}>
-            <AntdFormItem name="state" label="State" rules={[{ required: true, message: "State is required" }]} placeholder="MN" />
+            <AntdFormItem
+              name="state"
+              label="State"
+              rules={[{ required: true, message: 'State is required' }]}
+              placeholder="MN"
+            />
           </Col>
           <Col span={5}>
             <AntdFormItem name="zip" label="ZIP" placeholder="ZIP" />

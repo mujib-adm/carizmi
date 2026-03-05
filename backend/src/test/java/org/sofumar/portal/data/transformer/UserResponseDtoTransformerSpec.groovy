@@ -3,7 +3,7 @@ package org.sofumar.portal.data.transformer
 import org.sofumar.portal.constants.Role
 import org.sofumar.portal.core.vo.UserVO
 import org.sofumar.portal.data.dto.response.UserResponseDto
-import org.sofumar.portal.testsupport.BaseSpecification
+import org.sofumar.portal.testbase.BaseSpecification
 
 class UserResponseDtoTransformerSpec extends BaseSpecification {
 

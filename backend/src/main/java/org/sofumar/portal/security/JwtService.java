@@ -36,12 +36,13 @@ public class JwtService {
                 .collect(Collectors.toList());
 
         return Jwts.builder()
+                .setId(java.util.UUID.randomUUID().toString())
                 .setSubject(userDetails.getUsername())
                 .claim("roles", roles)
                 .setIssuer(issuer)
                 .setIssuedAt(Date.from(Instant.now()))
                 .setExpiration(Date.from(Instant.now().plus(expMin, ChronoUnit.MINUTES)))
-                .signWith(Keys.hmacShaKeyFor(Base64.getDecoder().decode(secret)), SignatureAlgorithm.HS256)
+                .signWith(Keys.hmacShaKeyFor(Base64.getDecoder().decode(secret)), SignatureAlgorithm.HS512)
                 .compact();
     }
 

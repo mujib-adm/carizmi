@@ -6,12 +6,12 @@ import { addPayment, deletePayment, getPayment, updatePayment } from '../../apic
 import { MessageBanner } from '../../component/MessageBanner';
 import PaymentModal from '../../modals/PaymentModal.tsx';
 import SearchFilterBar from '../../component/SearchFilterBar.jsx';
-import Sidebar from "../../component/Sidebar";
+import Sidebar from '../../component/Sidebar';
 import { paymentSearchFiltersConfig } from '../../constants/paymentSearchFiltersConfig.ts';
-import { ReferenceConstants } from "../../constants/ReferenceConstants";
+import { ReferenceConstants } from '../../constants/ReferenceConstants';
 import { MessageType, Payment, PaymentSearchRequest } from '../../constants/types';
-import { useNotification } from "../../context/NotificationContext";
-import { useReference } from "../../context/ReferenceContext";
+import { useNotification } from '../../context/NotificationContext';
+import { useReference } from '../../context/ReferenceContext';
 import { useApiMessages } from '../../hook/ApiResponseHandler';
 import { usePaginatedPayments } from '../../hook/PaginatedPayments';
 import { useAuthorization } from '../../hook/useAuthorization';
@@ -19,185 +19,229 @@ import { useAuthorization } from '../../hook/useAuthorization';
 const { Title } = Typography;
 
 export default function PaymentPage() {
+  const notify = useNotification();
+  const { payments, meta, loading, fetchPayments, setPayments } = usePaginatedPayments();
+  const { globalMessages, handleError, resetMessages } = useApiMessages<any>();
 
-    const notify = useNotification();
-    const { payments, meta, loading, fetchPayments, setPayments } = usePaginatedPayments();
-    const { globalMessages, handleError, resetMessages } = useApiMessages<any>();
+  // search filters
+  const [filters, setFilters] = useState<PaymentSearchRequest>({});
 
-    // search filters
-    const [filters, setFilters] = useState<PaymentSearchRequest>({});
+  // Modal State
+  const [modalOpenInd, setModalOpenInd] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState<any>(null);
 
-    // Modal State
-    const [modalOpenInd, setModalOpenInd] = useState(false);
-    const [selectedRecord, setSelectedRecord] = useState<any>(null);
+  const { canWrite } = useAuthorization();
 
-    const { canWrite } = useAuthorization();
+  // Ref Data
+  const { getReference, toDisplay } = useReference();
+  const feeTypes = getReference(ReferenceConstants.FEE_TYPE.NAME).map((r) => ({
+    value: r.code,
+    label: r.display,
+  }));
+  const paymentMethods = getReference(ReferenceConstants.PAYMENT_METHOD.NAME).map((r) => ({
+    value: r.code,
+    label: r.display,
+  }));
 
-    // Ref Data
-    const { getReference, toDisplay } = useReference();
-    const feeTypes = getReference(ReferenceConstants.FEE_TYPE.NAME).map(r => ({ value: r.code, label: r.display }));
-    const paymentMethods = getReference(ReferenceConstants.PAYMENT_METHOD.NAME).map(r => ({ value: r.code, label: r.display }));
+  const handleSearch = async () => {
+    resetMessages();
+    try {
+      await fetchPayments({ ...filters, page: 0, size: meta?.pageSize ?? 10 });
+    } catch (e: any) {
+      handleError(e);
+    }
+  };
 
-    const handleSearch = async () => {
-        resetMessages();
+  const openAdd = () => {
+    setSelectedRecord(null);
+    setModalOpenInd(true);
+  };
+
+  const openEdit = (record: Payment) => {
+    setSelectedRecord(record);
+    setModalOpenInd(true);
+  };
+
+  const handleDelete = async (record: Payment) => {
+    const feeTypeDisplay =
+      toDisplay(ReferenceConstants.FEE_TYPE.NAME, record.feeType) || record.feeType;
+    Modal.confirm({
+      title: 'Are you sure you want to delete payment record?',
+      content: (
+        <div
+          style={{
+            color: 'red',
+            display: 'grid',
+            gridTemplateColumns: 'min-content auto',
+            columnGap: '12px',
+            rowGap: '6px',
+            lineHeight: '1.6',
+          }}
+        >
+          <div style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Member:</div>
+          <div>{record.memberFullName}</div>
+          <div style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Fee Type:</div>
+          <div>{feeTypeDisplay}</div>
+          <div style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Amount:</div>
+          <div>${record.amount.toFixed(2)}</div>
+        </div>
+      ),
+      okText: 'Delete',
+      okType: 'danger',
+      onOk: async () => {
         try {
-            await fetchPayments({ ...filters, page: 0, size: meta?.pageSize ?? 10 });
+          resetMessages();
+          const resp = await deletePayment(record.paymentID);
+
+          if (resp.globalMessages?.[0]?.type === MessageType.SUCCESS) {
+            notify.success({ message: 'Deleted', description: 'Payment deleted successfully.' });
+          }
+          fetchPayments(filters); // Refresh
         } catch (e: any) {
-            handleError(e);
+          handleError(e);
         }
-    };
+      },
+    });
+  };
 
-    const openAdd = () => {
-        setSelectedRecord(null);
-        setModalOpenInd(true);
-    };
+  const handleSubmit = async (values: any) => {
+    const isAdd = !selectedRecord?.paymentID;
+    const resp = isAdd ? await addPayment(values) : await updatePayment(values);
 
-    const openEdit = (record: Payment) => {
-        setSelectedRecord(record);
-        setModalOpenInd(true);
-    };
+    if (resp.globalMessages?.[0]?.type === MessageType.SUCCESS) {
+      notify.success({ message: 'Success', description: resp.globalMessages[0].message });
 
-    const handleDelete = async (record: Payment) => {
-        const feeTypeDisplay = toDisplay(ReferenceConstants.FEE_TYPE.NAME, record.feeType) || record.feeType;
-        Modal.confirm({
-            title: 'Are you sure you want to delete payment record?',
-            content: (
-                <div style={{ color: "red", display: 'grid', gridTemplateColumns: 'min-content auto', columnGap: '12px', rowGap: '6px', lineHeight: '1.6' }} >
-                    <div style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Member:</div> <div>{record.memberFullName}</div>
-                    <div style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Fee Type:</div> <div>{feeTypeDisplay}</div>
-                    <div style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Amount:</div> <div>${record.amount.toFixed(2)}</div>
-                </div>
-            ),
-            okText: 'Delete',
-            okType: 'danger',
-            onOk: async () => {
-                try {
-                    resetMessages();
-                    const resp = await deletePayment(record.paymentID);
-
-                    if (resp.globalMessages?.[0]?.type === MessageType.SUCCESS) {
-                        notify.success({ message: "Deleted", description: "Payment deleted successfully." });
-                    }
-                    fetchPayments(filters); // Refresh
-                } catch (e: any) {
-                    handleError(e);
-                }
-            }
-        });
-    };
-
-    const handleSubmit = async (values: any) => {
-        const isAdd = !selectedRecord?.paymentID;
-        const resp = isAdd ? await addPayment(values) : await updatePayment(values);
-
-        if (resp.globalMessages?.[0]?.type === MessageType.SUCCESS) {
-            notify.success({ message: "Success", description: resp.globalMessages[0].message });
-
-            if (isAdd && resp.responseData) {
-                // Fetch the newly created payment details
-                const fullPaymentResp = await getPayment(resp.responseData);
-                if (fullPaymentResp.responseData) {
-                    // Prepend to the list
-                    setPayments(prev => [fullPaymentResp.responseData!, ...prev]);
-                }
-            } else if (!isAdd) {
-                // For updates, we still refresh the list to ensure sorting/filtering logic
-                fetchPayments(filters);
-            }
+      if (isAdd && resp.responseData) {
+        // Fetch the newly created payment details
+        const fullPaymentResp = await getPayment(resp.responseData);
+        if (fullPaymentResp.responseData) {
+          // Prepend to the list
+          setPayments((prev) => [fullPaymentResp.responseData!, ...prev]);
         }
-        setModalOpenInd(false);
-        setSelectedRecord(null);
-        resetMessages();
-    };
+      } else if (!isAdd) {
+        // For updates, we still refresh the list to ensure sorting/filtering logic
+        fetchPayments(filters);
+      }
+    }
+    setModalOpenInd(false);
+    setSelectedRecord(null);
+    resetMessages();
+  };
 
-    const columns: ColumnsType<Payment> = [
-        { title: 'Member', dataIndex: 'memberFullName', key: 'memberFullName' },
-        {
-            title: 'Fee Type',
-            dataIndex: 'feeType',
-            key: 'feeType',
-            render: (code: string) => toDisplay(ReferenceConstants.FEE_TYPE.NAME, code)
-        },
-        { title: 'Amount', dataIndex: 'amount', key: 'amount', render: (val: number) => `$${val?.toFixed(2) ?? '0.00'}` },
-        { title: 'Date', dataIndex: 'dateReceived', key: 'dateReceived' },
-        { title: 'Method', dataIndex: 'methodOfPayment', key: 'methodOfPayment', render: (code: string) => toDisplay(ReferenceConstants.PAYMENT_METHOD.NAME, code) },
-        { title: 'Period', key: 'period', render: (_, record) => record.year && record.quarter ? `${record.year}-Q${record.quarter}` : '' },
-        ...(canWrite ? [{
+  const columns: ColumnsType<Payment> = [
+    { title: 'Member', dataIndex: 'memberFullName', key: 'memberFullName' },
+    {
+      title: 'Fee Type',
+      dataIndex: 'feeType',
+      key: 'feeType',
+      render: (code: string) => toDisplay(ReferenceConstants.FEE_TYPE.NAME, code),
+    },
+    {
+      title: 'Amount',
+      dataIndex: 'amount',
+      key: 'amount',
+      render: (val: number) => `$${val?.toFixed(2) ?? '0.00'}`,
+    },
+    { title: 'Date', dataIndex: 'dateReceived', key: 'dateReceived' },
+    {
+      title: 'Method',
+      dataIndex: 'methodOfPayment',
+      key: 'methodOfPayment',
+      render: (code: string) => toDisplay(ReferenceConstants.PAYMENT_METHOD.NAME, code),
+    },
+    {
+      title: 'Period',
+      key: 'period',
+      render: (_, record) =>
+        record.year && record.quarter ? `${record.year}-Q${record.quarter}` : '',
+    },
+    ...(canWrite
+      ? [
+          {
             title: 'Action',
             key: 'action',
             render: (_: any, record: Payment) => (
-                <Space>
-                    <Button icon={<EditOutlined />} onClick={() => openEdit(record)} />
-                    <Button icon={<DeleteOutlined />} danger onClick={() => handleDelete(record)} />
-                </Space>
+              <Space>
+                <Button icon={<EditOutlined />} onClick={() => openEdit(record)} />
+                <Button icon={<DeleteOutlined />} danger onClick={() => handleDelete(record)} />
+              </Space>
             ),
-        }] : []),
-    ];
+          },
+        ]
+      : []),
+  ];
 
-    // Dynamic search config for fee types (Reference data)
-    const searchConfig = useMemo(() => {
-        return paymentSearchFiltersConfig.map(filter => {
-            if (filter.name === 'feeType') {
-                return { ...filter, options: feeTypes };
-            }
-            return filter;
-        });
-    }, [feeTypes]);
+  // Dynamic search config for fee types (Reference data)
+  const searchConfig = useMemo(() => {
+    return paymentSearchFiltersConfig.map((filter) => {
+      if (filter.name === 'feeType') {
+        return { ...filter, options: feeTypes };
+      }
+      return filter;
+    });
+  }, [feeTypes]);
 
-    return (
-        <div className="dashboard-layout">
-            <Sidebar />
-            <main className="content fade-in">
-                <div style={{ padding: 24 }}>
-                    <div className="page-header">
-                        <Title level={2} className="page-title">
-                            <DollarOutlined /> Payments
-                        </Title>
-                    </div>
+  return (
+    <div className="dashboard-layout">
+      <Sidebar />
+      <main className="content fade-in">
+        <div style={{ padding: 24 }}>
+          <div className="page-header">
+            <Title level={2} className="page-title">
+              <DollarOutlined /> Payments
+            </Title>
+          </div>
 
-                    <SearchFilterBar config={searchConfig as any} filters={filters} onChange={setFilters} onSearch={handleSearch} onAdd={canWrite ? openAdd : undefined} />
+          <SearchFilterBar
+            config={searchConfig as any}
+            filters={filters}
+            onChange={setFilters}
+            onSearch={handleSearch}
+            onAdd={canWrite ? openAdd : undefined}
+          />
 
-                    {globalMessages && <MessageBanner messages={globalMessages} />}
+          {globalMessages && <MessageBanner messages={globalMessages} />}
 
-                    <Card className="glass-card" style={{ padding: 0 }}>
-                        <Table<Payment>
-                            size="small"
-                            rowKey="paymentID"
-                            dataSource={payments}
-                            columns={columns}
-                            loading={loading}
-                            pagination={{
-                                current: meta ? meta.page + 1 : 1,
-                                pageSize: meta?.pageSize ?? 10,
-                                total: meta?.totalRecords ?? 0,
-                                showSizeChanger: true,
-                            }}
-                            onChange={(pagination, _filters, sorter) => {
-                                const sortField = Array.isArray(sorter) ? sorter[0].field : sorter.field;
-                                const sortOrder = Array.isArray(sorter) ? sorter[0].order : sorter.order;
+          <Card className="glass-card" style={{ padding: 0 }}>
+            <Table<Payment>
+              size="small"
+              rowKey="paymentID"
+              dataSource={payments}
+              columns={columns}
+              loading={loading}
+              pagination={{
+                current: meta ? meta.page + 1 : 1,
+                pageSize: meta?.pageSize ?? 10,
+                total: meta?.totalRecords ?? 0,
+                showSizeChanger: true,
+              }}
+              onChange={(pagination, _filters, sorter) => {
+                const sortField = Array.isArray(sorter) ? sorter[0].field : sorter.field;
+                const sortOrder = Array.isArray(sorter) ? sorter[0].order : sorter.order;
 
-                                resetMessages();
-                                fetchPayments({
-                                    ...filters, // use the state-level search filters
-                                    page: (pagination.current ?? 1) - 1,
-                                    size: pagination.pageSize ?? 10,
-                                    sortField: sortField as string,
-                                    sortOrder: sortOrder === "ascend" ? "asc" : sortOrder === "descend" ? "desc" : undefined,
-                                }).catch(handleError);
-                            }}
-                        />
-                    </Card>
+                resetMessages();
+                fetchPayments({
+                  ...filters, // use the state-level search filters
+                  page: (pagination.current ?? 1) - 1,
+                  size: pagination.pageSize ?? 10,
+                  sortField: sortField as string,
+                  sortOrder:
+                    sortOrder === 'ascend' ? 'asc' : sortOrder === 'descend' ? 'desc' : undefined,
+                }).catch(handleError);
+              }}
+            />
+          </Card>
 
-                    <PaymentModal
-                        open={modalOpenInd}
-                        onCancel={() => setModalOpenInd(false)}
-                        onSubmit={handleSubmit}
-                        initialValues={selectedRecord}
-                        feeTypes={feeTypes}
-                        paymentMethods={paymentMethods}
-                    />
-                </div>
-            </main>
+          <PaymentModal
+            open={modalOpenInd}
+            onCancel={() => setModalOpenInd(false)}
+            onSubmit={handleSubmit}
+            initialValues={selectedRecord}
+            feeTypes={feeTypes}
+            paymentMethods={paymentMethods}
+          />
         </div>
-    );
-};
+      </main>
+    </div>
+  );
+}

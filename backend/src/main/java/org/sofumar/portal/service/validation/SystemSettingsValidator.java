@@ -1,53 +1,35 @@
 package org.sofumar.portal.service.validation;
 
-import org.apache.commons.lang3.StringUtils;
 import org.sofumar.portal.constants.FieldConstants;
 import org.sofumar.portal.core.vo.SystemSettingsVO;
-import org.sofumar.portal.framework.exception.ValidationException;
-import org.sofumar.portal.framework.util.LabelUtils;
+import org.sofumar.portal.framework.bl.AbstractDomainValidator;
 import org.springframework.stereotype.Service;
 
-import static org.sofumar.portal.constants.MessagesConstants.REQUIRED_FIELD;
-
 @Service
-public class SystemSettingsValidator {
+public class SystemSettingsValidator extends AbstractDomainValidator<SystemSettingsVO> {
 
-    public void validate(SystemSettingsVO vo) throws ValidationException {
+    @Override
+    public void validate(SystemSettingsVO vo) {
         validateSettingName(vo);
         validateSettingKey(vo);
         validateSettingValue(vo);
-
-        if (vo.hasErrors()) {
-            throw new ValidationException(vo);
-        }
     }
 
-    public void validateForUpdate(SystemSettingsVO vo) throws ValidationException {
-        if (vo.getSystemSettingsID() == null) {
-            vo.addFieldMessage(FieldConstants.SYSTEM_SETTINGS_ID,
-                    REQUIRED_FIELD.addMessageArgs(LabelUtils.toLabel(FieldConstants.SYSTEM_SETTINGS_ID)));
-        }
+    @Override
+    public void validateForUpdate(SystemSettingsVO vo) {
+        validateRequired(vo, FieldConstants.SYSTEM_SETTINGS_ID, vo.getSystemSettingsID());
         validate(vo);
     }
 
     private void validateSettingName(SystemSettingsVO vo) {
-        if (StringUtils.isBlank(vo.getSettingName())) {
-            vo.addFieldMessage(FieldConstants.SETTING_NAME,
-                    REQUIRED_FIELD.addMessageArgs(LabelUtils.toLabel(FieldConstants.SETTING_NAME)));
-        }
+        validateRequired(vo, FieldConstants.SETTING_NAME, vo.getSettingName());
     }
 
     private void validateSettingKey(SystemSettingsVO vo) {
-        if (StringUtils.isBlank(vo.getSettingKey())) {
-            vo.addFieldMessage(FieldConstants.SETTING_KEY,
-                    REQUIRED_FIELD.addMessageArgs(LabelUtils.toLabel(FieldConstants.SETTING_KEY)));
-        }
+        validateRequired(vo, FieldConstants.SETTING_KEY, vo.getSettingKey());
     }
 
     private void validateSettingValue(SystemSettingsVO vo) {
-        if (StringUtils.isBlank(vo.getSettingValue())) {
-            vo.addFieldMessage(FieldConstants.SETTING_VALUE,
-                    REQUIRED_FIELD.addMessageArgs(LabelUtils.toLabel(FieldConstants.SETTING_VALUE)));
-        }
+        validateRequired(vo, FieldConstants.SETTING_VALUE, vo.getSettingValue());
     }
 }

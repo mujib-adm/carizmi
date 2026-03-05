@@ -4,3 +4,10 @@
 **/.idea
 **/target
 **/*.log
+**/.env
+**/.vscode
+**/.DS_Store
+**/docs
+**/.mvn
+**/.github
+**/README.md

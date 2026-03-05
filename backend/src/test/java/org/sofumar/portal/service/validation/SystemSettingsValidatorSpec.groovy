@@ -2,8 +2,7 @@ package org.sofumar.portal.service.validation
 
 import org.sofumar.portal.constants.FieldConstants
 import org.sofumar.portal.core.vo.SystemSettingsVO
-import org.sofumar.portal.framework.exception.ValidationException
-import org.sofumar.portal.testsupport.BaseSpecification
+import org.sofumar.portal.testbase.BaseSpecification
 import spock.lang.Subject
 import spock.lang.Unroll
 
@@ -40,11 +39,7 @@ class SystemSettingsValidatorSpec extends BaseSpecification {
         )
 
         when: "The target method executed"
-        try {
-            systemSettingsValidator.validate(vo)
-        } catch (ValidationException e) {
-            // expected
-        }
+        systemSettingsValidator.validate(vo)
 
         then: "The expected calls are made"
         0 * _
@@ -91,7 +86,7 @@ class SystemSettingsValidatorSpec extends BaseSpecification {
         0 * _
 
         and: "The expected result"
-        thrown(ValidationException)
+        noExceptionThrown()
         vo.hasErrors()
         vo.getFieldMessages().containsKey(FieldConstants.SYSTEM_SETTINGS_ID)
     }

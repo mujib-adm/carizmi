@@ -2,26 +2,32 @@ package org.sofumar.portal.service.validation;
 
 import org.apache.commons.lang3.StringUtils;
 import org.sofumar.portal.constants.FieldConstants;
-import org.sofumar.portal.constants.MessagesConstants;
+import org.sofumar.portal.message.ValidationMessages;
 import org.sofumar.portal.constants.Role;
 import org.sofumar.portal.core.vo.UserVO;
-import org.sofumar.portal.framework.exception.ValidationException;
+import org.sofumar.portal.framework.bl.AbstractDomainValidator;
 import org.springframework.stereotype.Service;
 
 @Service
-public class UserValidator {
+public class UserValidator extends AbstractDomainValidator<UserVO> {
     private static final String USERNAME_REGEX = "^[a-zA-Z0-9._-]{4,}$";
     private static final String PASSWORD_REGEX = "^(?=.*[a-z])(?=.*[A-Z])(?=.*[\\d\\W]).{12,}$";
     private static final String PASSWORD_REGEX_TEMP = "^(?=.*[a-z])(?=.*[A-Z])(?=.*[\\d\\W]).{5,}$"; // for local testing only
 
-    public void validate(UserVO vo) throws ValidationException {
+    @Override
+    public void validate(UserVO vo) {
+        validateNames(vo);
         validateUsername(vo);
-        validatePassword(vo);
+        validateEmail(vo);
         validateRole(vo);
+    }
 
-        if (vo.hasErrors()) {
-            throw new ValidationException(vo);
-        }
+    /**
+     * Raw Password validation: validates the PLAINTEXT password against the regex.
+     * Must be called explicitly by business methods BEFORE the VO enters the add()/update() lifecycle where encoding occurs.
+     */
+    public void validatePassword(UserVO vo) {
+        validateRegex(vo, FieldConstants.PASSWORD, vo.getPassword(), PASSWORD_REGEX_TEMP, ValidationMessages.INVALID_PASSWORD);
     }
 
     public boolean isInvalidRole(String role) {
@@ -34,30 +40,35 @@ public class UserValidator {
         }
     }
 
-    private void validateUsername(UserVO vo) {
-        if (isNotMatchRegex(vo.getUsername(), USERNAME_REGEX)) {
-            vo.addFieldMessage(FieldConstants.USERNAME, MessagesConstants.INVALID_USERNAME);
-        }
+    private void validateNames(UserVO vo) {
+        validateRequired(vo, FieldConstants.FIRST_NAME, vo.getFirstName());
+        validateRequired(vo, FieldConstants.LAST_NAME, vo.getLastName());
     }
 
-    private void validatePassword(UserVO vo) {
-        if (isNotMatchRegex(vo.getPassword(), PASSWORD_REGEX_TEMP)) {
-            vo.addFieldMessage(FieldConstants.PASSWORD, MessagesConstants.INVALID_PASSWORD);
+    private void validateUsername(UserVO vo) {
+        validateRegex(vo, FieldConstants.USERNAME, vo.getUsername(), USERNAME_REGEX, ValidationMessages.INVALID_USERNAME);
+    }
+
+    private void validateEmail(UserVO vo) {
+        if (StringUtils.isBlank(vo.getEmail())) {
+            validateRequired(vo, FieldConstants.EMAIL, vo.getEmail());
+            return;
+        }
+        // Basic email format check (VO has @Email annotation for JPA, but we do domain check here for fail-fast)
+        if (!vo.getEmail().contains("@")) {
+            vo.addFieldMessage(FieldConstants.EMAIL, ValidationMessages.INVALID_VALUE);
         }
     }
 
     private void validateRole(UserVO vo) {
+        if (vo.getRole() == null) {
+            validateRequired(vo, FieldConstants.ROLE, null);
+            return;
+        }
         String role = String.valueOf(vo.getRole());
         if (isInvalidRole(role)) {
-            vo.addFieldMessage(FieldConstants.ROLE, MessagesConstants.INVALID_ROLE);
+            vo.addFieldMessage(FieldConstants.ROLE, ValidationMessages.INVALID_ROLE);
         }
-    }
-
-    private boolean isNotMatchRegex(String value, String regex) {
-        if (StringUtils.isBlank(value)) {
-            return true;
-        }
-        return !value.matches(regex);
     }
 
 }

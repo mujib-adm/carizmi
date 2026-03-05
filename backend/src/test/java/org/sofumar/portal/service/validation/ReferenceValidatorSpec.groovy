@@ -1,11 +1,11 @@
 package org.sofumar.portal.service.validation
 
 import org.sofumar.portal.constants.FieldConstants
-import org.sofumar.portal.constants.MessagesConstants
+import org.sofumar.portal.message.ValidationMessages
 import org.sofumar.portal.constants.ReferenceConstants
 import org.sofumar.portal.core.businesslogic.Reference
 import org.sofumar.portal.framework.vo.ValueObject
-import org.sofumar.portal.testsupport.BaseSpecification
+import org.sofumar.portal.testbase.BaseSpecification
 import spock.lang.Subject
 import spock.lang.Unroll
 
@@ -39,7 +39,7 @@ class ReferenceValidatorSpec extends BaseSpecification {
         if (code != null && !code.blank && !isValid) {
             vo.hasErrors()
             vo.getFieldMessages().containsKey(fieldName)
-            vo.getFieldMessages().get(fieldName).contains(MessagesConstants.INVALID_VALUE)
+            vo.getFieldMessages().get(fieldName).contains(ValidationMessages.INVALID_VALUE)
         } else {
             !vo.hasErrors()
         }

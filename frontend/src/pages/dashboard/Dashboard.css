@@ -10,7 +10,7 @@
   background: transparent !important;
 }
 
-.glass-card .ant-table-thead>tr>th {
+.glass-card .ant-table-thead > tr > th {
   background: rgba(30, 86, 49, 0.05) !important;
   color: var(--priColor);
   font-weight: 600;

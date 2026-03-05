@@ -1,16 +1,16 @@
-import { DashboardOutlined, DollarOutlined, TeamOutlined } from "@ant-design/icons";
-import { Card, Col, Row, Table, Typography } from "antd";
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { DashboardOutlined, DollarOutlined, TeamOutlined } from '@ant-design/icons';
+import { Card, Col, Row, Table, Typography } from 'antd';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
-import { getDashboardMetrics, getLatestPayments } from "../../apiclient/dashboardApi";
-import { MessageBanner } from "../../component/MessageBanner";
-import Sidebar from "../../component/Sidebar";
-import { ReferenceConstants } from "../../constants/ReferenceConstants";
-import { DashboardMetrics, RecentTransactions } from "../../constants/types";
-import { useReference } from "../../context/ReferenceContext";
-import { useApiMessages } from "../../hook/ApiResponseHandler";
-import "./Dashboard.css";
+import { getDashboardMetrics, getLatestPayments } from '../../apiclient/dashboardApi';
+import { MessageBanner } from '../../component/MessageBanner';
+import Sidebar from '../../component/Sidebar';
+import { ReferenceConstants } from '../../constants/ReferenceConstants';
+import { DashboardMetrics, RecentTransactions } from '../../constants/types';
+import { useReference } from '../../context/ReferenceContext';
+import { useApiMessages } from '../../hook/ApiResponseHandler';
+import './Dashboard.css';
 
 const { Title } = Typography;
 
@@ -58,7 +58,7 @@ export default function Dashboard() {
     duesThisQuarter: 0,
     overdueTotal: 0,
     quarterlyFeeAmt: 0,
-    quarterlyCollections: []
+    quarterlyCollections: [],
   });
   const [payments, setPayments] = useState<RecentTransactions[]>([]);
   const [loading, setLoading] = useState(true);
@@ -109,7 +109,7 @@ export default function Dashboard() {
       name: '',
       value: gapSize,
       color: 'transparent',
-      isGap: true
+      isGap: true,
     });
 
     // 2. Paid Slice
@@ -119,7 +119,7 @@ export default function Dashboard() {
       value: q.collectedAmount,
       rate: q.percentage,
       color: COLORS[idx % COLORS.length],
-      isGap: false
+      isGap: false,
     });
 
     // 3. Unpaid/Future Slice
@@ -137,7 +137,7 @@ export default function Dashboard() {
       value: unpaidVal,
       rate: 0,
       color: unpaidColor,
-      isGap: false
+      isGap: false,
     });
   });
 
@@ -171,15 +171,29 @@ export default function Dashboard() {
             <Col xs={24} md={6}>
               <Card className="glass-card">
                 <div className="metric-label">Total Revenue</div>
-                <div className="metric-value">${metrics.totalRevenue?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0.00'}</div>
+                <div className="metric-value">
+                  $
+                  {metrics.totalRevenue?.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }) ?? '0.00'}
+                </div>
                 <div className="metric-subtext"> Total Amount in account </div>
                 <DollarOutlined style={{ position: 'absolute', bottom: 20, right: 20, fontSize: 48, color: '#40916C', opacity: 0.15 }} />
               </Card>
             </Col>
             <Col xs={24} md={6}>
               <Card className="glass-card">
-                <div className="metric-label" style={{ color: 'orange' }}>Dues</div>
-                <div className="metric-value" style={{ color: 'orange' }}>${metrics.duesThisQuarter?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0.00'}</div>
+                <div className="metric-label" style={{ color: 'orange' }}>
+                  Dues
+                </div>
+                <div className="metric-value" style={{ color: 'orange' }}>
+                  $
+                  {metrics.duesThisQuarter?.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }) ?? '0.00'}
+                </div>
                 <div className="metric-subtext"> Unpaid - Current Quarter </div>
                 <DollarOutlined style={{ position: 'absolute', bottom: 20, right: 20, fontSize: 48, color: 'orange', opacity: 0.15 }} />
               </Card>
@@ -187,7 +201,13 @@ export default function Dashboard() {
             <Col xs={24} md={6}>
               <Card className="glass-card">
                 <div className="metric-label" style={{ color: 'red' }}>Overdues</div>
-                <div className="metric-value" style={{ color: 'red' }}>${metrics.overdueTotal?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0.00'}</div>
+                <div className="metric-value" style={{ color: 'red' }}>
+                  $
+                  {metrics.overdueTotal?.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }) ?? '0.00'}
+                </div>
                 <div className="metric-subtext"> Unpaid - Overall </div>
                 <DollarOutlined style={{ position: 'absolute', bottom: 20, right: 20, fontSize: 48, color: 'red', opacity: 0.15 }} />
               </Card>

@@ -6,7 +6,7 @@
   /* Subtle primary color glow */
   --glass-shadow: 0 16px 48px 0 rgba(0, 0, 0, 0.12), 0 2px 12px 0 rgba(31, 38, 135, 0.08);
   --glass-shadow-hover: 0 24px 60px 0 rgba(0, 0, 0, 0.18), 0 4px 16px 0 rgba(31, 38, 135, 0.12);
-  --vibrant-gradient: linear-gradient(135deg, #1E5631 0%, #5C9013 100%);
+  --vibrant-gradient: linear-gradient(135deg, #1e5631 0%, #5c9013 100%);
   --accent-blue: #00b4d8;
   --accent-purple: #7209b7;
   --soft-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
@@ -143,7 +143,7 @@
   font-family: 'Poppins', sans-serif;
   font-size: 0.9rem;
   font-weight: 500;
-  color: #40916C;
+  color: #40916c;
   margin-bottom: 4px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -153,14 +153,14 @@
   font-family: 'Outfit', sans-serif;
   font-size: 2.8rem;
   font-weight: 800;
-  color: #1E5631;
+  color: #1e5631;
   margin: 0;
   line-height: 1;
 }
 
 .metric-subtext {
   font-size: 0.8rem;
-  color: #52665D;
+  color: #52665d;
   margin-top: 8px;
 }
 
@@ -177,7 +177,7 @@
   /* margin-bottom: 24px; */
   font-family: 'Federo', sans-serif;
   font-size: 1.2rem;
-  color: #1E5631;
+  color: #1e5631;
 }
 
 .metric-trend-down {
@@ -244,7 +244,7 @@
 
 .login-glass-card h2 {
   font-family: 'Federo', sans-serif;
-  color: #1E5631;
+  color: #1e5631;
   font-size: 2.2rem;
   font-weight: 400;
   text-align: center;
@@ -257,7 +257,7 @@
   font-family: 'Poppins', sans-serif;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #2D6A4F;
+  color: #2d6a4f;
   margin-bottom: 0px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -281,7 +281,7 @@
 
 .modern-login-container .form_field:focus {
   background: #ffffff !important;
-  border-color: #40916C !important;
+  border-color: #40916c !important;
   box-shadow: 0 0 0 4px rgba(64, 145, 108, 0.1) !important;
   outline: none !important;
 }
@@ -290,7 +290,7 @@
   width: 100%;
   height: 52px;
   margin-top: 24px;
-  background: linear-gradient(135deg, #2D6A4F 0%, #1E5631 100%) !important;
+  background: linear-gradient(135deg, #2d6a4f 0%, #1e5631 100%) !important;
   border-radius: 14px !important;
   font-weight: 600 !important;
   font-size: 1rem !important;
@@ -311,12 +311,12 @@
 
 .modern-login-container .auth-link {
   margin-top: 24px;
-  color: #52665D;
+  color: #52665d;
   font-size: 0.95rem;
 }
 
 .modern-login-container .auth-link a {
-  color: #2D6A4F;
+  color: #2d6a4f;
   font-weight: 700;
   text-decoration: none;
   border-bottom: 2px solid transparent;
@@ -324,7 +324,7 @@
 }
 
 .modern-login-container .auth-link a:hover {
-  border-bottom-color: #2D6A4F;
+  border-bottom-color: #2d6a4f;
 }
 
 .modern-modal .ant-modal-footer {
@@ -433,7 +433,7 @@
 .portal-title-main {
   font-size: 1.9rem;
   font-family: var(--fontSecondary);
-  color: #1E5631 !important;
+  color: #1e5631 !important;
   margin: 0 !important;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -467,12 +467,12 @@
 
 .header-nav-link:hover {
   background: rgba(64, 145, 108, 0.1);
-  color: #1E5631;
+  color: #1e5631;
 }
 
 .header-nav-link.active {
   background: rgba(64, 145, 108, 0.15);
-  color: #1E5631;
+  color: #1e5631;
 }
 
 /* Quick Actions */
@@ -515,7 +515,7 @@
 
 .page-title {
   margin: 0 !important;
-  color: #1E5631 !important;
+  color: #1e5631 !important;
   font-family: 'Federo', sans-serif !important;
   letter-spacing: 0.5px;
   display: flex !important;
@@ -523,7 +523,7 @@
   gap: 12px !important;
 }
 
-.page-title span[role="img"] {
+.page-title span[role='img'] {
   font-size: 1.1em;
 }
 
@@ -561,7 +561,8 @@
 
 .ant-input:not(.ant-input-disabled),
 .ant-input-affix-wrapper:not(.ant-input-affix-wrapper-disabled),
-.ant-select:not(.ant-select-customize-input):not(.ant-select-disabled):not(.member-lookup-select) .ant-select-selector,
+.ant-select:not(.ant-select-customize-input):not(.ant-select-disabled):not(.member-lookup-select)
+  .ant-select-selector,
 .ant-picker:not(.ant-picker-disabled),
 .ant-input-number:not(.ant-input-number-disabled) {
   background-color: #ffffff !important; /* Stark white for interactive look */
@@ -574,6 +575,6 @@
 .ant-select-focused:not(.ant-select-disabled):not(.member-lookup-select) .ant-select-selector,
 .ant-picker-focused,
 .ant-input-number-focused {
-  border-color: #40916C !important;
+  border-color: #40916c !important;
   box-shadow: 0 0 0 2px rgba(64, 145, 108, 0.1) !important;
 }

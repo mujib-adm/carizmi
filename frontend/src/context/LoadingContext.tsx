@@ -1,5 +1,5 @@
-import React, { createContext, useEffect, useState } from "react";
-import GradientSpinner from "./GradientSpinnerContext";
+import React, { createContext, useEffect, useState } from 'react';
+import GradientSpinner from './GradientSpinnerContext';
 
 type LoadingContextType = {
   isLoading: boolean;
@@ -8,7 +8,7 @@ type LoadingContextType = {
 
 export const LoadingContext = createContext<LoadingContextType>({
   isLoading: false,
-  setLoading: () => { },
+  setLoading: () => {},
 });
 
 /**
@@ -49,11 +49,11 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
       <LoadingOverlay visible={isLoading} />
     </LoadingContext.Provider>
   );
-};
+}
 
 function LoadingOverlay({ visible }: { visible: boolean }) {
   return (
-    <div className={`overlay ${visible ? "fade-in" : "fade-out"}`}>
+    <div className={`overlay ${visible ? 'fade-in' : 'fade-out'}`}>
       {visible && <GradientSpinner />}
     </div>
   );
@@ -103,4 +103,4 @@ const styles = `
   100% { transform: rotate(360deg); }
 }
 `;
-document.head.insertAdjacentHTML("beforeend", `<style>${styles}</style>`);
+document.head.insertAdjacentHTML('beforeend', `<style>${styles}</style>`);

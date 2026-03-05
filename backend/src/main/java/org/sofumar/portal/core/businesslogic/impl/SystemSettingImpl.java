@@ -26,11 +26,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static org.sofumar.portal.constants.MessagesConstants.RECORD_UPDATED;
+import static org.sofumar.portal.message.ValidationMessages.RECORD_UPDATED;
 
 @Service
-public non-sealed class SystemSettingImpl extends SystemSettingAbstractBL
-        implements SystemSetting {
+public non-sealed class SystemSettingImpl extends SystemSettingAbstractBL implements SystemSetting {
     private static final Logger logger = LoggerFactory.getLogger(SystemSettingImpl.class);
 
     private final SystemSettingsDtoTransformer dtoTransformer;
@@ -51,6 +50,15 @@ public non-sealed class SystemSettingImpl extends SystemSettingAbstractBL
     }
 
     @Override
+    protected void performDomainValidation(SystemSettingsVO vo, boolean isUpdate) {
+        if (isUpdate) {
+            validator.validateForUpdate(vo);
+        } else {
+            validator.validate(vo);
+        }
+    }
+
+    @Override
     @Transactional
     public ResponseEntity<GlobalResponse<Void>> updateSystemSetting(SystemSettingsDto dto) {
         SystemSettingsVO existing = getRepo().findById(dto.getSystemSettingsID())
@@ -61,13 +69,13 @@ public non-sealed class SystemSettingImpl extends SystemSettingAbstractBL
         // We preserve settingName and settingKey to ensure integrity with sync mechanism.
         existing.setSettingValue(dto.getSettingValue());
 
-        validator.validateForUpdate(existing);
         update(existing);
         return ResponseUtils.ok(RECORD_UPDATED.addMessageArgs("System Setting").getMessageString());
     }
 
 
     @Override
+    @Transactional(readOnly = true)
     public ResponseEntity<GlobalResponse<SystemSettingsDto>> getSystemSetting(Integer id) {
         SystemSettingsVO vo = getRepo().findById(id)
                 .orElseThrow(() -> new RecordNotFoundException("System Setting not found with ID: " + id));
@@ -75,6 +83,7 @@ public non-sealed class SystemSettingImpl extends SystemSettingAbstractBL
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ResponseEntity<GlobalResponse<List<SystemSettingsDto>>> searchSystemSettings(SystemSettingsSearchRequestDto request) {
         List<Specification<SystemSettingsVO>> specList = new ArrayList<>();
         if (StringUtils.isNotBlank(request.getSettingName()))
@@ -90,17 +99,20 @@ public non-sealed class SystemSettingImpl extends SystemSettingAbstractBL
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ResponseEntity<GlobalResponse<List<SystemSettingsDto>>> getSettingsByKey(String key) {
         List<SystemSettingsVO> list = getRepo().findAll(SystemSettingsSpecifications.withSettingKey(key));
         return ResponseUtils.okWithData(dtoTransformer.transformList(list));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<SystemSettingsVO> findBySettingKey(String key) {
         return getRepo().findOne(SystemSettingsSpecifications.withSettingKey(key));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<SystemSettingsVO> findByNameAndKey(String settingName, String key) {
         Specification<SystemSettingsVO> spec = SystemSettingsSpecifications.withSettingName(settingName)
                 .and(SystemSettingsSpecifications.withSettingKey(key));

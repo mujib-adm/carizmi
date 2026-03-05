@@ -3,10 +3,13 @@ package org.sofumar.portal.core.businesslogic.impl;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.sofumar.portal.constants.MessagesConstants;
+import org.sofumar.portal.constants.FieldConstants;
+import org.sofumar.portal.message.ValidationMessages;
 import org.sofumar.portal.constants.Role;
 import org.sofumar.portal.data.dto.response.UserResponseDto;
 import org.sofumar.portal.data.dto.response.UserProfileDto;
@@ -15,7 +18,7 @@ import org.sofumar.portal.data.dto.UserDto;
 import org.sofumar.portal.data.transformer.UserResponseDtoTransformer;
 import org.sofumar.portal.data.transformer.UserVOTransformer;
 import org.sofumar.portal.core.vo.UserVO;
-import org.sofumar.portal.framework.data.msg.Message;
+import org.sofumar.portal.framework.message.Message;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
 import org.sofumar.portal.framework.exception.RecordNotFoundException;
 import org.sofumar.portal.framework.service.TokenBlacklistService;
@@ -36,7 +39,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import static org.sofumar.portal.constants.MessagesConstants.RECORD_UPDATED;
+import static org.sofumar.portal.message.ValidationMessages.RECORD_UPDATED;
+import static org.sofumar.portal.security.CookieService.REFRESH_TOKEN_MAP_KEY;
+import static org.sofumar.portal.security.CookieService.TOKEN_MAP_KEY;
 
 @Service
 public non-sealed class UserImpl extends UserAbstractBL implements User {
@@ -70,10 +75,30 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
         return logger;
     }
 
-//    @Override
-//    protected void validateInternal(UserVO vo, boolean isUpdate) {
-//        validator.validate(vo);
-//    }
+    @Override
+    @Transactional(readOnly = true)
+    protected void performDomainValidation(UserVO vo, boolean isUpdate) {
+        // 1. Stateless Validation
+        validator.validate(vo);
+
+        // 2. Stateful Validation
+        performStatefulValidation(vo, isUpdate);
+    }
+
+    @Override
+    protected void beforeAdd(UserVO vo) {
+        if (StringUtils.isNotBlank(vo.getPassword())) {
+            vo.setPassword(encoder.encode(vo.getPassword()));
+        }
+    }
+
+    @Override
+    protected void beforeUpdate(UserVO vo) {
+        if (StringUtils.isNotBlank(vo.getPassword()) && !Objects.equals(vo.getPassword(), vo.getPersistedPassword())) {
+            vo.setPassword(encoder.encode(vo.getPassword()));
+            vo.setPasswordUpdatedAt(LocalDateTime.now());
+        }
+    }
 
     @Override
     @Transactional
@@ -81,8 +106,7 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
         UserVO userVO = voTransformer.transform(requestDto);
         userVO.setRole(Role.ANONYMOUS);
         userVO.setActive(true);
-        validator.validate(userVO);
-        userVO.setPassword(encoder.encode(userVO.getPassword()));
+        validator.validatePassword(userVO);
         add(userVO);
         return ResponseUtils.ok("Registered. Await role assignment.");
     }
@@ -126,15 +150,16 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
             String newAccessToken = jwtService.generateAccessToken(userDetails);
             
             return ResponseUtils.withMap(Map.of(
-                "token", newAccessToken,
-                "refreshToken", newRefreshToken
+                TOKEN_MAP_KEY, newAccessToken,
+                REFRESH_TOKEN_MAP_KEY, newRefreshToken
             ));
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | RecordNotFoundException e) {
             return ResponseUtils.withStatus(HttpStatus.UNAUTHORIZED, Message.Type.ERROR, "Invalid or expired refresh token.");
         }
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ResponseEntity<GlobalResponse<UserProfileDto>> getProfile(String username) {
         logger.info("Fetching profile for user: {}", username);
         UserVO userVO = getRepo().findOne(UserSpecifications.hasUsername(username)).orElse(null);
@@ -170,21 +195,20 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
         }
 
         userVO.setPassword(requestDto.getNewPassword());
-        validator.validate(userVO);
-        userVO.setPassword(encoder.encode(userVO.getPassword()));
-        userVO.setPasswordUpdatedAt(LocalDateTime.now());
-        
+        validator.validatePassword(userVO);
+
+        update(userVO);
+
         // Revoke the current token
         if (token != null) {
              blacklistService.revokeToken(token, (long) expMin * 60);
         }
 
-        update(userVO);
-
         return ResponseUtils.ok("Password updated successfully! Please log in again.");
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ResponseEntity<GlobalResponse<List<UserResponseDto>>> getAllUsers() {
         List<UserVO> result = getRepo().findAll();
         return ResponseUtils.okWithData(dtoTransformer.transformList(result));
@@ -194,19 +218,12 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
     @Transactional
     public ResponseEntity<GlobalResponse<Void>> updateUserRole(@NonNull Integer userId, String newRole) {
         UserVO userVO = getRepo().findById(userId).orElseThrow(() -> new RecordNotFoundException("User not found"));
-
-        if (validator.isInvalidRole(newRole)) {
-            return ResponseUtils.badRequest(MessagesConstants.INVALID_ROLE.getMessageString());
-        }
-
-        // Prevent removing the last active admin
-        if (Role.ADMIN == userVO.getRole() && !Role.ADMIN.name().equals(newRole)) {
-            if (userVO.isActive() && countActiveAdmins() <= 1) {
-                return ResponseUtils.badRequest("Cannot update role for the last active " + Role.ADMIN.name() + ".");
-            }
-        }
         
-        userVO.setRole(Role.valueOf(newRole));
+        try {
+            userVO.setRole(Role.valueOf(newRole));
+        } catch (IllegalArgumentException | NullPointerException e) {
+            userVO.addFieldMessage(FieldConstants.ROLE, ValidationMessages.INVALID_ROLE);
+        }
         update(userVO);
         return ResponseUtils.ok(RECORD_UPDATED.addMessageArgs("User role").getMessageString());
     }
@@ -215,11 +232,6 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
     @Transactional
     public ResponseEntity<GlobalResponse<Void>> toggleUserStatus(@NonNull Integer userId, boolean active) {
         UserVO userVO = getRepo().findById(userId).orElseThrow(() -> new RecordNotFoundException("User not found"));
-        
-        // Prevent deactivating the last active admin
-        if (!active && Role.ADMIN == userVO.getRole() && countActiveAdmins() <= 1) {
-            return ResponseUtils.badRequest("Cannot deactivate the last active " + Role.ADMIN.name() + ".");
-        }
         
         userVO.setActive(active);
         update(userVO);
@@ -231,11 +243,13 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean adminUserExists() {
         return getRepo().exists(UserSpecifications.hasRole(Role.ADMIN));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public UserVO findUserForAuthentication(String username) {
         return getRepo().findOne(UserSpecifications.hasUsername(username)).orElse(null);
     }
@@ -264,5 +278,53 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
             }
             update(user);
         });
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean existsByUsername(String username, Integer userId) {
+        return exists(UserSpecifications.hasUsername(username).and(UserSpecifications.notUserId(userId)));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean existsByEmail(String email, Integer userId) {
+        return exists(UserSpecifications.hasEmail(email).and(UserSpecifications.notUserId(userId)));
+    }
+
+    @Transactional(readOnly = true)
+    protected void performStatefulValidation(UserVO vo, boolean isUpdate) {
+        // 1. Uniqueness checks
+        if (StringUtils.isNotBlank(vo.getUsername()) && (!vo.hasErrors() || !vo.getFieldMessages().containsKey(FieldConstants.USERNAME))) {
+            if (existsByUsername(vo.getUsername(), vo.getUserID())) {
+                vo.addFieldMessage(FieldConstants.USERNAME, ValidationMessages.ALREADY_EXISTS.addMessageArgs("Username"));
+            }
+        }
+
+        if (StringUtils.isNotBlank(vo.getEmail()) && (!vo.hasErrors() || !vo.getFieldMessages().containsKey(FieldConstants.EMAIL))) {
+            if (existsByEmail(vo.getEmail(), vo.getUserID())) {
+                vo.addFieldMessage(FieldConstants.EMAIL, ValidationMessages.ALREADY_EXISTS.addMessageArgs("Email"));
+            }
+        }
+
+        // 2. Role validation (only on update if role changed)
+        if (isUpdate) {
+            UserVO existing = getRepo().findById(vo.getUserID())
+                    .orElseThrow(() -> new RecordNotFoundException("User not found"));
+
+            // If changing away from ADMIN, check if it's the last active admin
+            if (Role.ADMIN == existing.getRole() && Role.ADMIN != vo.getRole()) {
+                if (existing.isActive() && countActiveAdmins() <= 1) {
+                    vo.addGlobalMessage(ValidationMessages.ERR_LAST_ADMIN_ROLE);
+                }
+            }
+
+            // If deactivating an active ADMIN, check if it's the last active admin
+            if (Role.ADMIN == existing.getRole() && existing.isActive() && !vo.isActive()) {
+                if (countActiveAdmins() <= 1) {
+                    vo.addGlobalMessage(ValidationMessages.ERR_LAST_ADMIN_DEACTIVATE);
+                }
+            }
+        }
     }
 }

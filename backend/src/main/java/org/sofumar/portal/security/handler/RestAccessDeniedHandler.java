@@ -5,7 +5,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.sofumar.portal.framework.data.msg.Message;
+import org.sofumar.portal.framework.message.Message;
 import org.sofumar.portal.framework.util.ResponseUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;

@@ -1,7 +1,7 @@
 package org.sofumar.portal.framework.util;
 
-import org.sofumar.portal.framework.data.msg.FieldMessage;
-import org.sofumar.portal.framework.data.msg.Message;
+import org.sofumar.portal.framework.message.FieldMessage;
+import org.sofumar.portal.framework.message.Message;
 import org.sofumar.portal.framework.data.response.FieldMsg;
 import org.sofumar.portal.framework.data.response.GlobalMsg;
 import org.sofumar.portal.framework.data.response.GlobalResponse;

@@ -1,18 +1,18 @@
 // enums
 export enum MessageType {
-  ERROR = "ERROR",
-  WARNING = "WARNING",
-  INFO = "INFO",
-  STATUS = "STATUS",
-  SUCCESS = "SUCCESS",
-  CONFIRMATION = "CONFIRMATION"
+  ERROR = 'ERROR',
+  WARNING = 'WARNING',
+  INFO = 'INFO',
+  STATUS = 'STATUS',
+  SUCCESS = 'SUCCESS',
+  CONFIRMATION = 'CONFIRMATION',
 }
 
 export interface Pagination {
-  page?: number;       // 0-based page index
-  size?: number;       // page size
-  sortField?: string;  // optional sort field
-  sortOrder?: "asc" | "desc"; // optional sort order
+  page?: number; // 0-based page index
+  size?: number; // page size
+  sortField?: string; // optional sort field
+  sortOrder?: 'asc' | 'desc'; // optional sort order
 }
 
 export interface PaginationMeta {
@@ -24,13 +24,13 @@ export interface PaginationMeta {
 
 // Generic API response structure
 export interface GlobalResponse<T = any, DataMap = Record<string, string>> {
-  statusCode: number;             // e.g. 200, 401, 409
-  statusDesc: string;             // e.g. "OK", "Conflict"
-  globalMessages: GlobalMsg[];    // list of global messages
-  fieldMessages: FieldMsg[];      // list of field-specific messages
+  statusCode: number; // e.g. 200, 401, 409
+  statusDesc: string; // e.g. "OK", "Conflict"
+  globalMessages: GlobalMsg[]; // list of global messages
+  fieldMessages: FieldMsg[]; // list of field-specific messages
   map: DataMap;
-  responseData?: T;             // generic payload
-  meta?: PaginationMeta;        // pagination info
+  responseData?: T; // generic payload
+  meta?: PaginationMeta; // pagination info
 }
 
 export interface GlobalMsg {
@@ -42,12 +42,6 @@ export interface FieldMsg {
   type: MessageType;
   field: string;
   message: string;
-}
-
-// Login response payload
-export interface LoginData {
-  token: string;
-  role: string;
 }
 
 // Profile response payload
@@ -99,7 +93,7 @@ export type Member = {
   state: string;
   zip?: string;
 };
-export type MemberRequestDto = Omit<Member, "memberID"> & { memberID?: number };
+export type MemberRequestDto = Omit<Member, 'memberID'> & { memberID?: number };
 
 export interface MemberSearchRequest extends Pagination {
   firstName?: string;
@@ -134,7 +128,7 @@ export type Payment = {
   quarter?: number;
 };
 
-export type PaymentRequestDto = Omit<Payment, "paymentID"> & { paymentID?: number };
+export type PaymentRequestDto = Omit<Payment, 'paymentID'> & { paymentID?: number };
 
 export interface PaymentSearchRequest extends Pagination {
   memberID?: number;
@@ -182,7 +176,7 @@ export type Reference = {
   active: boolean;
 };
 
-export type ReferenceRequestDto = Omit<Reference, "referenceID"> & { referenceID?: number };
+export type ReferenceRequestDto = Omit<Reference, 'referenceID'> & { referenceID?: number };
 
 export interface ReferenceSearchRequest extends Pagination {
   referenceName?: string;

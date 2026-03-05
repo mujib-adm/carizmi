@@ -3,25 +3,23 @@ package org.sofumar.portal.service.validation;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.sofumar.portal.constants.FieldConstants;
-import org.sofumar.portal.constants.MessagesConstants;
+import org.sofumar.portal.message.ValidationMessages;
 import org.sofumar.portal.constants.ReferenceConstants;
 import org.sofumar.portal.core.vo.MemberVO;
-import org.sofumar.portal.framework.exception.ValidationException;
-import org.sofumar.portal.framework.util.LabelUtils;
+import org.sofumar.portal.framework.bl.AbstractDomainValidator;
 import org.springframework.stereotype.Service;
-
-import static org.sofumar.portal.constants.MessagesConstants.REQUIRED_FIELD;
 
 @Service
 @RequiredArgsConstructor
-public class MemberValidator {
+public class MemberValidator extends AbstractDomainValidator<MemberVO> {
     private static final String PHONE_REGEX = "^\\(?\\d{3}\\)?[- ]?\\d{3}[- ]?\\d{4}$";
     private static final String EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";
     private static final String ZIP_REGEX = "^\\d{5}(-\\d{4})?$";
 
     private final ReferenceValidator referenceValidator;
 
-    public void validate(MemberVO vo) throws ValidationException {
+    @Override
+    public void validate(MemberVO vo) {
         validateFirstName(vo);
         validateLastName(vo);
         validatePhone(vo);
@@ -29,53 +27,43 @@ public class MemberValidator {
         validateStatus(vo);
         validateState(vo);
         validateZip(vo);
-
-        if (vo.hasErrors()) {
-            throw new ValidationException(vo);
-        }
     }
 
-    public void validateForUpdate(MemberVO vo) throws ValidationException {
+    @Override
+    public void validateForUpdate(MemberVO vo) {
         validateMemberID(vo);
         validate(vo);
     }
 
     private void validateMemberID(MemberVO vo) {
-        if (vo.getMemberID() == null) {
-            vo.addFieldMessage(FieldConstants.MEMBER_ID, REQUIRED_FIELD.addMessageArgs(LabelUtils.toLabel(FieldConstants.MEMBER_ID)));
-        }
+        validateRequired(vo, FieldConstants.MEMBER_ID, vo.getMemberID());
     }
 
     private void validateFirstName(MemberVO vo) {
-        if (StringUtils.isBlank(vo.getFirstName())) {
-            vo.addFieldMessage(FieldConstants.FIRST_NAME, REQUIRED_FIELD.addMessageArgs(LabelUtils.toLabel(FieldConstants.FIRST_NAME)));
-        }
+        validateRequired(vo, FieldConstants.FIRST_NAME, vo.getFirstName());
     }
 
     private void validateLastName(MemberVO vo) {
-        if (StringUtils.isBlank(vo.getLastName())) {
-            vo.addFieldMessage(FieldConstants.LAST_NAME, REQUIRED_FIELD.addMessageArgs(LabelUtils.toLabel(FieldConstants.LAST_NAME)));
-        }
+        validateRequired(vo, FieldConstants.LAST_NAME, vo.getLastName());
     }
 
     private void validatePhone(MemberVO vo) {
         if (StringUtils.isBlank(vo.getPhone())) {
-            vo.addFieldMessage(FieldConstants.PHONE, REQUIRED_FIELD.addMessageArgs(LabelUtils.toLabel(FieldConstants.PHONE)));
-        } else if (isNotMatchRegex(vo.getPhone(), PHONE_REGEX)) {
-            vo.addFieldMessage(FieldConstants.PHONE, MessagesConstants.INVALID_VALUE);
+            validateRequired(vo, FieldConstants.PHONE, vo.getPhone());
+        } else {
+            validateRegex(vo, FieldConstants.PHONE, vo.getPhone(), PHONE_REGEX, ValidationMessages.INVALID_VALUE);
         }
     }
 
     private void validateEmail(MemberVO vo) {
-        if (StringUtils.isNotBlank(vo.getEmail()) && isNotMatchRegex(vo.getEmail(), EMAIL_REGEX)) {
-            vo.addFieldMessage(FieldConstants.EMAIL, MessagesConstants.INVALID_VALUE);
+        if (StringUtils.isNotBlank(vo.getEmail())) {
+            validateRegex(vo, FieldConstants.EMAIL, vo.getEmail(), EMAIL_REGEX, ValidationMessages.INVALID_VALUE);
         }
     }
 
     private void validateStatus(MemberVO vo) {
         if (StringUtils.isBlank(vo.getStatus())) {
-            vo.addFieldMessage(FieldConstants.STATUS,
-                    REQUIRED_FIELD.addMessageArgs(LabelUtils.toLabel(FieldConstants.STATUS)));
+            validateRequired(vo, FieldConstants.STATUS, vo.getStatus());
         } else {
             referenceValidator.validate(vo, FieldConstants.STATUS, ReferenceConstants.MEMBER_STATUS.NAME,
                     vo.getStatus());
@@ -83,21 +71,12 @@ public class MemberValidator {
     }
 
     private void validateState(MemberVO vo) {
-        if (StringUtils.isBlank(vo.getState())) {
-            vo.addFieldMessage(FieldConstants.STATE, REQUIRED_FIELD.addMessageArgs(LabelUtils.toLabel(FieldConstants.STATE)));
-        }
+        validateRequired(vo, FieldConstants.STATE, vo.getState());
     }
 
     private void validateZip(MemberVO vo) {
-        if (StringUtils.isNotBlank(vo.getZip()) && isNotMatchRegex(vo.getZip(), ZIP_REGEX)) {
-            vo.addFieldMessage(FieldConstants.ZIP, MessagesConstants.INVALID_VALUE);
+        if (StringUtils.isNotBlank(vo.getZip())) {
+            validateRegex(vo, FieldConstants.ZIP, vo.getZip(), ZIP_REGEX, ValidationMessages.INVALID_VALUE);
         }
-    }
-
-    private boolean isNotMatchRegex(String value, String regex) {
-        if (StringUtils.isBlank(value)) {
-            return true;
-        }
-        return !value.matches(regex);
     }
 }

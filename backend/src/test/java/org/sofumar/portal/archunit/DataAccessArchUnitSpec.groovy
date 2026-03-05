@@ -8,7 +8,7 @@ import com.tngtech.archunit.core.domain.JavaClass
 import com.tngtech.archunit.lang.ArchCondition
 import com.tngtech.archunit.lang.ConditionEvents
 import com.tngtech.archunit.lang.SimpleConditionEvent
-import org.sofumar.portal.testsupport.BaseSpecification
+import org.sofumar.portal.testbase.BaseSpecification
 import com.tngtech.archunit.core.importer.ImportOption
 
 /**
