@@ -8,7 +8,6 @@ import org.sofumar.portal.core.businesslogic.User;
 import org.sofumar.portal.data.dto.UserDto;
 import org.sofumar.portal.data.dto.request.PasswordUpdateRequestDto;
 import org.sofumar.portal.data.dto.response.UserProfileDto;
-import org.sofumar.portal.framework.message.Message;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
 import org.sofumar.portal.framework.util.ResponseUtils;
 import org.sofumar.portal.security.CookieService;
@@ -92,9 +91,6 @@ public class AuthController {
     @GetMapping("/profile")
     @IsAuthenticated
     public ResponseEntity<GlobalResponse<UserProfileDto>> getCurrentUser(@AuthenticationPrincipal UserDetails userDetails) {
-        if (userDetails == null) {
-            return ResponseUtils.withStatusAndData(HttpStatus.UNAUTHORIZED, Message.Type.ERROR, "Session expired or User not logged in.");
-        }
         return user.getProfile(userDetails.getUsername());
     }
 
@@ -105,9 +101,6 @@ public class AuthController {
             HttpServletRequest request,
             HttpServletResponse response,
             @Valid @RequestBody PasswordUpdateRequestDto requestDto) {
-        if (userDetails == null) {
-            return ResponseUtils.withStatus(HttpStatus.UNAUTHORIZED, Message.Type.ERROR, "Session expired or User not logged in.");
-        }
 
         // Read access token from cookie for blacklisting after password change
         String token = cookieService.getAccessToken(request).orElse(null);

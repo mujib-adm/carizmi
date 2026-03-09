@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static org.sofumar.portal.message.ValidationMessages.RECORD_NOT_FOUND;
 import static org.sofumar.portal.message.ValidationMessages.RECORD_UPDATED;
 
 @Service
@@ -62,8 +63,7 @@ public non-sealed class SystemSettingImpl extends SystemSettingAbstractBL implem
     @Transactional
     public ResponseEntity<GlobalResponse<Void>> updateSystemSetting(SystemSettingsDto dto) {
         SystemSettingsVO existing = getRepo().findById(dto.getSystemSettingsID())
-                .orElseThrow(() -> new RecordNotFoundException(
-                        "System Setting not found with ID: " + dto.getSystemSettingsID()));
+                .orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
 
         // UI only allows updating settingValue. 
         // We preserve settingName and settingKey to ensure integrity with sync mechanism.
@@ -78,7 +78,7 @@ public non-sealed class SystemSettingImpl extends SystemSettingAbstractBL implem
     @Transactional(readOnly = true)
     public ResponseEntity<GlobalResponse<SystemSettingsDto>> getSystemSetting(Integer id) {
         SystemSettingsVO vo = getRepo().findById(id)
-                .orElseThrow(() -> new RecordNotFoundException("System Setting not found with ID: " + id));
+                .orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
         return ResponseUtils.okWithData(dtoTransformer.transform(vo));
     }
 

@@ -35,7 +35,7 @@ public class RefreshTokenService {
             redisTemplate.expire(KEY_PREFIX + oldToken, Duration.ofSeconds(20));
             return createRefreshToken(usernameOpt.get());
         }
-        throw new IllegalArgumentException("Invalid refresh token");
+        throw new IllegalArgumentException("Invalid state.");
     }
 
     public Optional<String> validateRefreshToken(String token) {

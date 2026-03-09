@@ -2,6 +2,7 @@ package org.sofumar.portal.framework.exceptionhandler;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.sofumar.portal.framework.exception.AuthenticationException;
 import org.sofumar.portal.framework.exception.DuplicateRecordException;
 import org.sofumar.portal.framework.exception.RecordNotFoundException;
 import org.sofumar.portal.framework.exception.ValidationException;
@@ -12,6 +13,7 @@ import org.sofumar.portal.framework.util.ResponseUtils;
 import org.sofumar.portal.framework.vo.ValueObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -56,11 +58,6 @@ public class GlobalExceptionHandler {
         return ResponseUtils.withStatus(HttpStatus.BAD_REQUEST, response);
     }
 
-//    @ExceptionHandler(StaleUserException.class)
-//    public ResponseEntity<ApiErrorResponse> handleStale(StaleUserException ex) {
-//        return new ResponseEntity<>(ApiErrorResponse.of(HttpStatus.CONFLICT, ex.getMessage(), ex), HttpStatus.CONFLICT);
-//    }
-
     @ExceptionHandler(RecordNotFoundException.class)
     public ResponseEntity<GlobalResponse<Void>> handleNotFound(RecordNotFoundException ex) {
         return ResponseUtils.notFound(ex.getMessage());
@@ -70,6 +67,21 @@ public class GlobalExceptionHandler {
     public ResponseEntity<GlobalResponse<Void>> handleGeneric(Exception ex) {
         logger.error("Unexpected error occurred: ", ex);
         return ResponseUtils.withStatus(HttpStatus.INTERNAL_SERVER_ERROR, Message.Type.ERROR, "Unexpected error occurred. Please try again or contact support.");
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<GlobalResponse<Void>> handleAuthentication(AuthenticationException ex) {
+        return ResponseUtils.unauthenticated();
+    }
+
+    @ExceptionHandler(org.springframework.security.core.AuthenticationException.class)
+    public ResponseEntity<GlobalResponse<Void>> handleAuthentication(org.springframework.security.core.AuthenticationException ex) {
+        return ResponseUtils.unauthenticated();
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<GlobalResponse<Void>> handleAccessDenied(AccessDeniedException ex) {
+        return ResponseUtils.accessDenied();
     }
 
 }

@@ -11,6 +11,8 @@ import org.sofumar.portal.data.dto.response.UserResponseDto
 import org.sofumar.portal.data.transformer.UserResponseDtoTransformer
 import org.sofumar.portal.data.transformer.UserVOTransformer
 import org.sofumar.portal.framework.data.response.GlobalResponse
+import org.sofumar.portal.framework.exception.AuthenticationException
+import org.sofumar.portal.framework.exception.RecordNotFoundException
 import org.sofumar.portal.framework.exception.ValidationException
 import org.sofumar.portal.framework.service.RefreshTokenService
 import org.sofumar.portal.framework.service.TokenBlacklistService
@@ -46,6 +48,8 @@ class UserSpec extends BaseSpecification {
 
     void setup() {
         userImpl.expMin = 60
+        ReflectionTestUtils.setField(userImpl, "maxLoginAttempts", 5)
+        ReflectionTestUtils.setField(userImpl, "lockoutDurationMinutes", 15L)
         ReflectionTestUtils.setField(userImpl, "constraintResolver", constraintResolver)
     }
 
@@ -157,7 +161,7 @@ class UserSpec extends BaseSpecification {
         String token = "refreshToken"
 
         when: "The target method executed"
-        ResponseEntity<?> response = userImpl.refreshToken(token)
+        userImpl.refreshToken(token)
 
         then: "The expected calls"
         if (reason == "Invalid") {
@@ -179,8 +183,8 @@ class UserSpec extends BaseSpecification {
             1 * refreshTokenService.deleteRefreshToken("rotated")
         }
 
-        and: "UNAUTHORIZED response"
-        response.statusCode == HttpStatus.UNAUTHORIZED
+        and: "AuthenticationException is thrown with expected message"
+        thrown(AuthenticationException)
 
         where:
         reason << ["Invalid", "NotFound", "Inactive", "Locked"]
@@ -209,14 +213,14 @@ class UserSpec extends BaseSpecification {
         String username = "u"
 
         when: "The target method executed"
-        ResponseEntity<GlobalResponse<UserProfileDto>> response = userImpl.getProfile(username)
+        userImpl.getProfile(username)
 
         then: "The expected calls"
         1 * userRepo.findOne(_) >> Optional.empty()
         0 * _
 
-        and: "UNAUTHORIZED response"
-        response.statusCode == HttpStatus.UNAUTHORIZED
+        and: "RecordNotFoundException is thrown"
+        thrown(RecordNotFoundException)
     }
 
     def "test - updatePassword: Success"() {

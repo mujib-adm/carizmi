@@ -37,6 +37,7 @@ import java.util.List;
 
 import static org.sofumar.portal.message.ValidationMessages.RECORD_ADDED;
 import static org.sofumar.portal.message.ValidationMessages.RECORD_DELETED;
+import static org.sofumar.portal.message.ValidationMessages.RECORD_NOT_FOUND;
 import static org.sofumar.portal.message.ValidationMessages.RECORD_UPDATED;
 
 @Service
@@ -107,7 +108,7 @@ public non-sealed class PaymentImpl extends PaymentAbstractBL implements Payment
         logger.info("Updating payment: {}", requestDto.getPaymentID());
 
         PaymentVO existingVO = getRepo().findById(requestDto.getPaymentID())
-                .orElseThrow(() -> new RecordNotFoundException("Payment not found: " + requestDto.getPaymentID()));
+                .orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
 
         PaymentVO updatedVO = voTransformer.transformForUpdate(requestDto, existingVO);
         update(updatedVO);
@@ -118,7 +119,7 @@ public non-sealed class PaymentImpl extends PaymentAbstractBL implements Payment
     @Transactional
     public ResponseEntity<GlobalResponse<Void>> deletePayment(@NonNull Integer paymentID) {
         PaymentVO existingVO = getRepo().findById(paymentID)
-                .orElseThrow(() -> new RecordNotFoundException("Payment not found: " + paymentID));
+                .orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
         delete(existingVO);
         return ResponseUtils.ok(RECORD_DELETED.addMessageArgs("Payment").getMessageString());
     }
@@ -127,7 +128,7 @@ public non-sealed class PaymentImpl extends PaymentAbstractBL implements Payment
     @Transactional(readOnly = true)
     public ResponseEntity<GlobalResponse<PaymentDto>> getPayment(@NonNull Integer paymentID) {
         PaymentVO existingVO = getRepo().findById(paymentID)
-                .orElseThrow(() -> new RecordNotFoundException("Payment not found: " + paymentID));
+                .orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
         return ResponseUtils.okWithData(dtoTransformer.transform(existingVO));
     }
 

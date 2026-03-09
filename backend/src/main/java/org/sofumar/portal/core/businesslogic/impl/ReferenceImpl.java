@@ -27,6 +27,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static org.sofumar.portal.message.ValidationMessages.RECORD_NOT_FOUND;
+
 @Service
 public non-sealed class ReferenceImpl extends ReferenceAbstractBL implements Reference {
 
@@ -54,7 +56,7 @@ public non-sealed class ReferenceImpl extends ReferenceAbstractBL implements Ref
     @Override
     public ResponseEntity<GlobalResponse<ReferenceDto>> getReference(Integer referenceID) {
         ReferenceVO existing = getRepo().findById(referenceID)
-                .orElseThrow(() -> new RecordNotFoundException("Reference not found: " + referenceID));
+                .orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
         return ResponseUtils.okWithData(dtoTransformer.transform(existing));
     }
 

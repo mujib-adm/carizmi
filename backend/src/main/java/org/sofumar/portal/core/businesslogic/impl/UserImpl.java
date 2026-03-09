@@ -9,6 +9,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sofumar.portal.constants.FieldConstants;
+import org.sofumar.portal.framework.exception.AuthenticationException;
 import org.sofumar.portal.message.ValidationMessages;
 import org.sofumar.portal.constants.Role;
 import org.sofumar.portal.data.dto.response.UserResponseDto;
@@ -18,7 +19,6 @@ import org.sofumar.portal.data.dto.UserDto;
 import org.sofumar.portal.data.transformer.UserResponseDtoTransformer;
 import org.sofumar.portal.data.transformer.UserVOTransformer;
 import org.sofumar.portal.core.vo.UserVO;
-import org.sofumar.portal.framework.message.Message;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
 import org.sofumar.portal.framework.exception.RecordNotFoundException;
 import org.sofumar.portal.framework.service.TokenBlacklistService;
@@ -33,12 +33,12 @@ import org.springframework.lang.NonNull;
 import org.sofumar.portal.framework.service.RefreshTokenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import static org.sofumar.portal.message.ValidationMessages.RECORD_NOT_FOUND;
 import static org.sofumar.portal.message.ValidationMessages.RECORD_UPDATED;
 import static org.sofumar.portal.security.CookieService.REFRESH_TOKEN_MAP_KEY;
 import static org.sofumar.portal.security.CookieService.TOKEN_MAP_KEY;
@@ -49,6 +49,12 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
 
     @Value("${jwt.expirationMinutes}")
     private int expMin;
+
+    @Value("${app.security.max-login-attempts:5}")
+    private int maxLoginAttempts;
+
+    @Value("${app.security.lockout-duration-minutes:15}")
+    private long lockoutDurationMinutes;
 
     private final PasswordEncoder encoder;
     private final UserResponseDtoTransformer dtoTransformer;
@@ -130,21 +136,21 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
         try {
             String newRefreshToken = refreshTokenService.rotateRefreshToken(token);
             String username = refreshTokenService.validateRefreshToken(newRefreshToken)
-                    .orElseThrow(() -> new IllegalArgumentException("Invalid refresh token state"));
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid state."));
             
             UserVO userVO = getRepo().findOne(UserSpecifications.hasUsername(username))
-                    .orElseThrow(() -> new RecordNotFoundException("User not found"));
+                    .orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
             
-            SofumarUserDetails userDetails = new SofumarUserDetails(userVO);
+            SofumarUserDetails userDetails = new SofumarUserDetails(userVO, lockoutDurationMinutes);
             
             if (!userDetails.isEnabled()) {
                 refreshTokenService.deleteRefreshToken(newRefreshToken);
-                return ResponseUtils.withStatus(HttpStatus.UNAUTHORIZED, Message.Type.ERROR, "Account inactive or invalid.");
+                throw new AuthenticationException();
             }
 
             if (!userDetails.isAccountNonLocked()) {
                 refreshTokenService.deleteRefreshToken(newRefreshToken);
-                return ResponseUtils.withStatus(HttpStatus.UNAUTHORIZED, Message.Type.ERROR, "Account temporarily locked.");
+                throw new AuthenticationException();
             }
             
             String newAccessToken = jwtService.generateAccessToken(userDetails);
@@ -154,19 +160,15 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
                 REFRESH_TOKEN_MAP_KEY, newRefreshToken
             ));
         } catch (IllegalArgumentException | RecordNotFoundException e) {
-            return ResponseUtils.withStatus(HttpStatus.UNAUTHORIZED, Message.Type.ERROR, "Invalid or expired refresh token.");
+            throw new AuthenticationException();
         }
     }
 
     @Override
     @Transactional(readOnly = true)
     public ResponseEntity<GlobalResponse<UserProfileDto>> getProfile(String username) {
-        logger.info("Fetching profile for user: {}", username);
-        UserVO userVO = getRepo().findOne(UserSpecifications.hasUsername(username)).orElse(null);
-        if (userVO == null) {
-            logger.warn("User not found: {}", username);
-            return ResponseUtils.withStatusAndData(HttpStatus.UNAUTHORIZED, Message.Type.ERROR, "User not found.");
-        }
+        UserVO userVO = getRepo().findOne(UserSpecifications.hasUsername(username))
+                .orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
         
         UserProfileDto dto = UserProfileDto.builder()
                 .username(userVO.getUsername())
@@ -176,7 +178,6 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
                 .email(userVO.getEmail())
                 .build();
                 
-        logger.info("Returning profile DTO for user: {}", username);
         return ResponseUtils.okWithData(dto);
     }
 
@@ -184,7 +185,7 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
     @Transactional
     public ResponseEntity<GlobalResponse<Void>> updatePassword(String username, String token, PasswordUpdateRequestDto requestDto) {
         UserVO userVO = getRepo().findOne(UserSpecifications.hasUsername(username))
-                .orElseThrow(() -> new RecordNotFoundException("User not found: " + username));
+                .orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
 
         if (!encoder.matches(requestDto.getOldPassword(), userVO.getPassword())) {
             return ResponseUtils.badRequest("Incorrect old password.");
@@ -217,7 +218,7 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
     @Override
     @Transactional
     public ResponseEntity<GlobalResponse<Void>> updateUserRole(@NonNull Integer userId, String newRole) {
-        UserVO userVO = getRepo().findById(userId).orElseThrow(() -> new RecordNotFoundException("User not found"));
+        UserVO userVO = getRepo().findById(userId).orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
         
         try {
             userVO.setRole(Role.valueOf(newRole));
@@ -231,7 +232,7 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
     @Override
     @Transactional
     public ResponseEntity<GlobalResponse<Void>> toggleUserStatus(@NonNull Integer userId, boolean active) {
-        UserVO userVO = getRepo().findById(userId).orElseThrow(() -> new RecordNotFoundException("User not found"));
+        UserVO userVO = getRepo().findById(userId).orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
         
         userVO.setActive(active);
         update(userVO);
@@ -273,7 +274,7 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
             int newFailures = user.getFailedLoginAttempts() + 1;
             user.setFailedLoginAttempts(newFailures);
 
-            if (newFailures >= 5) {
+            if (newFailures >= maxLoginAttempts) {
                 user.setLockoutTime(java.time.LocalDateTime.now());
             }
             update(user);
@@ -310,7 +311,7 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
         // 2. Role validation (only on update if role changed)
         if (isUpdate) {
             UserVO existing = getRepo().findById(vo.getUserID())
-                    .orElseThrow(() -> new RecordNotFoundException("User not found"));
+                    .orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
 
             // If changing away from ADMIN, check if it's the last active admin
             if (Role.ADMIN == existing.getRole() && Role.ADMIN != vo.getRole()) {

@@ -6,6 +6,7 @@ import org.sofumar.portal.framework.data.response.FieldMsg;
 import org.sofumar.portal.framework.data.response.GlobalMsg;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
 import org.sofumar.portal.framework.data.response.PaginationMeta;
+import org.sofumar.portal.framework.message.constant.CommonMessages;
 import org.sofumar.portal.framework.vo.ValueObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -51,18 +52,6 @@ public class ResponseUtils {
 
     public static ResponseEntity<GlobalResponse<Void>> notFound(String msg) {
         return withStatus(HttpStatus.NOT_FOUND, GlobalResponse.error(msg));
-    }
-
-    public static ResponseEntity<GlobalResponse<Void>> unauthorized(String msg) {
-        return withStatus(HttpStatus.UNAUTHORIZED, unauthorizedResp(msg));
-    }
-
-    public static GlobalResponse<Void> unauthorizedResp(String msg) {
-        GlobalResponse<Void> response = GlobalResponse.getInstance();
-        response.setStatusCode(HttpStatus.UNAUTHORIZED.value());
-        response.setStatusDesc(HttpStatus.UNAUTHORIZED.getReasonPhrase());
-        response.setGlobalMessages(List.of(new GlobalMsg(Message.Type.ERROR, "Unauthorized - " + msg)));
-        return response;
     }
 
     public static ResponseEntity<GlobalResponse<Void>> withStatus(HttpStatus status, GlobalResponse<Void> response) {
@@ -111,5 +100,37 @@ public class ResponseUtils {
 
     public static <T> ResponseEntity<GlobalResponse<T>> badRequestWithData(String msg) {
         return ResponseEntity.badRequest().body(GlobalResponse.error(msg));
+    }
+
+    public static ResponseEntity<GlobalResponse<Void>> accessDenied() {
+        return withStatus(HttpStatus.FORBIDDEN, accessDeniedResp());
+    }
+
+    public static GlobalResponse<Void> accessDeniedResp() {
+        GlobalResponse<Void> response = GlobalResponse.getInstance();
+        response.setStatusCode(HttpStatus.FORBIDDEN.value());
+        response.setStatusDesc(HttpStatus.FORBIDDEN.getReasonPhrase());
+        response.setGlobalMessages(List.of(new GlobalMsg(Message.Type.ERROR, CommonMessages.ACCESS_DENIED.getMessageString())));
+        return response;
+    }
+
+    public static ResponseEntity<GlobalResponse<Void>> unauthenticated() {
+        return withStatus(HttpStatus.UNAUTHORIZED, unauthenticatedResp());
+    }
+
+    public static GlobalResponse<Void> unauthenticatedResp() {
+        GlobalResponse<Void> response = GlobalResponse.getInstance();
+        response.setStatusCode(HttpStatus.UNAUTHORIZED.value());
+        response.setStatusDesc(HttpStatus.UNAUTHORIZED.getReasonPhrase());
+        response.setGlobalMessages(List.of(new GlobalMsg(Message.Type.ERROR, CommonMessages.AUTHENTICATION_FAILED.getMessageString())));
+        return response;
+    }
+
+    public static GlobalResponse<Void> unauthenticatedResp(String customMessage) {
+        GlobalResponse<Void> response = GlobalResponse.getInstance();
+        response.setStatusCode(HttpStatus.UNAUTHORIZED.value());
+        response.setStatusDesc(HttpStatus.UNAUTHORIZED.getReasonPhrase());
+        response.setGlobalMessages(List.of(new GlobalMsg(Message.Type.ERROR, customMessage)));
+        return response;
     }
 }

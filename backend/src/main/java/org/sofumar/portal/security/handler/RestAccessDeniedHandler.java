@@ -5,9 +5,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.sofumar.portal.framework.message.Message;
 import org.sofumar.portal.framework.util.ResponseUtils;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.web.access.AccessDeniedHandler;
@@ -25,6 +23,6 @@ public class RestAccessDeniedHandler implements AccessDeniedHandler {
     public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException) throws IOException, ServletException {
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        objectMapper.writeValue(response.getOutputStream(), ResponseUtils.withStatus(HttpStatus.FORBIDDEN, Message.Type.ERROR, accessDeniedException.getMessage()).getBody());
+        objectMapper.writeValue(response.getOutputStream(), ResponseUtils.accessDeniedResp());
     }
 }

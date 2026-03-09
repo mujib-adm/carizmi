@@ -10,11 +10,12 @@ import org.sofumar.portal.framework.service.RefreshTokenService
 import org.sofumar.portal.security.JwtService
 import org.sofumar.portal.security.SofumarUserDetails
 import org.sofumar.portal.security.CookieService
+import org.sofumar.portal.testbase.BaseSpecification
+import org.sofumar.portal.testbase.ServletCaptureHelper
 import org.springframework.http.MediaType
 import org.springframework.security.core.Authentication
-import spock.lang.Specification
 
-class RestAuthenticationSuccessHandlerSpec extends Specification {
+class RestAuthenticationSuccessHandlerSpec extends BaseSpecification {
 
     RefreshTokenService refreshTokenService = Mock()
     ObjectMapper objectMapper = new ObjectMapper()
@@ -26,15 +27,20 @@ class RestAuthenticationSuccessHandlerSpec extends Specification {
     HttpServletRequest request = Mock()
     HttpServletResponse response = Mock()
     Authentication authentication = Mock()
-    StringWriter stringWriter = new StringWriter()
-    PrintWriter writer = new PrintWriter(stringWriter)
+
+    ServletCaptureHelper capture
+
+    def setup() {
+        capture = captureServletOutput()
+        response.getOutputStream() >> capture.getServletOutputStream()
+    }
 
     def "should handle successful authentication"() {
         given:
         String username = "Test"
         String firstName = "Test"
         UserVO userVO = new UserVO(username: username, role: Role.MEMBER, firstName: firstName)
-        SofumarUserDetails userDetails = new SofumarUserDetails(userVO)
+        SofumarUserDetails userDetails = new SofumarUserDetails(userVO, 15L)
 
         when:
         handler.onAuthenticationSuccess(request, response, authentication)
@@ -48,17 +54,17 @@ class RestAuthenticationSuccessHandlerSpec extends Specification {
         1 * cookieService.addRefreshTokenCookie(response, "refreshToken")
         1 * response.setStatus(HttpServletResponse.SC_OK)
         1 * response.setContentType(MediaType.APPLICATION_JSON_VALUE)
-        1 * response.getWriter() >> writer
+        1 * response.getOutputStream() >> capture.getServletOutputStream()
         0 * _
 
-        and:
-        String jsonResponse = stringWriter.toString()
-        jsonResponse.contains("\"statusCode\":200")
-        jsonResponse.contains("\"statusDesc\":\"OK\"")
-        // Non-sensitive metadata in response
-        !jsonResponse.contains("\"token\"")
-        !jsonResponse.contains("\"refreshToken\"")
-        jsonResponse.contains("\"firstName\":\"Test\"")
-        jsonResponse.contains("\"role\":\"MEMBER\"")
+        and: "Response JSON contains user info and not sensitive tokens"
+        String jsonResponse = capture.getByteArrayOutputStream().toString('UTF-8')
+        jsonResponse.contains('"firstName":"Test"')
+        jsonResponse.contains('"role":"MEMBER"')
+        !jsonResponse.contains('"token"')
+        !jsonResponse.contains('"refreshToken"')
+
+        and: "No exception occurred"
+        noExceptionThrown()
     }
 }

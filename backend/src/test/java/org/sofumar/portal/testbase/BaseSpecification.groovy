@@ -57,4 +57,12 @@ class BaseSpecification extends Specification {
         return [filters: fields, values: values]
     }
 
+    /**
+     * Utility to create a typed ServletCaptureHelper that provides a real ServletOutputStream backed by a ByteArrayOutputStream
+     * and records byte[] write slices. Returns a ServletCaptureHelper typed holder with fields: byteArrayOutputStream, recordedWrites, servletOutputStream.
+     */
+    ServletCaptureHelper captureServletOutput() {
+        return new ServletCaptureHelper()
+    }
+
 }

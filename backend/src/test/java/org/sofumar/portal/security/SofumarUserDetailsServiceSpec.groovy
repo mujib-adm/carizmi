@@ -4,12 +4,17 @@ import org.sofumar.portal.core.businesslogic.User
 import org.sofumar.portal.core.vo.UserVO
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UsernameNotFoundException
+import org.springframework.test.util.ReflectionTestUtils
 import spock.lang.Specification
 
 class SofumarUserDetailsServiceSpec extends Specification {
 
     User user = Mock()
     SofumarUserDetailsService userDetailsService = new SofumarUserDetailsService(user)
+
+    void setup() {
+        ReflectionTestUtils.setField(userDetailsService, "lockoutDurationMinutes", 15L)
+    }
 
     def "loadUserByUsername - should return UserDetails when user found"() {
         given:

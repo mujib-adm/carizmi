@@ -51,13 +51,13 @@ public class MemberValidator extends AbstractDomainValidator<MemberVO> {
         if (StringUtils.isBlank(vo.getPhone())) {
             validateRequired(vo, FieldConstants.PHONE, vo.getPhone());
         } else {
-            validateRegex(vo, FieldConstants.PHONE, vo.getPhone(), PHONE_REGEX, ValidationMessages.INVALID_VALUE);
+            validateRegex(vo, FieldConstants.PHONE, vo.getPhone(), PHONE_REGEX);
         }
     }
 
     private void validateEmail(MemberVO vo) {
         if (StringUtils.isNotBlank(vo.getEmail())) {
-            validateRegex(vo, FieldConstants.EMAIL, vo.getEmail(), EMAIL_REGEX, ValidationMessages.INVALID_VALUE);
+            validateRegex(vo, FieldConstants.EMAIL, vo.getEmail(), EMAIL_REGEX);
         }
     }
 
@@ -76,7 +76,7 @@ public class MemberValidator extends AbstractDomainValidator<MemberVO> {
 
     private void validateZip(MemberVO vo) {
         if (StringUtils.isNotBlank(vo.getZip())) {
-            validateRegex(vo, FieldConstants.ZIP, vo.getZip(), ZIP_REGEX, ValidationMessages.INVALID_VALUE);
+            validateRegex(vo, FieldConstants.ZIP, vo.getZip(), ZIP_REGEX);
         }
     }
 }

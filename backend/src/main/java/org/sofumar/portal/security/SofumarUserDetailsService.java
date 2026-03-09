@@ -3,6 +3,7 @@ package org.sofumar.portal.security;
 import lombok.RequiredArgsConstructor;
 import org.sofumar.portal.core.businesslogic.User;
 import org.sofumar.portal.core.vo.UserVO;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -14,12 +15,15 @@ public class SofumarUserDetailsService implements UserDetailsService {
 
     private final User user;
 
+    @Value("${app.security.lockout-duration-minutes:15}")
+    private long lockoutDurationMinutes;
+
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         UserVO userVO = user.findUserForAuthentication(username);
         if (userVO == null) {
             throw new UsernameNotFoundException("User not found with username: " + username);
         }
-        return new SofumarUserDetails(userVO);
+        return new SofumarUserDetails(userVO, lockoutDurationMinutes);
     }
 }

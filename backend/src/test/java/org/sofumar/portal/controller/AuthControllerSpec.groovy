@@ -135,8 +135,6 @@ class AuthControllerSpec extends BaseSpecification {
         then: "The expected calls are made"
         1 * cookieService.getRefreshToken(request) >> Optional.of(refreshToken)
         1 * user.refreshToken(refreshToken) >> serviceResponse
-        0 * cookieService.addAccessTokenCookie(_, _)
-        0 * cookieService.addRefreshTokenCookie(_, _)
         0 * _
 
         and: "The expected result"
@@ -155,8 +153,6 @@ class AuthControllerSpec extends BaseSpecification {
         then: "The expected calls are made"
         1 * cookieService.getRefreshToken(request) >> Optional.of(refreshToken)
         1 * user.refreshToken(refreshToken) >> serviceResponse
-        0 * cookieService.addAccessTokenCookie(_, _)
-        0 * cookieService.addRefreshTokenCookie(_, _)
         0 * _
 
         and: "The expected result"
@@ -164,76 +160,48 @@ class AuthControllerSpec extends BaseSpecification {
         noExceptionThrown()
     }
 
-    @Unroll
-    def "test - getCurrentUser: Handling userDetails state [details: #details, expectedStatus: #expectedStatus]"() {
+    def "test - getCurrentUser: Should delegate to user service"() {
         given: "A profile request"
         String username = "Test"
-        UserDetails userDetails = null
-        if (details) {
-            userDetails = Mock(UserDetails)
-            userDetails.getUsername() >> username
-        }
+        UserDetails userDetails = Mock(UserDetails)
         ResponseEntity<GlobalResponse<UserProfileDto>> serviceResponse = new ResponseEntity<>(HttpStatus.OK)
 
         when: "The target method executed"
         ResponseEntity<GlobalResponse<UserProfileDto>> result = authController.getCurrentUser(userDetails)
 
         then: "The expected calls are made"
-        if (details) {
-            1 * userDetails.getUsername() >> username
-            1 * user.getProfile(username) >> serviceResponse
-        }
+        1 * userDetails.getUsername() >> username
+        1 * user.getProfile(username) >> serviceResponse
         0 * _
 
         and: "The expected result"
-        result.statusCode == expectedStatus
-        if (details) {
-            result == serviceResponse
-        }
+        result.statusCode == HttpStatus.OK
+        result == serviceResponse
         noExceptionThrown()
-
-        where:
-        details | expectedStatus
-        true    | HttpStatus.OK
-        false   | HttpStatus.UNAUTHORIZED
     }
 
-    @Unroll
-    def "test - updatePassword: Handling userDetails [details: #details, expectedStatus: #expectedStatus]"() {
+    def "test - updatePassword: Should delegate to user service"() {
         given: "A password update request"
         String username = "Test"
-        UserDetails userDetails = null
-        if (details) {
-            userDetails = Mock(UserDetails)
-            userDetails.getUsername() >> username
-        }
+        UserDetails userDetails = Mock(UserDetails)
         PasswordUpdateRequestDto requestDto = new PasswordUpdateRequestDto()
         ResponseEntity<GlobalResponse<Void>> serviceResponse = new ResponseEntity<>(HttpStatus.OK)
-        String accessTokenFromCookie = details ? "access-token" : null
+        String accessTokenFromCookie = "access-token"
 
         when: "The target method executed"
         ResponseEntity<GlobalResponse<Void>> result = authController.updatePassword(userDetails, request, response, requestDto)
 
         then: "The expected calls are made"
-        if (details) {
-            1 * cookieService.getAccessToken(request) >> Optional.ofNullable(accessTokenFromCookie)
-            1 * userDetails.getUsername() >> username
-            1 * user.updatePassword(username, accessTokenFromCookie, requestDto) >> serviceResponse
-            1 * cookieService.clearAuthCookies(response) // cookies cleared on successful password update
-        }
+        1 * cookieService.getAccessToken(request) >> Optional.ofNullable(accessTokenFromCookie)
+        1 * userDetails.getUsername() >> username
+        1 * user.updatePassword(username, accessTokenFromCookie, requestDto) >> serviceResponse
+        1 * cookieService.clearAuthCookies(response) // cookies cleared on successful password update
         0 * _
 
         and: "The expected result"
-        result.statusCode == expectedStatus
-        if (details) {
-            result == serviceResponse
-        }
+        result.statusCode == HttpStatus.OK
+        result == serviceResponse
         noExceptionThrown()
-
-        where:
-        details | expectedStatus
-        true    | HttpStatus.OK
-        false   | HttpStatus.UNAUTHORIZED
     }
 
     def "test - updatePassword: Should NOT clear cookies when password update fails"() {
@@ -250,7 +218,6 @@ class AuthControllerSpec extends BaseSpecification {
         1 * cookieService.getAccessToken(request) >> Optional.of("access-token")
         1 * userDetails.getUsername() >> username
         1 * user.updatePassword(username, "access-token", requestDto) >> failedResponse
-        0 * cookieService.clearAuthCookies(_) // cookies NOT cleared on failure
         0 * _
 
         and: "The expected result"

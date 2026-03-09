@@ -6,6 +6,9 @@ import org.sofumar.portal.framework.message.Message;
 import org.sofumar.portal.framework.util.LabelUtils;
 import org.sofumar.portal.framework.vo.ValueObject;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+
 /**
  * Base abstract class for domain validators providing common validation utilities.
  *
@@ -14,16 +17,27 @@ import org.sofumar.portal.framework.vo.ValueObject;
 public abstract class AbstractDomainValidator<V extends ValueObject> implements DomainValidator<V> {
 
     /**
-     * Validates if a field is required (not null or blank if it's a string).
+     * Validates required field.
      *
      * @param vo        the value object
-     * @param fieldName the name of the field (from FieldConstants)
+     * @param fieldName the name of the field
      * @param value     the value to check
      */
     protected void validateRequired(V vo, String fieldName, Object value) {
-        if (value == null || (value instanceof String s && StringUtils.isBlank(s))) {
-            vo.addFieldMessage(fieldName, CommonMessages.REQUIRED_FIELD.addMessageArgs(LabelUtils.toLabel(fieldName)));
+        boolean invalid = switch (value) {
+            case null -> true;
+            case String s -> s.isBlank();
+            case BigDecimal bd -> bd.compareTo(BigDecimal.ZERO) == 0;
+            case BigInteger bi -> bi.signum() == 0;
+            // All other Number types (Integer, Long, Double, Float, Short, Byte)
+            case Number n -> n.doubleValue() == 0d;
+            default -> false;
+        };
+
+        if (!invalid) {
+            return;
         }
+        vo.addFieldMessage(fieldName, CommonMessages.REQUIRED_FIELD.addMessageArgs(LabelUtils.toLabel(fieldName)));
     }
 
     /**
@@ -33,7 +47,15 @@ public abstract class AbstractDomainValidator<V extends ValueObject> implements 
      * @param fieldName the name of the field
      * @param value     the value to check
      * @param regex     the regex pattern
-     * @param message   the error message to add if validation fails
+     */
+    protected void validateRegex(V vo, String fieldName, String value, String regex) {
+        if (isNotMatchRegex(value, regex)) {
+            vo.addFieldMessage(fieldName, CommonMessages.INVALID_VALUE);
+        }
+    }
+
+    /**
+     * This version supports specific error message with 'param message' instead of default "Invalid value".
      */
     protected void validateRegex(V vo, String fieldName, String value, String regex, Message message) {
         if (isNotMatchRegex(value, regex)) {

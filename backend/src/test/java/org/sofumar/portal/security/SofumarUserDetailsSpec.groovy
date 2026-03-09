@@ -18,7 +18,7 @@ class SofumarUserDetailsSpec extends Specification {
         given: "A UserVO with a role"
         Role role = Role.ADMIN
         UserVO userVO = new UserVO(role: role)
-        userDetails = new SofumarUserDetails(userVO)
+        userDetails = new SofumarUserDetails(userVO, 15L)
 
         when: "Authorities are retrieved"
         Collection<? extends GrantedAuthority> authorities = userDetails.getAuthorities()
@@ -34,7 +34,7 @@ class SofumarUserDetailsSpec extends Specification {
     def "test - getAuthorities: Should return empty list when role is null"() {
         given: "A UserVO without a role"
         UserVO userVO = new UserVO(role: null)
-        userDetails = new SofumarUserDetails(userVO)
+        userDetails = new SofumarUserDetails(userVO, 15L)
 
         when: "Authorities are retrieved"
         Collection<? extends GrantedAuthority> authorities = userDetails.getAuthorities()
@@ -50,7 +50,7 @@ class SofumarUserDetailsSpec extends Specification {
         given: "A UserVO with a password"
         String password = "encodedPassword"
         UserVO userVO = new UserVO(password: password)
-        userDetails = new SofumarUserDetails(userVO)
+        userDetails = new SofumarUserDetails(userVO, 15L)
 
         when: "Password is retrieved"
         String result = userDetails.getPassword()
@@ -66,7 +66,7 @@ class SofumarUserDetailsSpec extends Specification {
         given: "A UserVO with a username"
         String username = "testuser"
         UserVO userVO = new UserVO(username: username)
-        userDetails = new SofumarUserDetails(userVO)
+        userDetails = new SofumarUserDetails(userVO, 15L)
 
         when: "Username is retrieved"
         String result = userDetails.getUsername()
@@ -82,7 +82,7 @@ class SofumarUserDetailsSpec extends Specification {
     def "test - isAccountNonLocked: Should return #expected for lockoutTime #lockoutTimeDescription"() {
         given: "A UserVO with a specific lockoutTime"
         UserVO userVO = new UserVO(lockoutTime: lockoutTime)
-        userDetails = new SofumarUserDetails(userVO)
+        userDetails = new SofumarUserDetails(userVO, 15L)
 
         when: "Checking if account is non-locked"
         boolean result = userDetails.isAccountNonLocked()
@@ -104,7 +104,7 @@ class SofumarUserDetailsSpec extends Specification {
     def "test - isEnabled: Should return #expected for active=#isActive and role=#role"() {
         given: "A UserVO with state and role"
         UserVO userVO = new UserVO(active: isActive, role: role)
-        userDetails = new SofumarUserDetails(userVO)
+        userDetails = new SofumarUserDetails(userVO, 15L)
 
         when: "Checking if account is enabled"
         boolean result = userDetails.isEnabled()
@@ -129,7 +129,7 @@ class SofumarUserDetailsSpec extends Specification {
     def "test - getAccountNonExpired and isCredentialsNonExpired: Should always return true"() {
         given: "Any userDetails"
         UserVO userVO = new UserVO()
-        userDetails = new SofumarUserDetails(userVO)
+        userDetails = new SofumarUserDetails(userVO, 15L)
 
         when: "Boolean flags retrieved"
         boolean nonExpired = userDetails.isAccountNonExpired()

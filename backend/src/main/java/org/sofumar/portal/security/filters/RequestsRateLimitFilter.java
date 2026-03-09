@@ -1,5 +1,6 @@
 package org.sofumar.portal.security.filters;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.github.bucket4j.Bandwidth;
@@ -8,14 +9,19 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.sofumar.portal.framework.message.Message;
+import org.sofumar.portal.framework.util.ResponseUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.lang.NonNull;
 
 import java.io.IOException;
 import java.time.Duration;
+
+import static org.sofumar.portal.framework.message.constant.CommonMessages.ACCOUNT_TEMP_LOCKED;
 
 /**
  * Rate limiting filter using Bucket4j.
@@ -65,7 +71,10 @@ public class RequestsRateLimitFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
         } else {
             response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
-            response.getWriter().write("Too many requests");
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            new ObjectMapper().writeValue(response.getOutputStream(),
+                    ResponseUtils.withStatusAndData(HttpStatus.TOO_MANY_REQUESTS, Message.Type.ERROR,
+                            ACCOUNT_TEMP_LOCKED.getMessageText()).getBody());
         }
     }
 

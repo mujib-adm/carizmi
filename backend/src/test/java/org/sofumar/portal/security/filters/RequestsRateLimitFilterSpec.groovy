@@ -5,16 +5,16 @@ import io.github.bucket4j.Bucket
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.sofumar.portal.testbase.BaseSpecification
 import org.springframework.http.HttpStatus
 import org.springframework.test.util.ReflectionTestUtils
-import spock.lang.Specification
 import spock.lang.Subject
 import spock.lang.Unroll
 
-
 import java.time.Duration
+import org.sofumar.portal.testbase.ServletCaptureHelper
 
-class RequestsRateLimitFilterSpec extends Specification {
+class RequestsRateLimitFilterSpec extends BaseSpecification {
 
     @Subject
     RequestsRateLimitFilter filter = new RequestsRateLimitFilter()
@@ -23,12 +23,16 @@ class RequestsRateLimitFilterSpec extends Specification {
     HttpServletResponse response = Mock()
     FilterChain chain = Mock()
 
+    ServletCaptureHelper capture
+
     void setup() {
         // Default configuration
         ReflectionTestUtils.setField(filter, "enabled", true)
         ReflectionTestUtils.setField(filter, "capacity", 5) // Small capacity for testing
         ReflectionTestUtils.setField(filter, "refillTokens", 5)
         ReflectionTestUtils.setField(filter, "refillDuration", Duration.ofSeconds(60))
+        // Prepare a capture for potential JSON writes
+        capture = captureServletOutput()
     }
 
     def "test - doFilterInternal: Should skip filtering when disabled"() {
@@ -69,8 +73,7 @@ class RequestsRateLimitFilterSpec extends Specification {
         int capacity = 1
         ReflectionTestUtils.setField(filter, "capacity", capacity)
 
-        PrintWriter writer = Mock()
-
+        // use capture for response output
         when: "Consuming more than capacity"
         filter.doFilterInternal(request, response, chain) // Consumption 1 (OK)
         filter.doFilterInternal(request, response, chain) // Consumption 2 (Over limit)
@@ -84,9 +87,8 @@ class RequestsRateLimitFilterSpec extends Specification {
         1 * request.getHeader("X-Forwarded-For") >> null
         1 * request.getRemoteAddr() >> ip
         1 * response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value())
-        1 * response.getWriter() >> writer
-        1 * writer.write("Too many requests")
-        0 * chain.doFilter(request, response)
+        1 * response.setContentType("application/json")
+        1 * response.getOutputStream() >> capture.getServletOutputStream()
         0 * _
 
         and: "No exception occurred"
@@ -101,7 +103,7 @@ class RequestsRateLimitFilterSpec extends Specification {
         when: "Filtering a request"
         filter.doFilterInternal(request, response, chain)
 
-        then: "Header and addr are checked"
+        then: "Header is checked"
         1 * request.getHeader("X-Forwarded-For") >> xForwardedFor
         if (xForwardedFor == null) {
             1 * request.getRemoteAddr() >> remoteAddr

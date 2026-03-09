@@ -7,6 +7,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -15,9 +16,11 @@ import java.util.List;
 public class SofumarUserDetails implements UserDetails {
 
     private final UserVO userVO;
+    private final long lockoutDurationMinutes;
 
-    public SofumarUserDetails(UserVO userVO) {
+    public SofumarUserDetails(UserVO userVO, long lockoutDurationMinutes) {
         this.userVO = userVO;
+        this.lockoutDurationMinutes = lockoutDurationMinutes;
     }
 
     @Override
@@ -43,10 +46,8 @@ public class SofumarUserDetails implements UserDetails {
         if (userVO.getLockoutTime() == null) {
             return true;
         }
-        // Lock lasts for 15 minutes
-        long lockoutDurationMinutes = 15;
-        java.time.LocalDateTime lockExpiration = userVO.getLockoutTime().plusMinutes(lockoutDurationMinutes);
-        return java.time.LocalDateTime.now().isAfter(lockExpiration);
+        LocalDateTime lockExpiration = userVO.getLockoutTime().plusMinutes(lockoutDurationMinutes);
+        return LocalDateTime.now().isAfter(lockExpiration);
     }
 
     @Override

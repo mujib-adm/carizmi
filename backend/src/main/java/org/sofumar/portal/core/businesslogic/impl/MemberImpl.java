@@ -43,6 +43,7 @@ import java.util.stream.Collectors;
 
 import static org.sofumar.portal.message.ValidationMessages.RECORD_ADDED;
 import static org.sofumar.portal.message.ValidationMessages.RECORD_DELETED;
+import static org.sofumar.portal.message.ValidationMessages.RECORD_NOT_FOUND;
 import static org.sofumar.portal.message.ValidationMessages.RECORD_UPDATED;
 
 @Service
@@ -92,7 +93,7 @@ public non-sealed class MemberImpl extends MemberAbstractBL implements Member {
     @Transactional
     public ResponseEntity<GlobalResponse<Void>> updateMember(MemberDto requestDto) {
         MemberVO existingMember = getRepo().findById(requestDto.getMemberID())
-                .orElseThrow(() -> new RecordNotFoundException("Member not found with ID: " + requestDto.getMemberID()));
+                .orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
 
         MemberVO updatedMember = voTransformer.transformForUpdate(requestDto, existingMember);
         MemberVO savedMember = update(updatedMember);
@@ -104,7 +105,7 @@ public non-sealed class MemberImpl extends MemberAbstractBL implements Member {
     @Transactional
     public ResponseEntity<GlobalResponse<Void>> deleteMember(Integer memberID) {
         MemberVO existingMember = getRepo().findById(memberID)
-                .orElseThrow(() -> new RecordNotFoundException("Member not found with ID: " + memberID));
+                .orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
 
         delete(existingMember);
         logger.info("Member deleted successfully, memberID: {}", memberID);
@@ -134,7 +135,7 @@ public non-sealed class MemberImpl extends MemberAbstractBL implements Member {
     @Transactional(readOnly = true)
     public ResponseEntity<GlobalResponse<MemberDto>> getMember(Integer memberID) {
         MemberVO member = getRepo().findById(memberID)
-                .orElseThrow(() -> new RecordNotFoundException("Member not found with ID: " + memberID));
+                .orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
 
         return ResponseUtils.okWithData(dtoTransformer.transform(member));
     }

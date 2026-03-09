@@ -46,11 +46,11 @@ public class RestAuthenticationSuccessHandler implements AuthenticationSuccessHa
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
         // Only return non-sensitive metadata in the JSON body (tokens are in cookies)
-        Map<String, String> data = Map.of(
+        Map<String, String> bodyMap = Map.of(
                 "role", userDetails.getUserVO().getRole().name(),
                 "firstName", userDetails.getUserVO().getFirstName()
         );
 
-        objectMapper.writeValue(response.getWriter(), ResponseUtils.withMap(data).getBody());
+        objectMapper.writeValue(response.getOutputStream(), ResponseUtils.withMap(bodyMap).getBody());
     }
 }

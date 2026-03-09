@@ -30,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.sofumar.portal.message.ValidationMessages.RECORD_ADDED;
 import static org.sofumar.portal.message.ValidationMessages.RECORD_DELETED;
+import static org.sofumar.portal.message.ValidationMessages.RECORD_NOT_FOUND;
 import static org.sofumar.portal.message.ValidationMessages.RECORD_UPDATED;
 
 @Service
@@ -79,7 +80,7 @@ public non-sealed class ExpenseImpl extends ExpenseAbstractBL implements Expense
         logger.info("Updating expense: {}", requestDto.getExpenseID());
 
         ExpenseVO existing = getRepo().findById(requestDto.getExpenseID())
-                .orElseThrow(() -> new RecordNotFoundException("Expense not found: " + requestDto.getExpenseID()));
+                .orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
 
         ExpenseVO updated = voTransformer.transformForUpdate(requestDto, existing);
         update(updated);
@@ -90,7 +91,7 @@ public non-sealed class ExpenseImpl extends ExpenseAbstractBL implements Expense
     @Transactional
     public ResponseEntity<GlobalResponse<Void>> deleteExpense(@NonNull Integer expenseID) {
         ExpenseVO existing = getRepo().findById(expenseID)
-                .orElseThrow(() -> new RecordNotFoundException("Expense not found: " + expenseID));
+                .orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
         delete(existing);
         return ResponseUtils.ok(RECORD_DELETED.addMessageArgs("Expense").getMessageString());
     }
@@ -99,7 +100,7 @@ public non-sealed class ExpenseImpl extends ExpenseAbstractBL implements Expense
     @Transactional(readOnly = true)
     public ResponseEntity<GlobalResponse<ExpenseDto>> getExpense(@NonNull Integer expenseID) {
         ExpenseVO existing = getRepo().findById(expenseID)
-                .orElseThrow(() -> new RecordNotFoundException("Expense not found: " + expenseID));
+                .orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
         return ResponseUtils.okWithData(dtoTransformer.transform(existing));
     }
 

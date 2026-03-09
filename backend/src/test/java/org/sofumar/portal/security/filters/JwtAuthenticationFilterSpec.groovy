@@ -123,7 +123,6 @@ class JwtAuthenticationFilterSpec extends Specification {
         1 * request.getMethod() >> method
         1 * request.getServletPath() >> servletPath
         2 * request.getCookies() >> ([accessCookie] as Cookie[])
-        0 * bearerTokenResolver.resolve(_)
         1 * blacklistService.isTokenRevoked(token) >> false
         1 * jwtService.getClaims(token) >> claims
         1 * claims.getSubject() >> username
