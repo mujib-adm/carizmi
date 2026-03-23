@@ -3,11 +3,16 @@ import { Card, Col, Row, Table, Typography } from 'antd';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
-import { getDashboardMetrics, getLatestPayments } from '../../apiclient/dashboardApi';
+import { dashboardApi } from '../../api/generated/dashboard/dashboard';
+import { paymentsApi } from '../../api/generated/payments/payments';
 import { MessageBanner } from '../../component/MessageBanner';
 import Sidebar from '../../component/Sidebar';
 import { ReferenceConstants } from '../../constants/ReferenceConstants';
-import { DashboardMetrics, RecentTransactions } from '../../constants/types';
+import {
+  DashboardMetricsDto,
+  LatestPaymentDto,
+  QuarterStatus,
+} from '../../api/generated/types';
 import { useReference } from '../../context/ReferenceContext';
 import { useApiMessages } from '../../hook/ApiResponseHandler';
 import './Dashboard.css';
@@ -52,7 +57,8 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, pay
 };
 
 export default function Dashboard() {
-  const [metrics, setMetrics] = useState<DashboardMetrics>({
+
+  const [metrics, setMetrics] = useState<DashboardMetricsDto>({
     totalMembers: 0,
     totalRevenue: 0,
     duesThisQuarter: 0,
@@ -60,7 +66,7 @@ export default function Dashboard() {
     quarterlyFeeAmt: 0,
     quarterlyCollections: [],
   });
-  const [payments, setPayments] = useState<RecentTransactions[]>([]);
+  const [payments, setPayments] = useState<LatestPaymentDto[]>([]);
   const [loading, setLoading] = useState(true);
   const { toDisplay } = useReference();
   const { globalMessages, handleError, resetMessages } = useApiMessages<any>();
@@ -69,12 +75,15 @@ export default function Dashboard() {
     const fetchDashboard = async () => {
       try {
         resetMessages();
-        const metricsRes = await getDashboardMetrics();
+        const [metricsRes, paymentsRes] = await Promise.all([
+          dashboardApi.getMetrics(),
+          paymentsApi.latestPayments(),
+        ]);
+
         if (metricsRes.responseData) {
           setMetrics(metricsRes.responseData);
         }
 
-        const paymentsRes = await getLatestPayments();
         if (paymentsRes.responseData) {
           setPayments(paymentsRes.responseData);
         }
@@ -89,7 +98,7 @@ export default function Dashboard() {
 
   const columns = [
     { title: 'Date', dataIndex: 'paymentDate', key: 'paymentDate', render: (d: string) => d ? new Date(d).toLocaleDateString() : 'N/A' },
-    { title: 'Member Name', dataIndex: 'memberName', key: 'memberName', render: (text: string, record: RecentTransactions) => <Link to={`/members/${record.memberID}`}>{text}</Link> },
+    { title: 'Member Name', dataIndex: 'memberName', key: 'memberName', render: (text: string, record: LatestPaymentDto) => <Link to={`/members/${record.memberID}`}>{text}</Link> },
     { title: 'Description', dataIndex: 'feeType', key: 'feeType', render: (code: string) => toDisplay(ReferenceConstants.FEE_TYPE.NAME, code) },
     { title: 'Amount', dataIndex: 'amount', key: 'amount', render: (val: number) => `$${val?.toFixed(2) ?? '0.00'}` },
   ];
@@ -98,12 +107,12 @@ export default function Dashboard() {
   // We want: [Gap, Q1 Paid, Q1 Unpaid, Gap, Q2 Paid, Q2 Unpaid...]
   // Total Potential per Quarter is constant: Active * quarterlyFeeAmt
   const activeMembers = metrics.totalMembers || 0;
-  const potentialPerQ = activeMembers * metrics.quarterlyFeeAmt;
+  const potentialPerQ = activeMembers * (metrics.quarterlyFeeAmt || 0);
   const gapSize = potentialPerQ * 0.03; // Gap size (3%)
 
   const pieData: any[] = [];
 
-  metrics.quarterlyCollections.forEach((q, idx) => {
+  (metrics.quarterlyCollections || []).forEach((q, idx) => {
     // 1. Spacer (Gap) - Transparent, to separate quarters
     pieData.push({
       name: '',
@@ -116,18 +125,18 @@ export default function Dashboard() {
     // If Future, Collected = 0.
     pieData.push({
       name: `${q.quarterLabel} Paid`,
-      value: q.collectedAmount,
+      value: q.collectedAmount || 0,
       rate: q.percentage,
       color: COLORS[idx % COLORS.length],
       isGap: false,
     });
 
     // 3. Unpaid/Future Slice
-    let unpaidVal = Math.max(0, potentialPerQ - q.collectedAmount);
+    let unpaidVal = Math.max(0, potentialPerQ - (q.collectedAmount || 0));
     let unpaidColor = 'orange'; // Orange for Unpaid
     let unpaidName = `${q.quarterLabel} Unpaid`;
 
-    if (q.status === 'FUTURE') {
+    if (q.status === QuarterStatus.FUTURE) {
       unpaidColor = '#E0E0E0'; // Gray for Future
       unpaidName = `${q.quarterLabel} Future`;
     }
@@ -142,7 +151,7 @@ export default function Dashboard() {
   });
 
   // Center Label: Current Quarter Rate
-  const currentQRate = metrics.quarterlyCollections.find(q => q.status === 'CURRENT')?.percentage ?? 0;
+  const currentQRate = (metrics.quarterlyCollections || []).find(q => q.status === QuarterStatus.CURRENT)?.percentage ?? 0;
 
   return (
     <div className="dashboard-layout">
@@ -163,7 +172,7 @@ export default function Dashboard() {
             <Col xs={24} md={6}>
               <Card className="glass-card">
                 <div className="metric-label">Total Members</div>
-                <div className="metric-value">{metrics.totalMembers.toLocaleString()}</div>
+                <div className="metric-value">{(metrics.totalMembers || 0).toLocaleString()}</div>
                 <div className="metric-subtext"> Total Active Members</div>
                 <TeamOutlined style={{ position: 'absolute', bottom: 20, right: 20, fontSize: 48, color: '#1E5631', opacity: 0.15 }} />
               </Card>

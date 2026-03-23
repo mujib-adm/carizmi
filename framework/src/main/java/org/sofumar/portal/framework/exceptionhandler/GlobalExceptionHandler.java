@@ -6,7 +6,7 @@ import org.sofumar.portal.framework.exception.AuthenticationException;
 import org.sofumar.portal.framework.exception.DuplicateRecordException;
 import org.sofumar.portal.framework.exception.RecordNotFoundException;
 import org.sofumar.portal.framework.exception.ValidationException;
-import org.sofumar.portal.framework.message.Message;
+import org.sofumar.portal.framework.message.MessageType;
 import org.sofumar.portal.framework.data.response.FieldMsg;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
 import org.sofumar.portal.framework.util.ResponseUtils;
@@ -27,7 +27,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<GlobalResponse<Void>> handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
         List<FieldMsg> fieldMessages = ex.getBindingResult().getFieldErrors().stream()
-                .map(fe -> new FieldMsg(Message.Type.ERROR, fe.getField(), fe.getDefaultMessage()))
+                .map(fe -> new FieldMsg(MessageType.ERROR, fe.getField(), fe.getDefaultMessage()))
                 .toList();
 
         GlobalResponse<Void> response = GlobalResponse.getInstance();
@@ -66,7 +66,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<GlobalResponse<Void>> handleGeneric(Exception ex) {
         logger.error("Unexpected error occurred: ", ex);
-        return ResponseUtils.withStatus(HttpStatus.INTERNAL_SERVER_ERROR, Message.Type.ERROR, "Unexpected error occurred. Please try again or contact support.");
+        return ResponseUtils.withStatus(HttpStatus.INTERNAL_SERVER_ERROR, MessageType.ERROR, "Unexpected error occurred. Please try again or contact support.");
     }
 
     @ExceptionHandler(AuthenticationException.class)

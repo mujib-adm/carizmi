@@ -1,7 +1,7 @@
 import { Form, Modal, Select, Switch } from 'antd';
 import { useEffect } from 'react';
 import { RoleConstants } from '../constants/RoleConstants';
-import { User } from '../constants/types';
+import { UserResponseDto } from '../api/generated/types';
 import { AntdFormItem } from '../component/AntdFormItem';
 import { MessageBanner } from '../component/MessageBanner';
 import { useApiMessages } from '../hook/ApiResponseHandler';
@@ -9,8 +9,8 @@ import { useApiMessages } from '../hook/ApiResponseHandler';
 interface UserModalProps {
   open: boolean;
   onCancel: () => void;
-  onSubmit: (values: any) => Promise<void>;
-  initialValues?: User | null;
+  onSubmit: (values: UserResponseDto) => Promise<void>;
+  initialValues?: UserResponseDto | null;
 }
 
 export const UserModal = ({ open, onCancel, onSubmit, initialValues }: UserModalProps) => {

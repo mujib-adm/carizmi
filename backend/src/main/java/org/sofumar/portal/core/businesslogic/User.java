@@ -2,6 +2,7 @@ package org.sofumar.portal.core.businesslogic;
 
 import java.util.List;
 import org.sofumar.portal.data.dto.response.UserResponseDto;
+import org.sofumar.portal.data.dto.response.TokenDto;
 import org.sofumar.portal.data.dto.response.UserProfileDto;
 import org.sofumar.portal.data.dto.request.PasswordUpdateRequestDto;
 import org.sofumar.portal.data.dto.UserDto;
@@ -17,7 +18,7 @@ public interface User extends BusinessLogic<UserVO> {
 
     void logout(String accessToken, String refreshToken);
 
-    ResponseEntity<?> refreshToken(String refreshToken);
+    ResponseEntity<GlobalResponse<TokenDto>> refreshToken(String refreshToken);
 
     ResponseEntity<GlobalResponse<UserProfileDto>> getProfile(String username);
 

@@ -9,7 +9,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.sofumar.portal.framework.message.Message;
+import org.sofumar.portal.framework.message.MessageType;
 import org.sofumar.portal.framework.util.ResponseUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -21,7 +21,7 @@ import org.springframework.lang.NonNull;
 import java.io.IOException;
 import java.time.Duration;
 
-import static org.sofumar.portal.framework.message.constant.CommonMessages.ACCOUNT_TEMP_LOCKED;
+import static org.sofumar.portal.framework.message.constant.CommonMessages.TOO_MANY_REQUESTS;
 
 /**
  * Rate limiting filter using Bucket4j.
@@ -73,8 +73,8 @@ public class RequestsRateLimitFilter extends OncePerRequestFilter {
             response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             new ObjectMapper().writeValue(response.getOutputStream(),
-                    ResponseUtils.withStatusAndData(HttpStatus.TOO_MANY_REQUESTS, Message.Type.ERROR,
-                            ACCOUNT_TEMP_LOCKED.getMessageText()).getBody());
+                    ResponseUtils.withStatusAndData(HttpStatus.TOO_MANY_REQUESTS, MessageType.ERROR,
+                            TOO_MANY_REQUESTS.getMessageText()).getBody());
         }
     }
 

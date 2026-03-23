@@ -1,15 +1,18 @@
 import { EditOutlined, SettingOutlined } from '@ant-design/icons';
 import { Button, Card, Space, Table, Typography } from 'antd';
 import { useEffect, useState } from 'react';
-import { updateSystemSetting } from '../../apiclient/systemSettingsApi';
+import { systemSettingsApi } from '../../api/generated/system-settings/system-settings';
 import { MessageBanner } from '../../component/MessageBanner.js';
 import SearchFilterBar from '../../component/SearchFilterBar.jsx';
 import Sidebar from '../../component/Sidebar';
 import '../../component/Sidebar.css';
-import { SystemSettingsModal } from '../../modals/SystemSettingsModal.js';
+import { SystemSettingsModal } from '../../modals/SystemSettingsModal';
 import { ReferenceConstants } from '../../constants/ReferenceConstants';
 import { systemSettingsSearchFiltersConfig } from '../../constants/systemSettingsSearchFiltersConfig';
-import { SystemSetting, SystemSettingSearchRequest } from '../../constants/types';
+import {
+  SystemSettingsDto,
+  SystemSettingsSearchRequestDto
+} from '../../api/generated/types';
 import { useReference } from '../../context/ReferenceContext';
 import { useApiMessages } from '../../hook/ApiResponseHandler';
 import { usePaginatedSystemSettings } from '../../hook/PaginatedSystemSettings';
@@ -19,13 +22,13 @@ const { Title } = Typography;
 
 export default function SystemSettingsPage() {
   const { settings, meta, loading, fetchSettings } = usePaginatedSystemSettings();
-  const [filters, setFilters] = useState<SystemSettingSearchRequest>({});
+  const [filters, setFilters] = useState<SystemSettingsSearchRequestDto>({});
   const { globalMessages, handleError, resetMessages } = useApiMessages<any>();
 
   const { canWrite } = useAuthorization();
 
   const [modalVisible, setModalVisible] = useState(false);
-  const [editingRecord, setEditingRecord] = useState<SystemSetting | null>(null);
+  const [editingRecord, setEditingRecord] = useState<SystemSettingsDto | null>(null);
 
   // Initial load
   useEffect(() => {
@@ -41,14 +44,14 @@ export default function SystemSettingsPage() {
     }
   };
 
-  const handleEdit = (record: SystemSetting) => {
+  const handleEdit = (record: SystemSettingsDto) => {
     setEditingRecord(record);
     setModalVisible(true);
   };
 
-  const handleSave = async (values: SystemSetting) => {
+  const handleSave = async (values: SystemSettingsDto) => {
     try {
-      await updateSystemSetting(values);
+      await systemSettingsApi.updateSystemSetting(values);
       fetchSettings(filters);
     } catch (e) {
       throw e; // Modal will handle reporting this
@@ -56,8 +59,8 @@ export default function SystemSettingsPage() {
   };
 
   // Helper to format codes like BASELINE_REVENUE -> Baseline Revenue
-  const formatCode = (str: string) => {
-    if (!str) return str;
+  const formatCode = (str?: string) => {
+    if (!str) return str || '';
     return str
       .replace(/_/g, ' ')
       .toLowerCase()
@@ -79,7 +82,7 @@ export default function SystemSettingsPage() {
       dataIndex: 'settingKey',
       key: 'settingKey',
       sorter: true,
-      render: (text: string, record: SystemSetting) => {
+      render: (text: string, record: SystemSettingsDto) => {
         // If it's a FEE setting, try to use the feeType reference display
         if (record.settingName === 'FEE') {
           const display = toDisplay(ReferenceConstants.FEE_TYPE.NAME, text);
@@ -95,7 +98,7 @@ export default function SystemSettingsPage() {
           {
             title: 'Action',
             key: 'action',
-            render: (_: any, record: SystemSetting) => (
+            render: (_: any, record: SystemSettingsDto) => (
               <Space>
                 <Button icon={<EditOutlined />} onClick={() => handleEdit(record)} />
               </Space>
@@ -127,14 +130,14 @@ export default function SystemSettingsPage() {
           {globalMessages && <MessageBanner messages={globalMessages} />}
 
           <Card className="glass-card" style={{ padding: 0 }}>
-            <Table<SystemSetting>
+            <Table<SystemSettingsDto>
               dataSource={settings}
               columns={columns}
               rowKey="systemSettingsID"
               loading={loading}
               size="small"
               pagination={{
-                current: meta ? meta.page + 1 : 1,
+                current: (meta?.page ?? 0) + 1,
                 pageSize: meta?.pageSize ?? 10,
                 total: meta?.totalRecords ?? 0,
                 showSizeChanger: true,

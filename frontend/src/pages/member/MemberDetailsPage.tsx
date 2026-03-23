@@ -7,11 +7,15 @@ import {
 import { Avatar, Badge, Button, Card, Col, Row, Skeleton, Space, Table, Typography } from 'antd';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getMember, getMemberSummary } from '../../apiclient/memberApi';
-import { searchPayments } from '../../apiclient/paymentApi';
+import { membersApi } from '../../api/generated/members/members';
+import { paymentsApi } from '../../api/generated/payments/payments';
 import Sidebar from '../../component/Sidebar';
 import { ReferenceConstants } from '../../constants/ReferenceConstants';
-import { Member, MemberSummary, Payment } from '../../constants/types';
+import {
+  MemberDto,
+  MemberSummaryDto,
+  PaymentDto
+} from '../../api/generated/types';
 import { useReference } from '../../context/ReferenceContext';
 import { useApiMessages } from '../../hook/ApiResponseHandler';
 
@@ -23,9 +27,9 @@ export default function MemberDetailsPage() {
   const { toDisplay } = useReference();
   const { handleError } = useApiMessages();
 
-  const [member, setMember] = useState<Member | null>(null);
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [summary, setSummary] = useState<MemberSummary | null>(null);
+  const [member, setMember] = useState<MemberDto | null>(null);
+  const [payments, setPayments] = useState<PaymentDto[]>([]);
+  const [summary, setSummary] = useState<MemberSummaryDto | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,9 +38,9 @@ export default function MemberDetailsPage() {
       try {
         const memberID = Number(id);
         const [memberData, paymentData, summaryData] = await Promise.all([
-          getMember(memberID),
-          searchPayments({ memberID, size: 10 }),
-          getMemberSummary(memberID),
+          membersApi.getMember(memberID),
+          paymentsApi.searchPayments({ memberID, size: 10 }),
+          membersApi.getMemberSummary(memberID),
         ]);
         setMember(memberData.responseData || null);
         setPayments(paymentData.responseData || []);
@@ -111,7 +115,7 @@ export default function MemberDetailsPage() {
                     <div style={{ marginTop: 8 }}>
                       <Badge
                         status={member.status === 'ACTIVE' ? 'success' : 'default'}
-                        text={toDisplay(ReferenceConstants.MEMBER_STATUS.NAME, member.status)}
+                        text={toDisplay(ReferenceConstants.MEMBER_STATUS.NAME, member.status || '')}
                       />
                     </div>
                   </Col>

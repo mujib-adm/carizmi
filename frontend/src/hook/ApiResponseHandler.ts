@@ -1,7 +1,7 @@
 import { AxiosError } from 'axios';
 import { useCallback, useState } from 'react';
 import { FieldValues, Path, UseFormSetError } from 'react-hook-form';
-import { GlobalMsg, GlobalResponse, MessageType } from '../constants/types';
+import { GlobalMsg, GlobalResponse, MessageType } from '../api/generated/types/index';
 
 export function useApiMessages<T extends FieldValues>(
   setError?: UseFormSetError<T>,
@@ -16,9 +16,9 @@ export function useApiMessages<T extends FieldValues>(
   const handleResponse = useCallback(<R>(response: GlobalResponse<R>) => {
     if (response) {
       setGlobalMessages(
-        response.globalMessages?.map((msg) => ({
-          type: msg.type,
-          message: msg.message,
+        response.globalMessages?.map((msg: any) => ({
+          type: msg.type!,
+          message: msg.message!,
         })) ?? null
       );
     }
@@ -37,7 +37,7 @@ export function useApiMessages<T extends FieldValues>(
 
         // Map backend fieldMessages to RHF errors or Generic Callback
         if (data.fieldMessages) {
-          data.fieldMessages.forEach((fm) => {
+          data.fieldMessages.forEach((fm: any) => {
             if (fm.field && fm.message) {
               if (setError) {
                 setError(fm.field as Path<T>, { type: 'server', message: fm.message });
@@ -50,9 +50,9 @@ export function useApiMessages<T extends FieldValues>(
 
         // Extract globalMessages to display on MessageBanner
         setGlobalMessages(
-          data.globalMessages?.map((msg) => ({
-            type: msg.type,
-            message: msg.message,
+          data.globalMessages?.map((msg: any) => ({
+            type: msg.type!,
+            message: msg.message!,
           })) ?? null
         );
         return;

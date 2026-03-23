@@ -72,9 +72,9 @@ public class MemberController {
     }
 
     @GetMapping("/lookup")
-    @Operation(summary = "Lookup members by name or ID (fuzzy search)")
+    @Operation(summary = "Lookup member by first name, last name or ID (fuzzy search)")
     @IsAuthenticated
-    public ResponseEntity<GlobalResponse<List<MemberLookupDto>>> lookupMembers(
+    public ResponseEntity<GlobalResponse<List<MemberLookupDto>>> memberLookup(
             @RequestParam String query) {
         return member.lookupMembers(query);
     }

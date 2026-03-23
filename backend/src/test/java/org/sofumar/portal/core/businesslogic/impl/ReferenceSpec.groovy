@@ -3,6 +3,7 @@ package org.sofumar.portal.core.businesslogic.impl
 import org.sofumar.portal.data.dto.ReferenceDto
 import org.sofumar.portal.data.dto.request.ReferenceSearchRequestDto
 import org.sofumar.portal.constants.FieldConstants
+import org.sofumar.portal.data.dto.request.SortOrder
 import org.sofumar.portal.data.transformer.ReferenceDtoTransformer
 import org.sofumar.portal.core.vo.ReferenceVO
 import org.sofumar.portal.framework.data.response.GlobalResponse
@@ -113,7 +114,7 @@ class ReferenceSpec extends BaseSpecification {
         request.setPage(0)
         request.setSize(10)
         request.setSortField(FieldConstants.REFERENCE_CODE)
-        request.setSortOrder("ASC")
+        request.setSortOrder(SortOrder.asc)
 
         when: "The target method executed"
         referenceImpl.searchReferences(request)

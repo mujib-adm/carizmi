@@ -18,7 +18,7 @@ import {
   Typography,
 } from 'antd';
 import { useEffect, useState } from 'react';
-import { getProfile, updatePassword } from '../../apiclient/userApi';
+import { authenticationApi } from '../../api/generated/authentication/authentication';
 import { AntdFormItem } from '../../component/AntdFormItem';
 import { MessageBanner } from '../../component/MessageBanner';
 import { useNotification } from '../../context/NotificationContext';
@@ -26,12 +26,16 @@ import { useApiMessages } from '../../hook/ApiResponseHandler';
 import Sidebar from '../../component/Sidebar';
 import '../../themes/modern-ui.css';
 
-import { MessageType, ProfileData } from '../../constants/types';
+import {
+  MessageType,
+  UserProfileDto,
+  PasswordUpdateRequestDto
+} from '../../api/generated/types';
 
 const { Title, Text } = Typography;
 
 export default function ProfilePage() {
-  const [profileData, setProfileData] = useState<ProfileData | null>(null);
+  const [profileData, setProfileData] = useState<UserProfileDto | null>(null);
   const [passwordForm] = Form.useForm();
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -48,12 +52,9 @@ export default function ProfilePage() {
     setLoading(true);
     try {
       resetMessages();
-      const res = await getProfile();
+      const res = await authenticationApi.getCurrentUser();
       if (res.responseData) {
         setProfileData(res.responseData);
-      } else if (res.map) {
-        // Fallback for older map-based response (optional but safe)
-        setProfileData(res.map as any);
       }
     } catch (err: any) {
       handleError(err);
@@ -66,17 +67,17 @@ export default function ProfilePage() {
     fetchProfile();
   }, []);
 
-  const onUpdatePassword = async (values: any) => {
+  const onUpdatePassword = async (values: PasswordUpdateRequestDto) => {
     try {
       resetMessages();
-      const res = await updatePassword(values);
-      if (res.globalMessages?.length > 0) {
+      const res = await authenticationApi.updatePassword(values);
+      if (res.globalMessages && res.globalMessages.length > 0) {
         const msg = res.globalMessages[0];
         if (msg.type === MessageType.SUCCESS) {
           setIsModalOpen(false);
           notify.success({ message: 'Success', description: msg.message }, '/logout');
         } else {
-          handleResponse(res);
+          handleResponse(res as any);
         }
       }
     } catch (err: any) {

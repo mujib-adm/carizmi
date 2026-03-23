@@ -3,14 +3,19 @@ import { Button, Card, Modal, Space, Table, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { addMember, deleteMember, getMember, updateMember } from '../../apiclient/memberApi';
+import { membersApi } from '../../api/generated/members/members';
 import { MemberModal } from '../../modals/MemberModal';
 import { MessageBanner } from '../../component/MessageBanner';
 import SearchFilterBar from '../../component/SearchFilterBar';
 import Sidebar from '../../component/Sidebar';
 import { memberSearchFiltersConfig } from '../../constants/memberSearchFiltersConfig';
 import { ReferenceConstants } from '../../constants/ReferenceConstants';
-import { Member, MemberRequestDto, MemberSearchRequest, MessageType } from '../../constants/types';
+import {
+  GlobalResponse,
+  MemberDto,
+  MemberSearchRequestDto,
+  MessageType
+} from '../../api/generated/types';
 import { useNotification } from '../../context/NotificationContext';
 import { useReference } from '../../context/ReferenceContext';
 import { useApiMessages } from '../../hook/ApiResponseHandler';
@@ -23,14 +28,14 @@ export default function MemberPage() {
   const navigate = useNavigate();
   const notify = useNotification();
   const { members, meta, loading, fetchMembers, setMembers } = usePaginatedMembers();
-  const { globalMessages, handleError, resetMessages } = useApiMessages<any>();
+  const { globalMessages, handleResponse, handleError, resetMessages } = useApiMessages<any>();
 
   // search filters
-  const [filters, setFilters] = useState<MemberSearchRequest>({});
+  const [filters, setFilters] = useState<MemberSearchRequestDto>({});
 
   // modal state
   const [modalOpenInd, setModalOpenInd] = useState(false);
-  const [selectedRecord, setSelectedRecord] = useState<Member | null>(null);
+  const [selectedRecord, setSelectedRecord] = useState<MemberDto | null>(null);
 
   const { canWrite } = useAuthorization();
 
@@ -38,8 +43,8 @@ export default function MemberPage() {
   const statusOptions = useMemo(
     () =>
       getReference(ReferenceConstants.MEMBER_STATUS.NAME).map((r) => ({
-        value: r.code,
-        label: r.display,
+        value: r.referenceCode || '',
+        label: r.referenceDisplay || '',
       })),
     [getReference]
   );
@@ -58,7 +63,7 @@ export default function MemberPage() {
     setModalOpenInd(true);
   };
 
-  const openEdit = (record: Member) => {
+  const openEdit = (record: MemberDto) => {
     setSelectedRecord(record);
     setModalOpenInd(true);
   };
@@ -84,11 +89,13 @@ export default function MemberPage() {
       onOk: async () => {
         try {
           resetMessages();
-          const resp = await deleteMember(id);
+          const resp = await membersApi.deleteMember(id);
 
           if (resp.globalMessages?.[0]?.type === MessageType.SUCCESS) {
             notify.success({ message: 'Deleted', description: 'Member deleted successfully.' });
             fetchMembers(filters); // Refresh
+          } else {
+            handleResponse(resp);
           }
         } catch (e: any) {
           handleError(e);
@@ -97,16 +104,16 @@ export default function MemberPage() {
     });
   };
 
-  const handleSubmit = async (values: MemberRequestDto) => {
+  const handleSubmit = async (values: MemberDto) => {
     const isAdd = !selectedRecord?.memberID;
-    const resp = isAdd ? await addMember(values) : await updateMember(values);
+    const resp = isAdd ? await membersApi.addMember(values) : await membersApi.updateMember(values);
 
     if (resp.globalMessages?.[0]?.type === MessageType.SUCCESS) {
       notify.success({ message: 'Success', description: resp.globalMessages[0].message });
 
       if (isAdd && resp.responseData) {
         // Fetch the newly created member details
-        const fullMemberResp = await getMember(resp.responseData);
+        const fullMemberResp = await membersApi.getMember(resp.responseData);
         if (fullMemberResp.responseData) {
           // Prepend to the list
           setMembers((prev) => [fullMemberResp.responseData!, ...prev]);
@@ -115,13 +122,15 @@ export default function MemberPage() {
         // For updates, we still refresh the list to ensure sorting/filtering logic
         fetchMembers(filters);
       }
+    } else {
+      handleResponse(resp as GlobalResponse<unknown>);
     }
     setModalOpenInd(false);
     setSelectedRecord(null);
     resetMessages();
   };
 
-  const columns: ColumnsType<Member> = [
+  const columns: ColumnsType<MemberDto> = [
     { title: 'Member ID', dataIndex: 'memberID', key: 'memberID', sorter: true, width: 140 },
     { title: 'First Name', dataIndex: 'firstName', key: 'firstName', sorter: true },
     { title: 'Last Name', dataIndex: 'lastName', key: 'lastName', sorter: true },
@@ -139,11 +148,11 @@ export default function MemberPage() {
           {
             title: 'Action',
             key: 'action',
-            render: (_: any, record: Member) => (
+            render: (_: any, record: MemberDto) => (
                 <Space>
                     <Button icon={<EyeOutlined />} onClick={() => navigate(`/members/${record.memberID}`)} />
                     <Button icon={<EditOutlined />} onClick={() => openEdit(record)} />
-                    <Button icon={<DeleteOutlined />} danger onClick={() => handleDelete(record.memberID, `${record.firstName} ${record.lastName}`)} />
+                    <Button icon={<DeleteOutlined />} danger onClick={() => record.memberID && handleDelete(record.memberID, `${record.firstName} ${record.lastName}`)} />
                 </Space>
             ),
           },
@@ -173,14 +182,14 @@ export default function MemberPage() {
           {globalMessages && <MessageBanner messages={globalMessages} />}
 
           <Card className="glass-card" style={{ padding: 0 }}>
-            <Table<Member>
+            <Table<MemberDto>
               size="small"
               rowKey="memberID"
               columns={columns}
               dataSource={members}
               loading={loading}
               pagination={{
-                current: meta ? meta.page + 1 : 1,
+                current: (meta?.page ?? 0) + 1,
                 pageSize: meta?.pageSize ?? 10,
                 total: meta?.totalRecords ?? 0,
                 showSizeChanger: true,

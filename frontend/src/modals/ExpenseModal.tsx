@@ -1,7 +1,7 @@
 import { Col, Form, Input, Modal, Row } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect } from 'react';
-import { Expense } from '../constants/types';
+import { ExpenseDto } from '../api/generated/types';
 import { useApiMessages } from '../hook/ApiResponseHandler';
 import { AntdFormItem } from '../component/AntdFormItem';
 import { MessageBanner } from '../component/MessageBanner';
@@ -9,8 +9,8 @@ import { MessageBanner } from '../component/MessageBanner';
 interface ExpenseModalProps {
   open: boolean;
   onCancel: () => void;
-  onSubmit: (values: any) => Promise<void>;
-  initialValues?: Expense | null;
+  onSubmit: (values: ExpenseDto) => Promise<void>;
+  initialValues?: ExpenseDto | null;
   categories: { value: string; label: string }[];
 }
 
@@ -43,7 +43,7 @@ export default function ExpenseModal({ open, onCancel, onSubmit, initialValues, 
       resetMessages();
       const values = await form.validateFields();
 
-      const payload = {
+      const payload: ExpenseDto = {
         ...values,
         dateOfExpense: values.dateOfExpense ? values.dateOfExpense.format('YYYY-MM-DD') : null,
         expenseID: initialValues?.expenseID,

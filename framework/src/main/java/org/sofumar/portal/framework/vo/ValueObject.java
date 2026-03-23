@@ -11,6 +11,7 @@ import lombok.Setter;
 import org.sofumar.portal.framework.constants.AuditFieldConstants;
 import org.sofumar.portal.framework.message.FieldMessage;
 import org.sofumar.portal.framework.message.Message;
+import org.sofumar.portal.framework.message.MessageType;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -119,7 +120,7 @@ public abstract class ValueObject {
         setErrorWarningFlags(fieldMessage.getMessage().getType());
     }
 
-    private void setErrorWarningFlags(Message.Type type) {
+    private void setErrorWarningFlags(MessageType type) {
         if (type == null) return;
         switch (type) {
             case ERROR -> this.errorExists = true;

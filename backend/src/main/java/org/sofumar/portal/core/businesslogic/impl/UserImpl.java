@@ -2,7 +2,7 @@ package org.sofumar.portal.core.businesslogic.impl;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
+import org.sofumar.portal.data.dto.response.TokenDto;
 import java.util.Objects;
 
 import org.apache.commons.lang3.StringUtils;
@@ -40,8 +40,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.sofumar.portal.message.ValidationMessages.RECORD_NOT_FOUND;
 import static org.sofumar.portal.message.ValidationMessages.RECORD_UPDATED;
-import static org.sofumar.portal.security.CookieService.REFRESH_TOKEN_MAP_KEY;
-import static org.sofumar.portal.security.CookieService.TOKEN_MAP_KEY;
 
 @Service
 public non-sealed class UserImpl extends UserAbstractBL implements User {
@@ -132,7 +130,7 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
     }
 
     @Override
-    public ResponseEntity<?> refreshToken(String token) {
+    public ResponseEntity<GlobalResponse<TokenDto>> refreshToken(String token) {
         try {
             String newRefreshToken = refreshTokenService.rotateRefreshToken(token);
             String username = refreshTokenService.validateRefreshToken(newRefreshToken)
@@ -155,10 +153,7 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
             
             String newAccessToken = jwtService.generateAccessToken(userDetails);
             
-            return ResponseUtils.withMap(Map.of(
-                TOKEN_MAP_KEY, newAccessToken,
-                REFRESH_TOKEN_MAP_KEY, newRefreshToken
-            ));
+            return ResponseUtils.okWithData(new TokenDto(newAccessToken, newRefreshToken));
         } catch (IllegalArgumentException | RecordNotFoundException e) {
             throw new AuthenticationException();
         }

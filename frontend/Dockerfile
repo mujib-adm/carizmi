@@ -8,7 +8,8 @@ RUN chmod +x node_modules/.bin/* || true
 ARG VITE_API_URL
 ENV VITE_API_URL=$VITE_API_URL
 
-RUN npm run build
+# Regenerate TypeScript API client from the committed OpenAPI contract before building
+RUN npm run generate:api && npm run build
 
 FROM nginxinc/nginx-unprivileged:1.27-alpine
 COPY --from=build /app/frontend/dist /usr/share/nginx/html

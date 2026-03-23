@@ -2,7 +2,7 @@ import { Col, Form, Modal, Row } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect } from 'react';
 import { ReferenceConstants } from '../constants/ReferenceConstants';
-import { Member, MemberRequestDto } from '../constants/types';
+import { MemberDto } from '../api/generated/types';
 import { useApiMessages } from '../hook/ApiResponseHandler';
 import '../themes/css/member.css';
 import { AntdFormItem } from '../component/AntdFormItem';
@@ -11,15 +11,15 @@ import { MessageBanner } from '../component/MessageBanner';
 type Props = {
   open: boolean;
   onCancel: () => void;
-  onSubmit: (values: MemberRequestDto) => Promise<void>;
-  initial?: Member | null;
+  onSubmit: (values: MemberDto) => Promise<void>;
+  initial?: MemberDto | null;
   statusOptions: { value: string; label: string }[];
 };
 
 export function MemberModal({ open, onCancel, onSubmit, initial, statusOptions }: Props) {
   const [form] = Form.useForm();
 
-  const { globalMessages, handleError, resetMessages } = useApiMessages<MemberRequestDto>(
+  const { globalMessages, handleError, resetMessages } = useApiMessages<MemberDto>(
     undefined,
     (field, msg) => {
       form.setFields([{ name: field, errors: [msg] }]);
@@ -50,8 +50,9 @@ export function MemberModal({ open, onCancel, onSubmit, initial, statusOptions }
       resetMessages();
       const values = await form.validateFields();
 
-      const payload: MemberRequestDto = {
+      const payload: MemberDto = {
         ...values,
+        memberID: initial?.memberID,
         joinDate: values.joinDate ? values.joinDate.format('YYYY-MM-DD') : null,
       };
 

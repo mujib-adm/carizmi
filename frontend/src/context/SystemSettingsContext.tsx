@@ -1,11 +1,11 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { searchSystemSettings } from '../apiclient/systemSettingsApi';
-import { SystemSetting } from '../constants/types';
+import { systemSettingsApi } from '../api/generated/system-settings/system-settings';
+import { SystemSettingsDto } from '../api/generated/types/index';
 import { useAuth } from './AuthContext';
 import { useNotification } from './NotificationContext';
 
 type SystemSettingsContextType = {
-  settings: SystemSetting[];
+  settings: SystemSettingsDto[];
   getSettingValue: (name: string, key: string) => string | undefined;
   getNumericSetting: (name: string, key: string) => number;
   isLoading: boolean;
@@ -23,13 +23,13 @@ const SystemSettingsContext = createContext<SystemSettingsContextType>({
 export function SystemSettingsProvider({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
   const notify = useNotification();
-  const [settings, setSettings] = useState<SystemSetting[]>([]);
+  const [settings, setSettings] = useState<SystemSettingsDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchSettings = async () => {
     setIsLoading(true);
     try {
-      const res = await searchSystemSettings({ page: 0, size: 100 }); // Fetch all reasonable settings
+      const res = await systemSettingsApi.searchSystemSettings({ page: 0, size: 100 });
       if (res.responseData) {
         setSettings(res.responseData);
       }

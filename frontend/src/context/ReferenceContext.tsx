@@ -1,13 +1,13 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import { getReferencesByName } from '../apiclient/referenceApi';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { referenceDataApi } from '../api/generated/reference-data/reference-data';
 import { STARTUP_REFERENCES } from '../constants/ReferenceConstants';
-import { ReferenceData } from '../constants/types';
+import { ReferenceDataDto } from '../api/generated/types';
 import { useAuth } from './AuthContext';
 import { useNotification } from './NotificationContext';
 
 type ReferenceContextType = {
-  references: Record<string, ReferenceData[]>;
-  getReference: (name: string) => ReferenceData[];
+  references: Record<string, ReferenceDataDto[]>;
+  getReference: (name: string) => ReferenceDataDto[];
   toCode: (name: string, display: string) => string | undefined;
   toDisplay: (name: string, code: string) => string | undefined;
   isLoading: boolean;
@@ -24,7 +24,7 @@ const ReferenceContext = createContext<ReferenceContextType>({
 export function ReferenceProvider({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
   const notify = useNotification();
-  const [references, setReferences] = useState<Record<string, ReferenceData[]>>({});
+  const [references, setReferences] = useState<Record<string, ReferenceDataDto[]>>({});
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchAllReferences = async () => {
@@ -34,20 +34,17 @@ export function ReferenceProvider({ children }: { children: React.ReactNode }) {
       const referenceNames = STARTUP_REFERENCES;
 
       // Create promises for each fetch
-      const promises = referenceNames.map((name) => getReferencesByName(name));
+      const promises = referenceNames.map((name) => referenceDataApi.getReferencesByName(name));
 
       // Execute all in parallel
       const results = await Promise.all(promises);
 
-      const newReferences: Record<string, ReferenceData[]> = {};
+      const newReferences: Record<string, ReferenceDataDto[]> = {};
 
       results.forEach((res, index) => {
         const name = referenceNames[index];
         if (res.responseData) {
-          newReferences[name] = res.responseData.map((r) => ({
-            code: r.referenceCode,
-            display: r.referenceDisplay,
-          }));
+          newReferences[name] = res.responseData;
         } else {
           newReferences[name] = [];
         }
@@ -78,13 +75,13 @@ export function ReferenceProvider({ children }: { children: React.ReactNode }) {
   };
 
   const toCode = (name: string, display: string) => {
-    const ref = references[name]?.find((r) => r.display === display);
-    return ref?.code;
+    const ref = references[name]?.find((r) => r.referenceDisplay === display);
+    return ref?.referenceCode;
   };
 
   const toDisplay = (name: string, code: string) => {
-    const ref = references[name]?.find((r) => r.code === code);
-    return ref?.display || code;
+    const ref = references[name]?.find((r) => r.referenceCode === code);
+    return ref?.referenceDisplay || code;
   };
 
   return (

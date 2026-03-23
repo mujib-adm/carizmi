@@ -2,14 +2,19 @@ import { DeleteOutlined, EditOutlined, ShoppingCartOutlined } from '@ant-design/
 import { Button, Card, Modal, Space, Table, Typography } from 'antd';
 import { ColumnsType } from 'antd/es/table';
 import { useMemo, useState } from 'react';
-import { addExpense, deleteExpense, getExpense, updateExpense } from '../../apiclient/expenseApi';
+import { expensesApi } from '../../api/generated/expenses/expenses';
 import ExpenseModal from '../../modals/ExpenseModal.tsx';
 import { MessageBanner } from '../../component/MessageBanner';
 import SearchFilterBar from '../../component/SearchFilterBar.jsx';
 import Sidebar from '../../component/Sidebar';
 import { expenseSearchFiltersConfig } from '../../constants/expenseSearchFiltersConfig.ts';
 import { ReferenceConstants } from '../../constants/ReferenceConstants';
-import { Expense, ExpenseSearchRequest, MessageType } from '../../constants/types';
+import {
+  ExpenseDto,
+  ExpenseSearchRequestDto,
+  GlobalResponse,
+  MessageType
+} from '../../api/generated/types';
 import { useNotification } from '../../context/NotificationContext';
 import { useReference } from '../../context/ReferenceContext';
 import { useApiMessages } from '../../hook/ApiResponseHandler';
@@ -21,22 +26,23 @@ const { Title } = Typography;
 export default function ExpensePage() {
   const notify = useNotification();
   const { expenses, meta, loading, fetchExpenses, setExpenses } = usePaginatedExpenses();
-  const { globalMessages, handleError, resetMessages } = useApiMessages<any>();
+  const { globalMessages, handleResponse, handleError, resetMessages } = useApiMessages<any>();
+
 
   // search filters
-  const [filters, setFilters] = useState<ExpenseSearchRequest>({});
+  const [filters, setFilters] = useState<ExpenseSearchRequestDto>({});
 
   // Modal State
   const [modalOpenInd, setModalOpenInd] = useState(false);
-  const [selectedRecord, setSelectedRecord] = useState<any>(null);
+  const [selectedRecord, setSelectedRecord] = useState<ExpenseDto | null>(null);
 
   const { canWrite } = useAuthorization();
 
   // Ref Data
   const { getReference, toDisplay } = useReference();
   const categories = getReference(ReferenceConstants.EXPENSE_CATEGORY.NAME).map((r) => ({
-    value: r.code,
-    label: r.display,
+    value: r.referenceCode || '',
+    label: r.referenceDisplay || '',
   }));
 
   const handleSearch = async () => {
@@ -53,13 +59,13 @@ export default function ExpensePage() {
     setModalOpenInd(true);
   };
 
-  const openEdit = (record: Expense) => {
+  const openEdit = (record: ExpenseDto) => {
     setSelectedRecord(record);
     setModalOpenInd(true);
   };
 
-  const handleDelete = async (record: Expense) => {
-    const categoryDisplay = toDisplay(ReferenceConstants.EXPENSE_CATEGORY.NAME, record.category) || record.category;
+  const handleDelete = async (record: ExpenseDto) => {
+    const categoryDisplay = record.category ? toDisplay(ReferenceConstants.EXPENSE_CATEGORY.NAME, record.category) : record.category;
 
     Modal.confirm({
       title: 'Are you sure you want to delete expense record?',
@@ -79,7 +85,7 @@ export default function ExpensePage() {
           <div style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Description:</div>
           <div>{record.description}</div>
           <div style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Amount:</div>
-          <div>${record.amount.toFixed(2)}</div>
+          <div>${record.amount?.toFixed(2) || '0.00'}</div>
         </div>
       ),
       okText: 'Delete',
@@ -87,10 +93,14 @@ export default function ExpensePage() {
       onOk: async () => {
         try {
           resetMessages();
-          const resp = await deleteExpense(record.expenseID);
+          if (record.expenseID) {
+            const resp = await expensesApi.deleteExpense(record.expenseID);
 
-          if (resp.globalMessages?.[0]?.type === MessageType.SUCCESS) {
-            notify.success({ message: 'Deleted', description: 'Expense deleted successfully.' });
+            if (resp.globalMessages?.[0]?.type === MessageType.SUCCESS) {
+              notify.success({ message: 'Deleted', description: 'Expense deleted successfully.' });
+            } else {
+              handleResponse(resp);
+            }
           }
           fetchExpenses(filters); // Refresh
         } catch (e: any) {
@@ -100,16 +110,16 @@ export default function ExpensePage() {
     });
   };
 
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: ExpenseDto) => {
     const isAdd = !selectedRecord?.expenseID;
-    const resp = isAdd ? await addExpense(values) : await updateExpense(values);
+    const resp = isAdd ? await expensesApi.addExpense(values) : await expensesApi.updateExpense(values);
 
     if (resp.globalMessages?.[0]?.type === MessageType.SUCCESS) {
       notify.success({ message: 'Success', description: resp.globalMessages[0].message });
 
       if (isAdd && resp.responseData) {
         // Fetch the newly created expense details
-        const fullExpenseResp = await getExpense(resp.responseData);
+        const fullExpenseResp = await expensesApi.getExpense(resp.responseData);
         if (fullExpenseResp.responseData) {
           // Prepend to the list
           setExpenses((prev) => [fullExpenseResp.responseData!, ...prev]);
@@ -118,13 +128,15 @@ export default function ExpensePage() {
         // For updates, we still refresh the list
         fetchExpenses(filters);
       }
+    } else {
+      handleResponse(resp as GlobalResponse<unknown>);
     }
     setModalOpenInd(false);
     setSelectedRecord(null);
     resetMessages();
   };
 
-  const columns: ColumnsType<Expense> = [
+  const columns: ColumnsType<ExpenseDto> = [
     {
       title: 'Category',
       dataIndex: 'category',
@@ -144,7 +156,7 @@ export default function ExpensePage() {
           {
             title: 'Action',
             key: 'action',
-            render: (_: any, record: Expense) => (
+            render: (_: any, record: ExpenseDto) => (
               <Space>
                 <Button icon={<EditOutlined />} onClick={() => openEdit(record)} />
                 <Button icon={<DeleteOutlined />} danger onClick={() => handleDelete(record)} />
@@ -187,14 +199,14 @@ export default function ExpensePage() {
           {globalMessages && <MessageBanner messages={globalMessages} />}
 
           <Card className="glass-card" style={{ padding: 0 }}>
-            <Table<Expense>
+            <Table<ExpenseDto>
               size="small"
               rowKey="expenseID"
               dataSource={expenses}
               columns={columns}
               loading={loading}
               pagination={{
-                current: meta ? meta.page + 1 : 1,
+                current: (meta?.page ?? 0) + 1,
                 pageSize: meta?.pageSize ?? 10,
                 total: meta?.totalRecords ?? 0,
                 showSizeChanger: true,

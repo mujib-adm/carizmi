@@ -6,26 +6,27 @@ import '../../themes/css/auth-form.css';
 import apiClient from '../../apiclient/ApiClient';
 import { FormField } from '../../component/FormField';
 import { MessageBanner } from '../../component/MessageBanner';
-import { ApiEndpoints } from '../../constants/endpoints';
-import { GlobalResponse, LoginForm, MessageType } from '../../constants/types';
+import { AUTH_LOGIN } from '../../api/constants/customEndpoints';
+import { LoginRequestDto } from '../../api/constants/customTypes';
+import { GlobalResponse, MessageType } from '../../api/generated/types/index';
 import { useApiMessages } from '../../hook/ApiResponseHandler';
 
 export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const { register, handleSubmit, formState: { errors }, } = useForm<LoginForm>();
-  const { globalMessages, handleResponse, handleError, resetMessages } = useApiMessages<LoginForm>();
+  const { register, handleSubmit, formState: { errors }, } = useForm<LoginRequestDto>();
+  const { globalMessages, handleResponse, handleError, resetMessages } = useApiMessages<LoginRequestDto>();
 
-  const onSubmit = async (formValues: LoginForm) => {
+  const onSubmit = async (formValues: LoginRequestDto) => {
     // clear old messages from MessageBanner before starting new call
     resetMessages();
     try {
-      const response = await apiClient.post<GlobalResponse>(ApiEndpoints.AUTH.LOGIN, formValues);
+      const response = await apiClient.post<GlobalResponse>(AUTH_LOGIN, formValues);
       const responseBody = response.data;
 
-      if (responseBody?.map?.role) {
-        login(responseBody.map.role, responseBody.map.firstName || '');
+      if (responseBody?.responseData?.role) {
+        login(responseBody.responseData.role, responseBody.responseData.firstName || '');
         navigate('/dashboard');
       } else if (responseBody.globalMessages?.length > 0) {
         handleResponse(responseBody);
@@ -37,7 +38,6 @@ export default function Login() {
             { type: MessageType.ERROR, message: 'Login failed. Invalid server response.' },
           ],
           fieldMessages: [],
-          map: {},
         });
       }
     } catch (error: any) {

@@ -1,8 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { onUnauthorized } from '../apiclient/ApiClient';
-import apiClient from '../apiclient/ApiClient';
-import { ApiEndpoints } from '../constants/endpoints';
-import { GlobalResponse, ProfileData } from '../constants/types';
+import { authenticationApi } from '../api/generated/authentication/authentication';
 
 type AuthContextType = {
   isAuthenticated: boolean;
@@ -39,7 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = () => {
     // Call logout API to clear server-side cookies
-    apiClient.post(ApiEndpoints.AUTH.LOGOUT).catch(() => {});
+    authenticationApi.logout().catch(() => {});
     localStorage.removeItem('role');
     localStorage.removeItem('firstName');
     setIsAuthenticated(false);
@@ -66,10 +64,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (storedRole) {
       // Validate session with backend (cookie is sent automatically)
-      apiClient
-        .get<GlobalResponse<ProfileData>>(ApiEndpoints.AUTH.PROFILE)
+      authenticationApi.getCurrentUser()
         .then((res) => {
-          const data = res.data;
+          const data = res;
           setIsAuthenticated(true);
           setRole(storedRole);
           if (data.responseData) {

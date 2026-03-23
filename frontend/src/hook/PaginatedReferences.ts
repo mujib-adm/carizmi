@@ -1,22 +1,24 @@
-import { useCallback, useState } from 'react';
-import { searchReferences } from '../apiclient/referenceApi';
+import { useCallback, useMemo, useState } from 'react';
+import { referenceDataApi } from '../api/generated/reference-data/reference-data';
 import {
-  GlobalResponse,
   PaginationMeta,
-  Reference,
-  ReferenceSearchRequest,
-} from '../constants/types';
+  ReferenceDto,
+  ReferenceSearchRequestDto,
+} from '../api/generated/types';
 
-export function usePaginatedReferences(initialRequest: ReferenceSearchRequest = {}) {
-  const [references, setReferences] = useState<Reference[]>([]);
+export function usePaginatedReferences(initialRequest: ReferenceSearchRequestDto = {}) {
+  const [references, setReferences] = useState<ReferenceDto[]>([]);
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const fetchReferences = useCallback(async (request: ReferenceSearchRequest = {}) => {
+  // Stabilize the input request
+  const memoInitialRequest = useMemo(() => initialRequest, [JSON.stringify(initialRequest)]);
+
+  const fetchReferences = useCallback(async (request: ReferenceSearchRequestDto = {}) => {
     setLoading(true);
     try {
-      const mergedRequest = { ...initialRequest, ...request };
-      const resp: GlobalResponse<Reference[]> = await searchReferences(mergedRequest);
+      const mergedRequest = { ...memoInitialRequest, ...request };
+      const resp = await referenceDataApi.searchReferences(mergedRequest);
       setReferences(resp.responseData ?? []);
       setMeta(resp.meta ?? null);
     } catch (error) {
@@ -24,7 +26,7 @@ export function usePaginatedReferences(initialRequest: ReferenceSearchRequest = 
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [memoInitialRequest]);
 
   return { references, meta, loading, fetchReferences, setReferences };
 }

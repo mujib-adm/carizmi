@@ -3,11 +3,13 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import '../../themes/css/auth-form.css';
 
-import apiClient from '../../apiclient/ApiClient';
+import { authenticationApi } from '../../api/generated/authentication/authentication';
 import { FormField } from '../../component/FormField';
 import { MessageBanner } from '../../component/MessageBanner';
-import { ApiEndpoints } from '../../constants/endpoints';
-import { GlobalResponse, MessageType, RegisterForm } from '../../constants/types';
+import {
+  MessageType,
+  UserDto
+} from '../../api/generated/types';
 import { useNotification } from '../../context/NotificationContext';
 import { useApiMessages } from '../../hook/ApiResponseHandler';
 
@@ -20,23 +22,24 @@ export default function Register() {
     handleSubmit,
     setError,
     formState: { errors },
-  } = useForm<RegisterForm>();
+  } = useForm<UserDto>();
   const { globalMessages, handleResponse, handleError, resetMessages } =
-    useApiMessages<RegisterForm>(setError);
+    useApiMessages<UserDto>(setError);
 
-  const onSubmit = async (formValues: RegisterForm) => {
+
+  const onSubmit = async (formValues: UserDto) => {
     try {
       // clear old messages from MessageBanner before starting new call
       resetMessages();
-      const response = await apiClient.post<GlobalResponse>(ApiEndpoints.AUTH.REGISTER, formValues);
-      const responseBody = response.data;
+      const response = await authenticationApi.register(formValues);
+      const responseBody = response;
 
       if (responseBody.globalMessages?.length > 0) {
         const msg = responseBody.globalMessages[0];
         if (msg.type === MessageType.SUCCESS) {
           notify.success({ message: 'Success', description: msg.message }, '/login');
         } else {
-          handleResponse(responseBody);
+          handleResponse(responseBody as any);
         }
       }
     } catch (error: any) {

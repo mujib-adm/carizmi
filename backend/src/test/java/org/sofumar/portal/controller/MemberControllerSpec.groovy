@@ -122,7 +122,7 @@ class MemberControllerSpec extends BaseSpecification {
         noExceptionThrown()
     }
 
-    def "test - lookupMembers: Should delegate to member service"() {
+    def "test - memberLookup: Should delegate to member service"() {
         given: "A query string"
         String query = "John"
         Integer memberID = 1
@@ -132,7 +132,7 @@ class MemberControllerSpec extends BaseSpecification {
         ResponseEntity<GlobalResponse<List<MemberLookupDto>>> expectedResponse = new ResponseEntity<>(responseBody, HttpStatus.OK)
 
         when: "The target method executed"
-        ResponseEntity<GlobalResponse<List<MemberLookupDto>>> result = memberController.lookupMembers(query)
+        ResponseEntity<GlobalResponse<List<MemberLookupDto>>> result = memberController.memberLookup(query)
 
         then: "The expected calls are made"
         1 * memberService.lookupMembers(query) >> expectedResponse

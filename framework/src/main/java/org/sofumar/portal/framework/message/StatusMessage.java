@@ -6,7 +6,7 @@ package org.sofumar.portal.framework.message;
 public class StatusMessage extends Message {
 
     public StatusMessage(String messageID, String messageText) {
-        super(Type.STATUS, messageID, messageText);
+        super(MessageType.STATUS, messageID, messageText);
     }
 
     protected StatusMessage(StatusMessage other) {

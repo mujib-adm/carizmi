@@ -76,3 +76,13 @@ app:
   security:
     max-login-attempts: 5
     lockout-duration-minutes: 15
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+  default-produces-media-type: application/json
+  default-consumes-media-type: application/json
+  wrapper-classes: org.sofumar.portal.framework.data.response.GlobalResponse

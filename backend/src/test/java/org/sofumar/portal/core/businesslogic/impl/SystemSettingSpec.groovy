@@ -3,6 +3,7 @@ package org.sofumar.portal.core.businesslogic.impl
 import org.sofumar.portal.constants.FieldConstants
 
 import org.sofumar.portal.data.dto.SystemSettingsDto
+import org.sofumar.portal.data.dto.request.SortOrder
 import org.sofumar.portal.data.dto.request.SystemSettingsSearchRequestDto
 import org.sofumar.portal.data.transformer.SystemSettingsDtoTransformer
 import org.sofumar.portal.core.vo.SystemSettingsVO
@@ -160,7 +161,7 @@ class SystemSettingSpec extends BaseSpecification {
         request.setPage(0)
         request.setSize(10)
         request.setSortField(FieldConstants.SETTING_KEY)
-        request.setSortOrder("DESC")
+        request.setSortOrder(SortOrder.desc)
 
         when: "The target method executed"
         systemSetting.searchSystemSettings(request)

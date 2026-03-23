@@ -1,5 +1,7 @@
 package org.sofumar.portal.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.sofumar.portal.core.businesslogic.User;
 import org.sofumar.portal.data.dto.response.UserResponseDto;
@@ -21,6 +23,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/users")
+@Tag(name = "User Management", description = "User administration APIs")
 @RequiredArgsConstructor
 @IsAdmin
 public class UserController {
@@ -28,11 +31,13 @@ public class UserController {
     private final User user;
 
     @GetMapping
+    @Operation(summary = "Get all users")
     public ResponseEntity<GlobalResponse<List<UserResponseDto>>> getAllUsers() {
         return user.getAllUsers();
     }
 
     @PutMapping("/{id}/role")
+    @Operation(summary = "Update user role")
     public ResponseEntity<GlobalResponse<Void>> updateRole(
             @PathVariable @NonNull Integer id,
             @Valid @RequestBody UserRoleUpdateRequestDto request) {
@@ -40,6 +45,7 @@ public class UserController {
     }
 
     @PutMapping("/{id}/status")
+    @Operation(summary = "Toggle user active status")
     public ResponseEntity<GlobalResponse<Void>> toggleStatus(
             @PathVariable @NonNull Integer id,
             @Valid @RequestBody UserStatusUpdateRequestDto request) {

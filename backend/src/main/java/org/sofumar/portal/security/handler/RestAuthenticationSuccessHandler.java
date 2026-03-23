@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.sofumar.portal.core.businesslogic.User;
+import org.sofumar.portal.data.dto.response.LoginResponseDto;
 import org.sofumar.portal.framework.service.RefreshTokenService;
 import org.sofumar.portal.framework.util.ResponseUtils;
 import org.sofumar.portal.security.JwtService;
@@ -16,7 +17,6 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -45,12 +45,12 @@ public class RestAuthenticationSuccessHandler implements AuthenticationSuccessHa
         response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
-        // Only return non-sensitive metadata in the JSON body (tokens are in cookies)
-        Map<String, String> bodyMap = Map.of(
-                "role", userDetails.getUserVO().getRole().name(),
-                "firstName", userDetails.getUserVO().getFirstName()
+        // Return non-sensitive metadata in the JSON body (tokens are in cookies)
+        LoginResponseDto loginResponse = new LoginResponseDto(
+                userDetails.getUserVO().getRole().name(),
+                userDetails.getUserVO().getFirstName()
         );
 
-        objectMapper.writeValue(response.getOutputStream(), ResponseUtils.withMap(bodyMap).getBody());
+        objectMapper.writeValue(response.getOutputStream(), ResponseUtils.okWithData(loginResponse).getBody());
     }
 }

@@ -1,5 +1,5 @@
 import { Alert } from 'antd';
-import { GlobalMsg, MessageType } from '../constants/types';
+import { GlobalMsg, MessageType } from '../api/generated/types/index';
 
 const typeMap: Record<
   MessageType,
@@ -23,11 +23,12 @@ export function MessageBanner({ messages, closable = false }: MessageBannerProps
   return (
     <div style={{ marginBottom: '16px' }}>
       {messages.map((msg, index) => {
-        const mapped = typeMap[msg.type];
+        // Safely cast msg.type to MessageType and provide a fallback for the antd type
+        const mappedType = typeMap[msg.type as MessageType]?.antd || 'info';
         return (
           <Alert
             key={index}
-            type={mapped.antd}
+            type={mappedType}
             description={msg.message}
             showIcon
             closable={closable}

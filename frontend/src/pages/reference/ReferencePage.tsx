@@ -6,7 +6,10 @@ import { MessageBanner } from '../../component/MessageBanner';
 import SearchFilterBar from '../../component/SearchFilterBar';
 import Sidebar from '../../component/Sidebar';
 import { referenceSearchFiltersConfig } from '../../constants/referenceSearchFiltersConfig';
-import { Reference, ReferenceSearchRequest } from '../../constants/types';
+import {
+  ReferenceDto,
+  ReferenceSearchRequestDto
+} from '../../api/generated/types';
 import { useApiMessages } from '../../hook/ApiResponseHandler';
 import { usePaginatedReferences } from '../../hook/PaginatedReferences';
 
@@ -17,7 +20,7 @@ export default function ReferencePage() {
   const { globalMessages, handleError, resetMessages } = useApiMessages<any>();
 
   // search filters
-  const [filters, setFilters] = useState<ReferenceSearchRequest>({});
+  const [filters, setFilters] = useState<ReferenceSearchRequestDto>({});
 
   // Initial load
   useEffect(() => {
@@ -33,7 +36,7 @@ export default function ReferencePage() {
     }
   };
 
-  const columns: ColumnsType<Reference> = [
+  const columns: ColumnsType<ReferenceDto> = [
     { title: 'Reference Name', dataIndex: 'referenceName', key: 'referenceName' },
     { title: 'Code', dataIndex: 'referenceCode', key: 'referenceCode' },
     { title: 'Display', dataIndex: 'referenceDisplay', key: 'referenceDisplay' },
@@ -67,14 +70,14 @@ export default function ReferencePage() {
           {globalMessages && <MessageBanner messages={globalMessages} />}
 
           <Card className="glass-card" style={{ padding: 0 }}>
-            <Table<Reference>
+            <Table<ReferenceDto>
               size="small"
               rowKey="referenceID"
               dataSource={references}
               columns={columns}
               loading={loading}
               pagination={{
-                current: meta ? meta.page + 1 : 1,
+                current: (meta?.page ?? 0) + 1,
                 pageSize: meta?.pageSize ?? 10,
                 total: meta?.totalRecords ?? 0,
                 showSizeChanger: true,

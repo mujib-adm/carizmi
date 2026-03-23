@@ -1,15 +1,14 @@
 import { SearchOutlined, UserOutlined } from '@ant-design/icons';
 import { ConfigProvider, Empty, Select, Spin, Tag } from 'antd';
-import { useEffect, useState } from 'react';
-import { lookupMembers } from '../apiclient/memberApi';
-
-import './member-lookup.css';
+import { useEffect, useRef, useState } from 'react';
+import { membersApi } from '../api/generated/members/members';
+import type { MemberLookupDto } from '../api/generated/types/index';
 
 import type { SelectProps } from 'antd';
 import './member-lookup.css';
 
-interface MemberLookupProps extends SelectProps<any> {
-  onSelectMember?: (member: any) => void;
+interface MemberLookupProps extends SelectProps<number> {
+  onSelectMember?: (member: MemberLookupDto) => void;
   onError?: (error: any) => void;
 }
 
@@ -20,8 +19,10 @@ export default function MemberLookup({
   onError,
   ...rest
 }: MemberLookupProps) {
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<MemberLookupDto[]>([]);
   const [fetching, setFetching] = useState(false);
+
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleSearch = async (newValue: string) => {
     if (!newValue || newValue.length < 3) {
@@ -30,7 +31,7 @@ export default function MemberLookup({
     }
     setFetching(true);
     try {
-      const result = await lookupMembers(newValue);
+      const result = await membersApi.memberLookup({ query: newValue });
       if (result && result.responseData) {
         setData(result.responseData);
       } else {
@@ -43,12 +44,15 @@ export default function MemberLookup({
     }
   };
 
-  useEffect(() => {}, []);
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
 
-  let timeout: ReturnType<typeof setTimeout> | null = null;
   const debouncedSearch = (val: string) => {
-    if (timeout) clearTimeout(timeout);
-    timeout = setTimeout(() => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
       handleSearch(val);
     }, 300);
   };
@@ -88,7 +92,7 @@ export default function MemberLookup({
           onChange={handleChange}
           notFoundContent={fetching ? (<Spin size="small" />) : (<Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Type 3+ chars" />)}
           suffixIcon={<UserOutlined className="member-lookup-suffix-icon" />}
-          options={(data || []).map((d: any) => ({
+          options={(data || []).map((d: MemberLookupDto) => ({
             value: d.memberID,
             label: `${d.firstName} ${d.lastName}`,
             member: d,
@@ -105,9 +109,9 @@ export default function MemberLookup({
                     ID: <span className="member-id-mono">{d.memberID}</span> • Phone: {d.phone}
                   </span>
                 </div>
-                {d.status !== 'Active'
-                    ? (<Tag className="member-tag" color="error">{d.status}</Tag>)
-                    : (<Tag className="member-tag" color="success">Active</Tag>)
+                {d.status == '01'
+                  ? (<Tag className="member-tag" color="success">Active</Tag>)
+                  : (<Tag className="member-tag" color="error">{d.status}</Tag>)
                 }
               </div>
             );

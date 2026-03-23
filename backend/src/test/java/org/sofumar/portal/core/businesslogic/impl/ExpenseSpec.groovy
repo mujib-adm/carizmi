@@ -3,6 +3,7 @@ package org.sofumar.portal.core.businesslogic.impl
 import org.sofumar.portal.constants.FieldConstants
 import org.sofumar.portal.data.dto.ExpenseDto
 import org.sofumar.portal.data.dto.request.ExpenseSearchRequestDto
+import org.sofumar.portal.data.dto.request.SortOrder
 import org.sofumar.portal.data.transformer.ExpenseDtoTransformer
 import org.sofumar.portal.data.transformer.ExpenseVOTransformer
 import org.sofumar.portal.core.vo.ExpenseVO
@@ -245,7 +246,7 @@ class ExpenseSpec extends BaseSpecification {
         request2.setPage(0)
         request2.setSize(10)
         request2.setSortField(FieldConstants.AMOUNT)
-        request2.setSortOrder("DESC")
+        request2.setSortOrder(SortOrder.desc)
         expenseImpl.searchExpenses(request2)
 
         then: "The expected calls are made"

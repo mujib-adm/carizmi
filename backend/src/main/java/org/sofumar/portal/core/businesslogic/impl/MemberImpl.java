@@ -148,11 +148,12 @@ public non-sealed class MemberImpl extends MemberAbstractBL implements Member {
         Page<MemberVO> members = getRepo().findAll(spec, pageRequest);
 
         List<MemberLookupDto> dtos = members.getContent().stream()
-                .map(m -> MemberLookupDto.builder()
-                        .memberID(m.getMemberID())
-                        .firstName(m.getFirstName())
-                        .lastName(m.getLastName())
-                        .phone(m.getPhone())
+                .map(memberVO -> MemberLookupDto.builder()
+                        .memberID(memberVO.getMemberID())
+                        .firstName(memberVO.getFirstName())
+                        .lastName(memberVO.getLastName())
+                        .phone(memberVO.getPhone())
+                        .status(memberVO.getStatus())
                         .build())
                 .collect(Collectors.toList());
 

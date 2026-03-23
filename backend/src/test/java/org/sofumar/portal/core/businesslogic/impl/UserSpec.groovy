@@ -8,6 +8,7 @@ import org.sofumar.portal.data.dto.UserDto
 import org.sofumar.portal.data.dto.request.PasswordUpdateRequestDto
 import org.sofumar.portal.data.dto.response.UserProfileDto
 import org.sofumar.portal.data.dto.response.UserResponseDto
+import org.sofumar.portal.data.dto.response.TokenDto
 import org.sofumar.portal.data.transformer.UserResponseDtoTransformer
 import org.sofumar.portal.data.transformer.UserVOTransformer
 import org.sofumar.portal.framework.data.response.GlobalResponse
@@ -149,10 +150,10 @@ class UserSpec extends BaseSpecification {
         1 * jwtService.generateAccessToken(_ as SofumarUserDetails) >> newAccess
         0 * _
 
-        and: "Response contains new tokens in the map"
+        and: "Response contains new tokens in responseData"
         response.statusCode == HttpStatus.OK
-        response.body.map.token == newAccess
-        response.body.map.refreshToken == rotatedToken
+        response.body.responseData.token == newAccess
+        response.body.responseData.refreshToken == rotatedToken
     }
 
     @Unroll

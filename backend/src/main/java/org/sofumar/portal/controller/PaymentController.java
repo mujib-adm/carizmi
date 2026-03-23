@@ -72,7 +72,7 @@ public class PaymentController {
     @GetMapping("/latest")
     @Operation(summary = "Get latest payments")
     @IsAuthenticated
-    public ResponseEntity<GlobalResponse<List<LatestPaymentDto>>> getLatest(@RequestParam(defaultValue = "5") int limit) {
+    public ResponseEntity<GlobalResponse<List<LatestPaymentDto>>> latestPayments(@RequestParam(defaultValue = "5") int limit) {
         return payment.getLatestPayments(limit);
     }
 }

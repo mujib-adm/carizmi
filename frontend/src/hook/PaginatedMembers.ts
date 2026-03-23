@@ -1,17 +1,24 @@
-import { useCallback, useState } from 'react';
-import { searchMembers } from '../apiclient/memberApi';
-import { GlobalResponse, Member, MemberSearchRequest, PaginationMeta } from '../constants/types';
+import { useCallback, useMemo, useState } from 'react';
+import { membersApi } from '../api/generated/members/members';
+import {
+  MemberDto,
+  MemberSearchRequestDto,
+  PaginationMeta,
+} from '../api/generated/types';
 
-export function usePaginatedMembers(initialRequest: MemberSearchRequest = {}) {
-  const [members, setMembers] = useState<Member[]>([]);
+export function usePaginatedMembers(initialRequest: MemberSearchRequestDto = {}) {
+  const [members, setMembers] = useState<MemberDto[]>([]);
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const fetchMembers = useCallback(async (request: MemberSearchRequest = {}) => {
+  // Stabilize the input request
+  const memoInitialRequest = useMemo(() => initialRequest, [JSON.stringify(initialRequest)]);
+
+  const fetchMembers = useCallback(async (request: MemberSearchRequestDto = {}) => {
     setLoading(true);
     try {
-      const mergedRequest = { ...initialRequest, ...request };
-      const resp: GlobalResponse<Member[]> = await searchMembers(mergedRequest);
+      const mergedRequest = { ...memoInitialRequest, ...request };
+      const resp = await membersApi.searchMembers(mergedRequest);
       setMembers(resp.responseData ?? []);
       setMeta(resp.meta ?? null);
     } catch (e: any) {
@@ -19,7 +26,7 @@ export function usePaginatedMembers(initialRequest: MemberSearchRequest = {}) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [memoInitialRequest]);
 
   return { members, meta, loading, fetchMembers, setMembers };
 }

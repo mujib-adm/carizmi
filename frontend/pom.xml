@@ -26,9 +26,6 @@
                             <directory>${project.build.directory}</directory>
                         </fileset>
                         <fileset>
-                            <directory>${project.basedir}/node_modules</directory>
-                        </fileset>
-                        <fileset>
                             <directory>${project.build.directory}/node</directory>
                         </fileset>
                     </filesets>
@@ -59,6 +56,14 @@
                         <phase>generate-resources</phase>
                         <configuration>
                             <arguments>ci</arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>npm-generate-api</id>
+                        <goals><goal>npm</goal></goals>
+                        <phase>generate-resources</phase>
+                        <configuration>
+                            <arguments>run generate:api</arguments>
                         </configuration>
                     </execution>
                     <execution>

@@ -3,6 +3,7 @@ package org.sofumar.portal.core.businesslogic.impl
 import org.sofumar.portal.constants.ReferenceConstants
 import org.sofumar.portal.constants.FieldConstants
 import org.sofumar.portal.constants.TableConstants
+import org.sofumar.portal.data.dto.request.SortOrder
 import org.sofumar.portal.data.dto.response.LatestPaymentDto
 import org.sofumar.portal.data.dto.PaymentDto
 import org.sofumar.portal.data.dto.request.PaymentSearchRequestDto
@@ -387,7 +388,7 @@ class PaymentSpec extends BaseSpecification {
         request.setPage(0)
         request.setSize(10)
         request.setSortField(FieldConstants.AMOUNT)
-        request.setSortOrder("DESC")
+        request.setSortOrder(SortOrder.desc)
 
         when: "The target method executed"
         paymentImpl.searchPayments(request)

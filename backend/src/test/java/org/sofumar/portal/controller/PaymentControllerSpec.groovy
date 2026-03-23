@@ -119,7 +119,7 @@ class PaymentControllerSpec extends BaseSpecification {
         noExceptionThrown()
     }
 
-    def "test - getLatest: Should delegate to payment service"() {
+    def "test - latestPayments: Should delegate to payment service"() {
         given: "A limit"
         int limit = 10
         Integer paymentID = 1
@@ -129,7 +129,7 @@ class PaymentControllerSpec extends BaseSpecification {
         ResponseEntity<GlobalResponse<List<LatestPaymentDto>>> expectedResponse = new ResponseEntity<>(responseBody, HttpStatus.OK)
 
         when: "The target method executed"
-        ResponseEntity<GlobalResponse<List<LatestPaymentDto>>> result = paymentController.getLatest(limit)
+        ResponseEntity<GlobalResponse<List<LatestPaymentDto>>> result = paymentController.latestPayments(limit)
 
         then: "The expected calls are made"
         1 * paymentService.getLatestPayments(limit) >> expectedResponse

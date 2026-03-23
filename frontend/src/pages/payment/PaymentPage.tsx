@@ -2,14 +2,19 @@ import { DeleteOutlined, DollarOutlined, EditOutlined } from '@ant-design/icons'
 import { Button, Card, Modal, Space, Table, Typography } from 'antd';
 import { ColumnsType } from 'antd/es/table';
 import { useMemo, useState } from 'react';
-import { addPayment, deletePayment, getPayment, updatePayment } from '../../apiclient/paymentApi';
+import { paymentsApi } from '../../api/generated/payments/payments';
 import { MessageBanner } from '../../component/MessageBanner';
 import PaymentModal from '../../modals/PaymentModal.tsx';
 import SearchFilterBar from '../../component/SearchFilterBar.jsx';
 import Sidebar from '../../component/Sidebar';
 import { paymentSearchFiltersConfig } from '../../constants/paymentSearchFiltersConfig.ts';
 import { ReferenceConstants } from '../../constants/ReferenceConstants';
-import { MessageType, Payment, PaymentSearchRequest } from '../../constants/types';
+import {
+  GlobalResponse,
+  MessageType,
+  PaymentDto,
+  PaymentSearchRequestDto
+} from '../../api/generated/types';
 import { useNotification } from '../../context/NotificationContext';
 import { useReference } from '../../context/ReferenceContext';
 import { useApiMessages } from '../../hook/ApiResponseHandler';
@@ -21,26 +26,27 @@ const { Title } = Typography;
 export default function PaymentPage() {
   const notify = useNotification();
   const { payments, meta, loading, fetchPayments, setPayments } = usePaginatedPayments();
-  const { globalMessages, handleError, resetMessages } = useApiMessages<any>();
+  const { globalMessages, handleResponse, handleError, resetMessages } = useApiMessages<any>();
+
 
   // search filters
-  const [filters, setFilters] = useState<PaymentSearchRequest>({});
+  const [filters, setFilters] = useState<PaymentSearchRequestDto>({});
 
   // Modal State
   const [modalOpenInd, setModalOpenInd] = useState(false);
-  const [selectedRecord, setSelectedRecord] = useState<any>(null);
+  const [selectedRecord, setSelectedRecord] = useState<PaymentDto | null>(null);
 
   const { canWrite } = useAuthorization();
 
   // Ref Data
   const { getReference, toDisplay } = useReference();
   const feeTypes = getReference(ReferenceConstants.FEE_TYPE.NAME).map((r) => ({
-    value: r.code,
-    label: r.display,
+    value: r.referenceCode || '',
+    label: r.referenceDisplay || '',
   }));
   const paymentMethods = getReference(ReferenceConstants.PAYMENT_METHOD.NAME).map((r) => ({
-    value: r.code,
-    label: r.display,
+    value: r.referenceCode || '',
+    label: r.referenceDisplay || '',
   }));
 
   const handleSearch = async () => {
@@ -57,14 +63,14 @@ export default function PaymentPage() {
     setModalOpenInd(true);
   };
 
-  const openEdit = (record: Payment) => {
+  const openEdit = (record: PaymentDto) => {
     setSelectedRecord(record);
     setModalOpenInd(true);
   };
 
-  const handleDelete = async (record: Payment) => {
-    const feeTypeDisplay =
-      toDisplay(ReferenceConstants.FEE_TYPE.NAME, record.feeType) || record.feeType;
+  const handleDelete = async (record: PaymentDto) => {
+    const feeTypeDisplay = record.feeType ?
+      toDisplay(ReferenceConstants.FEE_TYPE.NAME, record.feeType) : record.feeType;
     Modal.confirm({
       title: 'Are you sure you want to delete payment record?',
       content: (
@@ -83,7 +89,7 @@ export default function PaymentPage() {
           <div style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Fee Type:</div>
           <div>{feeTypeDisplay}</div>
           <div style={{ whiteSpace: 'nowrap', fontWeight: 600 }}>Amount:</div>
-          <div>${record.amount.toFixed(2)}</div>
+          <div>${record.amount?.toFixed(2) || '0.00'}</div>
         </div>
       ),
       okText: 'Delete',
@@ -91,10 +97,14 @@ export default function PaymentPage() {
       onOk: async () => {
         try {
           resetMessages();
-          const resp = await deletePayment(record.paymentID);
+          if (record.paymentID) {
+            const resp = await paymentsApi.deletePayment(record.paymentID);
 
-          if (resp.globalMessages?.[0]?.type === MessageType.SUCCESS) {
-            notify.success({ message: 'Deleted', description: 'Payment deleted successfully.' });
+            if (resp.globalMessages?.[0]?.type === MessageType.SUCCESS) {
+              notify.success({ message: 'Deleted', description: 'Payment deleted successfully.' });
+            } else {
+              handleResponse(resp);
+            }
           }
           fetchPayments(filters); // Refresh
         } catch (e: any) {
@@ -106,14 +116,14 @@ export default function PaymentPage() {
 
   const handleSubmit = async (values: any) => {
     const isAdd = !selectedRecord?.paymentID;
-    const resp = isAdd ? await addPayment(values) : await updatePayment(values);
+    const resp = isAdd ? await paymentsApi.addPayment(values) : await paymentsApi.updatePayment(values);
 
     if (resp.globalMessages?.[0]?.type === MessageType.SUCCESS) {
       notify.success({ message: 'Success', description: resp.globalMessages[0].message });
 
       if (isAdd && resp.responseData) {
         // Fetch the newly created payment details
-        const fullPaymentResp = await getPayment(resp.responseData);
+        const fullPaymentResp = await paymentsApi.getPayment(resp.responseData);
         if (fullPaymentResp.responseData) {
           // Prepend to the list
           setPayments((prev) => [fullPaymentResp.responseData!, ...prev]);
@@ -122,13 +132,15 @@ export default function PaymentPage() {
         // For updates, we still refresh the list to ensure sorting/filtering logic
         fetchPayments(filters);
       }
+    } else {
+      handleResponse(resp as GlobalResponse<unknown>);
     }
     setModalOpenInd(false);
     setSelectedRecord(null);
     resetMessages();
   };
 
-  const columns: ColumnsType<Payment> = [
+  const columns: ColumnsType<PaymentDto> = [
     { title: 'Member', dataIndex: 'memberFullName', key: 'memberFullName' },
     {
       title: 'Fee Type',
@@ -160,7 +172,7 @@ export default function PaymentPage() {
           {
             title: 'Action',
             key: 'action',
-            render: (_: any, record: Payment) => (
+            render: (_: any, record: PaymentDto) => (
               <Space>
                 <Button icon={<EditOutlined />} onClick={() => openEdit(record)} />
                 <Button icon={<DeleteOutlined />} danger onClick={() => handleDelete(record)} />
@@ -203,14 +215,14 @@ export default function PaymentPage() {
           {globalMessages && <MessageBanner messages={globalMessages} />}
 
           <Card className="glass-card" style={{ padding: 0 }}>
-            <Table<Payment>
+            <Table<PaymentDto>
               size="small"
               rowKey="paymentID"
               dataSource={payments}
               columns={columns}
               loading={loading}
               pagination={{
-                current: meta ? meta.page + 1 : 1,
+                current: (meta?.page ?? 0) + 1,
                 pageSize: meta?.pageSize ?? 10,
                 total: meta?.totalRecords ?? 0,
                 showSizeChanger: true,

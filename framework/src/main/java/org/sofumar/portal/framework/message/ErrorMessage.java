@@ -6,7 +6,7 @@ package org.sofumar.portal.framework.message;
 public class ErrorMessage extends Message {
 
     public ErrorMessage(String messageID, String messageText) {
-        super(Type.ERROR, messageID, messageText);
+        super(MessageType.ERROR, messageID, messageText);
     }
 
     protected ErrorMessage(ErrorMessage other) {

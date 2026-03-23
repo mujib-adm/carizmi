@@ -1,22 +1,24 @@
-import { useCallback, useState } from 'react';
-import { searchSystemSettings } from '../apiclient/systemSettingsApi';
+import { useCallback, useMemo, useState } from 'react';
+import { systemSettingsApi } from '../api/generated/system-settings/system-settings';
 import {
-  GlobalResponse,
   PaginationMeta,
-  SystemSetting,
-  SystemSettingSearchRequest,
-} from '../constants/types';
+  SystemSettingsDto,
+  SystemSettingsSearchRequestDto,
+} from '../api/generated/types';
 
-export function usePaginatedSystemSettings(initialRequest: SystemSettingSearchRequest = {}) {
-  const [settings, setSettings] = useState<SystemSetting[]>([]);
+export function usePaginatedSystemSettings(initialRequest: SystemSettingsSearchRequestDto = {}) {
+  const [settings, setSettings] = useState<SystemSettingsDto[]>([]);
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const fetchSettings = useCallback(async (request: SystemSettingSearchRequest = {}) => {
+  // Stabilize initialRequest
+  const memoInitialRequest = useMemo(() => initialRequest, [JSON.stringify(initialRequest)]);
+
+  const fetchSettings = useCallback(async (request: SystemSettingsSearchRequestDto = {}) => {
     setLoading(true);
     try {
-      const mergedRequest = { ...initialRequest, ...request };
-      const resp: GlobalResponse<SystemSetting[]> = await searchSystemSettings(mergedRequest);
+      const mergedRequest = { ...memoInitialRequest, ...request };
+      const resp = await systemSettingsApi.searchSystemSettings(mergedRequest);
       setSettings(resp.responseData ?? []);
       setMeta(resp.meta ?? null);
     } catch (error) {
@@ -24,7 +26,7 @@ export function usePaginatedSystemSettings(initialRequest: SystemSettingSearchRe
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [memoInitialRequest]);
 
   return { settings, meta, loading, fetchSettings, setSettings };
 }

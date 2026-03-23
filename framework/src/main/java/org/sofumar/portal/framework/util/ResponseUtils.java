@@ -2,6 +2,7 @@ package org.sofumar.portal.framework.util;
 
 import org.sofumar.portal.framework.message.FieldMessage;
 import org.sofumar.portal.framework.message.Message;
+import org.sofumar.portal.framework.message.MessageType;
 import org.sofumar.portal.framework.data.response.FieldMsg;
 import org.sofumar.portal.framework.data.response.GlobalMsg;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
@@ -62,24 +63,16 @@ public class ResponseUtils {
         return ResponseEntity.status(status).body(response);
     }
 
-    public static ResponseEntity<GlobalResponse<Void>> withStatus(HttpStatus status, Message.Type type, String msg) {
+    public static ResponseEntity<GlobalResponse<Void>> withStatus(HttpStatus status, MessageType type, String msg) {
         return withStatusAndData(status, type, msg);
     }
 
-    public static <T> ResponseEntity<GlobalResponse<T>> withStatusAndData(HttpStatus status, Message.Type type, String msg) {
+    public static <T> ResponseEntity<GlobalResponse<T>> withStatusAndData(HttpStatus status, MessageType type, String msg) {
         GlobalResponse<T> response = GlobalResponse.getInstance();
         response.setStatusCode(status.value());
         response.setStatusDesc(status.getReasonPhrase());
         response.setGlobalMessages(List.of(new GlobalMsg(type, msg)));
         return ResponseEntity.status(status).body(response);
-    }
-
-    public static ResponseEntity<GlobalResponse<Void>> withMap(Map<String, String> map) {
-        GlobalResponse<Void> response = GlobalResponse.getInstance();
-        response.setStatusCode(HttpStatus.OK.value());
-        response.setStatusDesc(HttpStatus.OK.getReasonPhrase());
-        response.setMap(map);
-        return ResponseEntity.ok(response);
     }
 
     public static <T> ResponseEntity<GlobalResponse<T>> okWithData(T data) {
@@ -94,7 +87,7 @@ public class ResponseUtils {
 
     public static <T> ResponseEntity<GlobalResponse<T>> okWithData(T data, String msg) {
         GlobalResponse<T> response = GlobalResponse.withResponseData(data);
-        response.setGlobalMessages(List.of(new GlobalMsg(Message.Type.SUCCESS, msg)));
+        response.setGlobalMessages(List.of(new GlobalMsg(MessageType.SUCCESS, msg)));
         return ResponseEntity.ok(response);
     }
 
@@ -110,7 +103,7 @@ public class ResponseUtils {
         GlobalResponse<Void> response = GlobalResponse.getInstance();
         response.setStatusCode(HttpStatus.FORBIDDEN.value());
         response.setStatusDesc(HttpStatus.FORBIDDEN.getReasonPhrase());
-        response.setGlobalMessages(List.of(new GlobalMsg(Message.Type.ERROR, CommonMessages.ACCESS_DENIED.getMessageString())));
+        response.setGlobalMessages(List.of(new GlobalMsg(MessageType.ERROR, CommonMessages.ACCESS_DENIED.getMessageString())));
         return response;
     }
 
@@ -122,7 +115,7 @@ public class ResponseUtils {
         GlobalResponse<Void> response = GlobalResponse.getInstance();
         response.setStatusCode(HttpStatus.UNAUTHORIZED.value());
         response.setStatusDesc(HttpStatus.UNAUTHORIZED.getReasonPhrase());
-        response.setGlobalMessages(List.of(new GlobalMsg(Message.Type.ERROR, CommonMessages.AUTHENTICATION_FAILED.getMessageString())));
+        response.setGlobalMessages(List.of(new GlobalMsg(MessageType.ERROR, CommonMessages.AUTHENTICATION_FAILED.getMessageString())));
         return response;
     }
 
@@ -130,7 +123,7 @@ public class ResponseUtils {
         GlobalResponse<Void> response = GlobalResponse.getInstance();
         response.setStatusCode(HttpStatus.UNAUTHORIZED.value());
         response.setStatusDesc(HttpStatus.UNAUTHORIZED.getReasonPhrase());
-        response.setGlobalMessages(List.of(new GlobalMsg(Message.Type.ERROR, customMessage)));
+        response.setGlobalMessages(List.of(new GlobalMsg(MessageType.ERROR, customMessage)));
         return response;
     }
 }

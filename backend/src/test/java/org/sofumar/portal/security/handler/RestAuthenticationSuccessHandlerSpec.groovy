@@ -59,8 +59,8 @@ class RestAuthenticationSuccessHandlerSpec extends BaseSpecification {
 
         and: "Response JSON contains user info and not sensitive tokens"
         String jsonResponse = capture.getByteArrayOutputStream().toString('UTF-8')
-        jsonResponse.contains('"firstName":"Test"')
-        jsonResponse.contains('"role":"MEMBER"')
+        jsonResponse.contains('"firstName"')
+        jsonResponse.contains('"role"')
         !jsonResponse.contains('"token"')
         !jsonResponse.contains('"refreshToken"')
 

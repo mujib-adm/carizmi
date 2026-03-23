@@ -34,6 +34,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Auto-generated API Client (TypeScript types are regenerated from OpenAPI contract - openapi.json)
+frontend/src/api/generated/
+
 # React environment files
 .env
 .env.local

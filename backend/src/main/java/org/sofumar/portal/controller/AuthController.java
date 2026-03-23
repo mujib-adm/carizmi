@@ -3,10 +3,13 @@ package org.sofumar.portal.controller;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.sofumar.portal.core.businesslogic.User;
 import org.sofumar.portal.data.dto.UserDto;
 import org.sofumar.portal.data.dto.request.PasswordUpdateRequestDto;
+import org.sofumar.portal.data.dto.response.TokenDto;
 import org.sofumar.portal.data.dto.response.UserProfileDto;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
 import org.sofumar.portal.framework.util.ResponseUtils;
@@ -23,13 +26,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
-
-import static org.sofumar.portal.security.CookieService.REFRESH_TOKEN_MAP_KEY;
-import static org.sofumar.portal.security.CookieService.TOKEN_MAP_KEY;
-
 @RestController
 @RequestMapping("/auth")
+@Tag(name = "Authentication", description = "Authentication and account management APIs")
 @RequiredArgsConstructor
 public class AuthController {
 
@@ -37,14 +36,16 @@ public class AuthController {
     private final CookieService cookieService;
 
     @PostMapping("/register")
+    @Operation(summary = "Register a new user")
     @IsAdmin
     public ResponseEntity<GlobalResponse<Void>> register(@Valid @RequestBody UserDto requestDto) {
         return user.register(requestDto);
     }
 
     @PostMapping("/logout")
+    @Operation(summary = "Logout current user")
     @IsAuthenticated
-    public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<GlobalResponse<Void>> logout(HttpServletRequest request, HttpServletResponse response) {
         // Read tokens from cookies for blacklisting
         String accessToken = cookieService.getAccessToken(request).orElse(null);
         String refreshToken = cookieService.getRefreshToken(request).orElse(null);
@@ -54,34 +55,32 @@ public class AuthController {
         // Clear auth cookies
         cookieService.clearAuthCookies(response);
 
-        return ResponseEntity.ok(Map.of("message", "Successfully logged out"));
+        return ResponseUtils.ok("Successfully logged out");
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<?> refreshToken(HttpServletRequest request, HttpServletResponse response) {
+    @Operation(summary = "Refresh access token")
+    public ResponseEntity<GlobalResponse<TokenDto>> refreshToken(HttpServletRequest request, HttpServletResponse response) {
         String refreshToken = cookieService.getRefreshToken(request).orElse(null);
         if (refreshToken == null) {
-            return ResponseUtils.badRequest("Refresh token is required.");
+            return ResponseUtils.badRequestWithData("Refresh token is required.");
         }
-        ResponseEntity<?> result = user.refreshToken(refreshToken);
+        ResponseEntity<GlobalResponse<TokenDto>> result = user.refreshToken(refreshToken);
 
-        // If refresh was successful, set new cookies from the response map
+        // If refresh was successful, set new cookies from the response
         if (result.getStatusCode() == HttpStatus.OK) {
-            Object responseBody = result.getBody();
-            if (responseBody instanceof GlobalResponse<?>) {
-                @SuppressWarnings("unchecked")
-                GlobalResponse<Void> body = (GlobalResponse<Void>) responseBody;
-                if (body.getMap() != null) {
-                    String newAccessToken = body.getMap().get(TOKEN_MAP_KEY);
-                    String newRefreshToken = body.getMap().get(REFRESH_TOKEN_MAP_KEY);
-                    if (newAccessToken != null) {
-                        cookieService.addAccessTokenCookie(response, newAccessToken);
+            GlobalResponse<TokenDto> body = result.getBody();
+            if (body != null) {
+                TokenDto tokenDto = body.getResponseData();
+                if (tokenDto != null) {
+                    if (tokenDto.getToken() != null) {
+                        cookieService.addAccessTokenCookie(response, tokenDto.getToken());
                     }
-                    if (newRefreshToken != null) {
-                        cookieService.addRefreshTokenCookie(response, newRefreshToken);
+                    if (tokenDto.getRefreshToken() != null) {
+                        cookieService.addRefreshTokenCookie(response, tokenDto.getRefreshToken());
                     }
-                    // Remove tokens from map in response body (they're in cookies)
-                    body.setMap(null);
+                    // Remove tokens from response body (they're in cookies)
+                    body.setResponseData(null);
                 }
             }
         }
@@ -89,12 +88,14 @@ public class AuthController {
     }
 
     @GetMapping("/profile")
+    @Operation(summary = "Get current user profile")
     @IsAuthenticated
     public ResponseEntity<GlobalResponse<UserProfileDto>> getCurrentUser(@AuthenticationPrincipal UserDetails userDetails) {
         return user.getProfile(userDetails.getUsername());
     }
 
     @PostMapping("/password-update")
+    @Operation(summary = "Update current user password")
     @IsAuthenticated
     public ResponseEntity<GlobalResponse<Void>> updatePassword(
             @AuthenticationPrincipal UserDetails userDetails,

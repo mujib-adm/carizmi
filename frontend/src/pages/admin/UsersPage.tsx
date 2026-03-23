@@ -1,23 +1,27 @@
 import { EditOutlined, UserOutlined } from '@ant-design/icons';
 import { Button, Card, Col, Divider, Row, Space, Table, Tag, Typography, message } from 'antd';
 import { useEffect, useState } from 'react';
-import { getAllUsers, updateUserRole, updateUserStatus } from '../../apiclient/userApi';
+import { userManagementApi } from '../../api/generated/user-management/user-management';
 import { MessageBanner } from '../../component/MessageBanner';
 import Sidebar from '../../component/Sidebar';
 import '../../component/Sidebar.css';
 import { UserModal } from '../../modals/UserModal';
 import { RoleConstants } from '../../constants/RoleConstants';
-import { MessageType, User } from '../../constants/types';
+import {
+  MessageType,
+  UserResponseDto,
+  UserStatusUpdateRequestDto
+} from '../../api/generated/types';
 import { useApiMessages } from '../../hook/ApiResponseHandler';
 import { useNotification } from '../../context/NotificationContext';
 
 const { Title } = Typography;
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<UserResponseDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedUser, setSelectedUser] = useState<UserResponseDto | null>(null);
   const notify = useNotification();
 
   const { globalMessages, handleError, resetMessages } = useApiMessages();
@@ -26,7 +30,7 @@ export default function UsersPage() {
     setLoading(true);
     resetMessages();
     try {
-      const response = await getAllUsers();
+      const response = await userManagementApi.getAllUsers();
       if (response.responseData) {
         setUsers(response.responseData);
       } else {
@@ -43,23 +47,25 @@ export default function UsersPage() {
     fetchUsers();
   }, []);
 
-  const openEdit = (user: User) => {
+  const openEdit = (user: UserResponseDto) => {
     setSelectedUser(user);
     setModalOpen(true);
   };
 
   const handleUpdateUser = async (updatedValues: any) => {
     try {
+      if (!selectedUser?.userID) return;
       // Check and update Role if changed
       let resp;
       if (updatedValues.role !== selectedUser?.role) {
-        resp = await updateUserRole(updatedValues.userID, updatedValues.role);
+        resp = await userManagementApi.updateRole(selectedUser.userID, { role: updatedValues.role });
       }
       // Check and update Status if changed
       if (updatedValues.active !== selectedUser?.active) {
-        resp = await updateUserStatus(updatedValues.userID, updatedValues.active);
+        const statusReq: UserStatusUpdateRequestDto = { active: updatedValues.active };
+        resp = await userManagementApi.toggleStatus(selectedUser.userID, statusReq);
       }
-      if (resp.globalMessages?.[0]?.type === MessageType.SUCCESS) {
+      if (resp?.globalMessages?.[0]?.type === MessageType.SUCCESS) {
         notify.success({ message: 'Success', description: resp.globalMessages[0].message });
       }
       setModalOpen(false);
@@ -74,31 +80,31 @@ export default function UsersPage() {
     {
       title: 'Name',
       key: 'name',
-      render: (_: any, record: User) => `${record.firstName} ${record.lastName}`,
+      render: (_: any, record: UserResponseDto) => `${record.firstName} ${record.lastName}`,
     },
     { title: 'Email', dataIndex: 'email', key: 'email' },
     { title: 'Username', dataIndex: 'username', key: 'username' },
     {
       title: 'Role',
       key: 'role',
-      render: (_: any, record: User) => {
+      render: (_: any, record: UserResponseDto) => {
         let color = 'geekblue';
         if (record.role === RoleConstants.ROLE_ADMIN) color = 'volcano';
         if (record.role === RoleConstants.ROLE_MANAGER) color = 'gold';
-        return <Tag color={color}>{record.role.replace('ROLE_', '')}</Tag>;
+        return <Tag color={color}>{(record.role || '').replace('ROLE_', '')}</Tag>;
       },
     },
     {
       title: 'Status',
       key: 'active',
-      render: (_: any, record: User) => (
+      render: (_: any, record: UserResponseDto) => (
         <Tag color={record.active ? 'green' : 'red'}>{record.active ? 'Active' : 'Inactive'}</Tag>
       ),
     },
     {
       title: 'Action',
       key: 'action',
-      render: (_: any, record: User) => (
+      render: (_: any, record: UserResponseDto) => (
         <Space>
           <Button icon={<EditOutlined />} onClick={() => openEdit(record)} />
         </Space>

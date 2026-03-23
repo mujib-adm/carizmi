@@ -6,6 +6,7 @@ import org.sofumar.portal.core.businesslogic.User
 import org.sofumar.portal.data.dto.UserDto
 import org.sofumar.portal.data.dto.request.PasswordUpdateRequestDto
 import org.sofumar.portal.data.dto.response.UserProfileDto
+import org.sofumar.portal.data.dto.response.TokenDto
 import org.sofumar.portal.framework.data.response.GlobalResponse
 import org.sofumar.portal.testbase.BaseSpecification
 import org.sofumar.portal.security.CookieService
@@ -51,7 +52,7 @@ class AuthControllerSpec extends BaseSpecification {
         String expectedMessage = "Successfully logged out"
 
         when: "The target method executed"
-        ResponseEntity<?> result = authController.logout(request, response)
+        ResponseEntity<GlobalResponse<Void>> result = authController.logout(request, response)
 
         then: "The expected calls are made"
         1 * cookieService.getAccessToken(request) >> Optional.ofNullable(accessToken)
@@ -62,7 +63,7 @@ class AuthControllerSpec extends BaseSpecification {
 
         and: "The expected result"
         result.statusCode == HttpStatus.OK
-        ((Map) result.body).message == expectedMessage
+        result.body.globalMessages[0].message == expectedMessage
         noExceptionThrown()
 
         where:
@@ -76,10 +77,10 @@ class AuthControllerSpec extends BaseSpecification {
     @Unroll
     def "test - refreshToken: Should return bad request when no refresh token [token: #token, expectedStatus: #expectedStatus]"() {
         given: "A refresh request"
-        ResponseEntity<?> serviceResponse = new ResponseEntity<>(HttpStatus.OK)
+        ResponseEntity<GlobalResponse<TokenDto>> serviceResponse = new ResponseEntity<>(HttpStatus.OK)
 
         when: "The target method executed"
-        ResponseEntity<?> result = authController.refreshToken(request, response)
+        ResponseEntity<GlobalResponse<TokenDto>> result = authController.refreshToken(request, response)
 
         then: "The expected calls are made"
         1 * cookieService.getRefreshToken(request) >> Optional.ofNullable(token)
@@ -98,15 +99,15 @@ class AuthControllerSpec extends BaseSpecification {
         null      | HttpStatus.BAD_REQUEST
     }
 
-    def "test - refreshToken: Should set new cookies when refresh succeeds with token map"() {
+    def "test - refreshToken: Should set new cookies when refresh succeeds with token data"() {
         given: "A successful refresh response containing tokens"
         String refreshToken = "old-refresh"
-        GlobalResponse<Void> body = new GlobalResponse<>()
-        body.setMap([token: "new-access", refreshToken: "new-refresh"])
-        ResponseEntity<?> serviceResponse = ResponseEntity.ok(body)
+        GlobalResponse<TokenDto> body = new GlobalResponse<>()
+        body.setResponseData(new TokenDto("new-access", "new-refresh"))
+        ResponseEntity<GlobalResponse<TokenDto>> serviceResponse = ResponseEntity.ok(body)
 
         when: "The target method executed"
-        ResponseEntity<?> result = authController.refreshToken(request, response)
+        ResponseEntity<GlobalResponse<TokenDto>> result = authController.refreshToken(request, response)
 
         then: "The expected calls are made"
         1 * cookieService.getRefreshToken(request) >> Optional.of(refreshToken)
@@ -117,20 +118,19 @@ class AuthControllerSpec extends BaseSpecification {
 
         and: "Tokens are removed from response body (set to null)"
         result.statusCode == HttpStatus.OK
-        GlobalResponse<Void> responseBody = (GlobalResponse<Void>) result.body
-        responseBody.map == null
+        result.body.responseData == null
         noExceptionThrown()
     }
 
-    def "test - refreshToken: Should not set cookies when refresh response has no map"() {
-        given: "A successful refresh response without map"
+    def "test - refreshToken: Should not set cookies when refresh response has no token data"() {
+        given: "A successful refresh response without token data"
         String refreshToken = "old-refresh"
-        GlobalResponse<Void> body = new GlobalResponse<>()
-        body.setMap(null)
-        ResponseEntity<?> serviceResponse = ResponseEntity.ok(body)
+        GlobalResponse<TokenDto> body = new GlobalResponse<>()
+        body.setResponseData(null)
+        ResponseEntity<GlobalResponse<TokenDto>> serviceResponse = ResponseEntity.ok(body)
 
         when: "The target method executed"
-        ResponseEntity<?> result = authController.refreshToken(request, response)
+        ResponseEntity<GlobalResponse<TokenDto>> result = authController.refreshToken(request, response)
 
         then: "The expected calls are made"
         1 * cookieService.getRefreshToken(request) >> Optional.of(refreshToken)
@@ -145,10 +145,10 @@ class AuthControllerSpec extends BaseSpecification {
     def "test - refreshToken: Should not set cookies when refresh fails"() {
         given: "A failed refresh response"
         String refreshToken = "expired-refresh"
-        ResponseEntity<?> serviceResponse = new ResponseEntity<>(HttpStatus.UNAUTHORIZED)
+        ResponseEntity<GlobalResponse<TokenDto>> serviceResponse = new ResponseEntity<>(HttpStatus.UNAUTHORIZED)
 
         when: "The target method executed"
-        ResponseEntity<?> result = authController.refreshToken(request, response)
+        ResponseEntity<GlobalResponse<TokenDto>> result = authController.refreshToken(request, response)
 
         then: "The expected calls are made"
         1 * cookieService.getRefreshToken(request) >> Optional.of(refreshToken)

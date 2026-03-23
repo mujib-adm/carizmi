@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 import { useEffect } from 'react';
 import { ReferenceConstants } from '../constants/ReferenceConstants';
 import { SystemSettingConstants } from '../constants/SystemSettingConstants.ts';
-import { Payment } from '../constants/types';
+import { PaymentDto } from '../api/generated/types';
 import { useSystemSettings } from '../context/SystemSettingsContext';
 import { useApiMessages } from '../hook/ApiResponseHandler';
 import { AntdFormItem } from '../component/AntdFormItem';
@@ -13,8 +13,8 @@ import { MessageBanner } from '../component/MessageBanner';
 interface PaymentModalProps {
   open: boolean;
   onCancel: () => void;
-  onSubmit: (values: any) => Promise<void>;
-  initialValues?: Payment | null;
+  onSubmit: (values: PaymentDto) => Promise<void>;
+  initialValues?: PaymentDto | null;
   feeTypes: { value: string; label: string }[];
   paymentMethods: { value: string; label: string }[];
 }
@@ -82,7 +82,7 @@ export default function PaymentModal({
     }
   };
 
-  const title = initialValues?.memberID ? 'Edit Payment' : 'Add Payment';
+  const title = initialValues?.paymentID ? 'Edit Payment' : 'Add Payment';
 
   return (
     <Modal

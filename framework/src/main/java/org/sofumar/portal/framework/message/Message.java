@@ -9,7 +9,7 @@ import java.text.MessageFormat;
 @Getter
 public class Message {
 
-    private final Type type;
+    private final MessageType type;
     private final String messageID;
     private final String messageText;
     private Object[] messageArgs;
@@ -24,7 +24,7 @@ public class Message {
         }
     }
 
-    protected Message(Type type, String messageID, String messageText) {
+    protected Message(MessageType type, String messageID, String messageText) {
         this.type = type;
         this.messageID = messageID;
         this.messageText = messageText;
@@ -60,14 +60,5 @@ public class Message {
         return this.messageArgs != null && this.messageArgs.length > 0
                 ? MessageFormat.format(this.messageText, this.messageArgs)
                 : this.messageText;
-    }
-
-    public enum Type {
-        ERROR,
-        WARNING,
-        INFO,
-        STATUS,
-        SUCCESS,
-        CONFIRMATION
     }
 }

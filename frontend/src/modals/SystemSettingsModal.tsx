@@ -1,6 +1,6 @@
 import { Form, Modal } from 'antd';
 import { useEffect } from 'react';
-import { SystemSetting } from '../constants/types';
+import { SystemSettingsDto } from '../api/generated/types';
 import { useApiMessages } from '../hook/ApiResponseHandler';
 import { AntdFormItem } from '../component/AntdFormItem';
 import { MessageBanner } from '../component/MessageBanner';
@@ -8,14 +8,14 @@ import { MessageBanner } from '../component/MessageBanner';
 type Props = {
   open: boolean;
   onCancel: () => void;
-  onSubmit: (values: SystemSetting) => Promise<void>;
-  initial?: SystemSetting | null;
+  onSubmit: (values: SystemSettingsDto) => Promise<void>;
+  initial?: SystemSettingsDto | null;
 };
 
 export function SystemSettingsModal({ open, onCancel, onSubmit, initial }: Props) {
   const [form] = Form.useForm();
 
-  const { globalMessages, handleError, resetMessages } = useApiMessages<SystemSetting>(
+  const { globalMessages, handleError, resetMessages } = useApiMessages<SystemSettingsDto>(
     undefined,
     (field, msg) => {
       form.setFields([{ name: field as string, errors: [msg] }]);
