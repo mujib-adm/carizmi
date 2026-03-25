@@ -1,0 +1,22 @@
+/* MemberModal — Form layout for member modal */
+
+.memberForm {
+  display: flex;
+  flex-direction: column;
+}
+
+.memberForm :global(.ant-form-item) {
+  margin-bottom: 12px;
+}
+
+.twoCol {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.threeCol {
+  display: grid;
+  grid-template-columns: 1fr 120px 120px;
+  gap: 12px;
+}

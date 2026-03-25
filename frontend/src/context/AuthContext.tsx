@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { onUnauthorized } from '../apiclient/ApiClient';
+import { onUnauthorized } from '../api/client/ApiClient';
 import { authenticationApi } from '../api/generated/authentication/authentication';
 
 type AuthContextType = {

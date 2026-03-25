@@ -24,7 +24,6 @@ import { MessageBanner } from '../../component/MessageBanner';
 import { useNotification } from '../../context/NotificationContext';
 import { useApiMessages } from '../../hook/ApiResponseHandler';
 import Sidebar from '../../component/Sidebar';
-import '../../themes/modern-ui.css';
 
 import {
   MessageType,

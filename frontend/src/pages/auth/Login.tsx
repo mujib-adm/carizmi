@@ -1,9 +1,9 @@
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import '../../themes/css/auth-form.css';
+import '../../styles/pages/auth-form.css';
 
-import apiClient from '../../apiclient/ApiClient';
+import apiClient from '../../api/client/ApiClient';
 import { FormField } from '../../component/FormField';
 import { MessageBanner } from '../../component/MessageBanner';
 import { AUTH_LOGIN } from '../../api/constants/customEndpoints';

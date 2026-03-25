@@ -1,13 +1,13 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { referenceDataApi } from '../api/generated/reference-data/reference-data';
 import { STARTUP_REFERENCES } from '../constants/ReferenceConstants';
-import { ReferenceDataDto } from '../api/generated/types';
+import { ReferenceDescDto } from '../api/generated/types';
 import { useAuth } from './AuthContext';
 import { useNotification } from './NotificationContext';
 
 type ReferenceContextType = {
-  references: Record<string, ReferenceDataDto[]>;
-  getReference: (name: string) => ReferenceDataDto[];
+  references: Record<string, ReferenceDescDto[]>;
+  getReference: (name: string) => ReferenceDescDto[];
   toCode: (name: string, display: string) => string | undefined;
   toDisplay: (name: string, code: string) => string | undefined;
   isLoading: boolean;
@@ -24,7 +24,7 @@ const ReferenceContext = createContext<ReferenceContextType>({
 export function ReferenceProvider({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
   const notify = useNotification();
-  const [references, setReferences] = useState<Record<string, ReferenceDataDto[]>>({});
+  const [references, setReferences] = useState<Record<string, ReferenceDescDto[]>>({});
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchAllReferences = async () => {
@@ -39,7 +39,7 @@ export function ReferenceProvider({ children }: { children: React.ReactNode }) {
       // Execute all in parallel
       const results = await Promise.all(promises);
 
-      const newReferences: Record<string, ReferenceDataDto[]> = {};
+      const newReferences: Record<string, ReferenceDescDto[]> = {};
 
       results.forEach((res, index) => {
         const name = referenceNames[index];

@@ -3,7 +3,7 @@ package org.sofumar.portal.core.businesslogic.impl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sofumar.portal.constants.FieldConstants;
-import org.sofumar.portal.data.dto.response.ReferenceDataDto;
+import org.sofumar.portal.data.dto.response.ReferenceDescDto;
 import org.sofumar.portal.data.dto.ReferenceDto;
 import org.sofumar.portal.data.dto.request.ReferenceSearchRequestDto;
 import org.sofumar.portal.data.transformer.ReferenceDtoTransformer;
@@ -62,7 +62,7 @@ public non-sealed class ReferenceImpl extends ReferenceAbstractBL implements Ref
 
     @Override
     @Transactional(readOnly = true)
-    public ResponseEntity<GlobalResponse<List<ReferenceDataDto>>> getReferencesByName(String referenceName) {
+    public ResponseEntity<GlobalResponse<List<ReferenceDescDto>>> getReferencesByName(String referenceName) {
         Specification<ReferenceVO> spec = Specification.allOf(
                 ReferenceSpecifications.hasReferenceName(referenceName),
                 ReferenceSpecifications.isActive(true));

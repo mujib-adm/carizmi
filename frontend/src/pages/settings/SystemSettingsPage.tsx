@@ -5,7 +5,6 @@ import { systemSettingsApi } from '../../api/generated/system-settings/system-se
 import { MessageBanner } from '../../component/MessageBanner.js';
 import SearchFilterBar from '../../component/SearchFilterBar.jsx';
 import Sidebar from '../../component/Sidebar';
-import '../../component/Sidebar.css';
 import { SystemSettingsModal } from '../../modals/SystemSettingsModal';
 import { ReferenceConstants } from '../../constants/ReferenceConstants';
 import { systemSettingsSearchFiltersConfig } from '../../constants/systemSettingsSearchFiltersConfig';

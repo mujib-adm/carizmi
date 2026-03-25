@@ -12,7 +12,7 @@ export default defineConfig({
       mode: 'tags-split',
       override: {
         mutator: {
-          path: './src/apiclient/apiMutator.ts',
+          path: './src/api/client/apiMutator.ts',
           name: 'apiMutator',
         },
       },

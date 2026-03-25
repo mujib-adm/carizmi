@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { ReferenceConstants } from '../constants/ReferenceConstants';
 import { MemberDto } from '../api/generated/types';
 import { useApiMessages } from '../hook/ApiResponseHandler';
-import '../themes/css/member.css';
+import styles from '../styles/components/MemberModal.module.css';
 import { AntdFormItem } from '../component/AntdFormItem';
 import { MessageBanner } from '../component/MessageBanner';
 
@@ -81,7 +81,7 @@ export function MemberModal({ open, onCancel, onSubmit, initial, statusOptions }
       centered
       width={520}
     >
-      <Form form={form} layout="vertical" className="member-form" requiredMark={false}>
+      <Form form={form} layout="vertical" className={styles.memberForm} requiredMark={false}>
         <Row gutter={12}>
           <Col span={12}>
             <AntdFormItem

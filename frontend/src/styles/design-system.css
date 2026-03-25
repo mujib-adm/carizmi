@@ -1,0 +1,115 @@
+/* ──────────────────────────────────────────────────────────
+   Glassmorphism Design System
+   
+   Shared visual primitives (glass-card, animations, grid).
+   These are used across multiple pages and thus stay global.
+   ────────────────────────────────────────────────────────── */
+
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.92);
+  --glass-border: rgba(30, 86, 49, 0.15);
+  --glass-shadow: 0 16px 48px 0 rgba(0, 0, 0, 0.12), 0 2px 12px 0 rgba(31, 38, 135, 0.08);
+  --glass-shadow-hover: 0 24px 60px 0 rgba(0, 0, 0, 0.18), 0 4px 16px 0 rgba(31, 38, 135, 0.12);
+  --vibrant-gradient: linear-gradient(135deg, #1e5631 0%, #5c9013 100%);
+  --accent-blue: #00b4d8;
+  --accent-purple: #7209b7;
+  --soft-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  --premium-rounding: 12px;
+}
+
+/* Glassmorphism Card */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: var(--premium-rounding);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  padding: 24px;
+  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+  width: 100%;
+}
+
+@media (max-width: 576px) {
+  .glass-card {
+    padding: 16px;
+  }
+}
+
+.glass-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--glass-shadow-hover);
+}
+
+/* Responsive Grid */
+.modern-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+/* Animation Utilities */
+.fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+.title-wrap {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Centralized Page Title Styling */
+.page-header {
+  margin-bottom: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.page-title {
+  margin: 0 !important;
+  color: #1e5631 !important;
+  font-family: 'Federo', sans-serif !important;
+  letter-spacing: 0.5px;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+.page-title span[role='img'] {
+  font-size: 1.1em;
+}
+
+/* Mobile Sidebar Transitions */
+@media (max-width: 768px) {
+  .sidebar-collapsed {
+    transform: translateX(-100%);
+  }
+
+  .modern-sidebar-menu {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100vw;
+    z-index: 1000;
+    display: flex;
+    justify-content: space-around;
+    padding: 8px 0 !important;
+    background: white;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+  }
+}

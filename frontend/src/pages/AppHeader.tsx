@@ -2,8 +2,8 @@ import { UserOutlined } from '@ant-design/icons';
 import { Avatar, Image, Layout, Space, Tooltip } from 'antd';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import Logo from '../images/logo.png';
-import '../themes/modern-ui.css';
+import Logo from '../assets/images/logo.png';
+import styles from '../styles/pages/AppHeader.module.css';
 
 const { Header } = Layout;
 
@@ -11,16 +11,16 @@ export default function AppHeader() {
   const { isAuthenticated, firstName } = useAuth();
 
   return (
-    <Header className="glass-header">
-      <div className="portal-logo-container">
-        <Image src={Logo} alt="Sof'umar Logo" preview={false} className="portal-logo-modern" />
-        <div className="portal-title-stack">
-          <h2 className="portal-title-main">SOF'UMAR</h2>
-          <span className="portal-title-sub">COMMUNITY OF MINNESOTA</span>
+    <Header className={styles.glassHeader}>
+      <div className={styles.logoContainer}>
+        <Image src={Logo} alt="Sof'umar Logo" preview={false} className={styles.logo} />
+        <div className={styles.titleStack}>
+          <h2 className={styles.titleMain}>SOF'UMAR</h2>
+          <span className={styles.titleSub}>COMMUNITY OF MINNESOTA</span>
         </div>
       </div>
 
-      <div className="header-actions">
+      <div className={styles.headerActions}>
         <Space size={24}>
           {isAuthenticated && (
             <Tooltip title={`Welcome, ${firstName}`} placement="bottom">

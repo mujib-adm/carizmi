@@ -1,6 +1,6 @@
 package org.sofumar.portal.data.transformer;
 
-import org.sofumar.portal.data.dto.response.ReferenceDataDto;
+import org.sofumar.portal.data.dto.response.ReferenceDescDto;
 import org.sofumar.portal.data.dto.ReferenceDto;
 import org.sofumar.portal.core.vo.ReferenceVO;
 import org.sofumar.portal.framework.data.transformer.Transformer;
@@ -25,15 +25,15 @@ public class ReferenceDtoTransformer implements Transformer<ReferenceVO, Referen
     }
 
     // For display purposes with limited fields
-    public ReferenceDataDto transformData(ReferenceVO vo) {
+    public ReferenceDescDto transformData(ReferenceVO vo) {
         if (vo == null) return null;
-        return ReferenceDataDto.builder()
+        return ReferenceDescDto.builder()
                 .referenceCode(vo.getReferenceCode())
                 .referenceDisplay(vo.getReferenceDisplay())
                 .build();
     }
 
-    public List<ReferenceDataDto> transformDataList(List<ReferenceVO> list) {
+    public List<ReferenceDescDto> transformDataList(List<ReferenceVO> list) {
         return list == null ? List.of() : list.stream()
                 .filter(java.util.Objects::nonNull)
                 .map(this::transformData)

@@ -5,7 +5,7 @@ import { membersApi } from '../api/generated/members/members';
 import type { MemberLookupDto } from '../api/generated/types/index';
 
 import type { SelectProps } from 'antd';
-import './member-lookup.css';
+import '../styles/components/member-lookup.css';
 
 interface MemberLookupProps extends SelectProps<number> {
   onSelectMember?: (member: MemberLookupDto) => void;

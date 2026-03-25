@@ -6,7 +6,7 @@
     "version" : "1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:60644",
+    "url" : "http://localhost:52985",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -651,7 +651,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/GlobalResponseListReferenceDataDto"
+                  "$ref" : "#/components/schemas/GlobalResponseListReferenceDescDto"
                 }
               }
             }
@@ -1910,7 +1910,7 @@
           }
         }
       },
-      "GlobalResponseListReferenceDataDto" : {
+      "GlobalResponseListReferenceDescDto" : {
         "type" : "object",
         "description" : "Unified API response envelope",
         "properties" : {
@@ -1943,7 +1943,7 @@
             "type" : "array",
             "description" : "Response payload",
             "items" : {
-              "$ref" : "#/components/schemas/ReferenceDataDto"
+              "$ref" : "#/components/schemas/ReferenceDescDto"
             }
           },
           "meta" : {
@@ -1952,7 +1952,7 @@
           }
         }
       },
-      "ReferenceDataDto" : {
+      "ReferenceDescDto" : {
         "type" : "object",
         "properties" : {
           "referenceCode" : {

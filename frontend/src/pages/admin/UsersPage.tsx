@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { userManagementApi } from '../../api/generated/user-management/user-management';
 import { MessageBanner } from '../../component/MessageBanner';
 import Sidebar from '../../component/Sidebar';
-import '../../component/Sidebar.css';
 import { UserModal } from '../../modals/UserModal';
 import { RoleConstants } from '../../constants/RoleConstants';
 import {

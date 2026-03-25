@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class ReferenceDataDto {
+public class ReferenceDescDto {
     private String referenceCode;
     private String referenceDisplay;
 }

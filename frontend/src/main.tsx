@@ -1,9 +1,9 @@
 import { ConfigProvider, theme } from 'antd';
 import { LoadingProvider } from './context/LoadingContext.tsx';
 import ReactDOM from 'react-dom/client';
-import './themes/main-styles.css';
-import './themes/style.min.css';
-import './themes/modern-ui.css';
+import './styles/global.css';
+import './styles/design-system.css';
+import './styles/ant-overrides.css';
 import App from './App';
 
 const sofumarTheme = {

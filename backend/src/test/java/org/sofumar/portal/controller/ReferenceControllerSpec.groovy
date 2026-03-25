@@ -3,7 +3,7 @@ package org.sofumar.portal.controller
 import org.sofumar.portal.core.businesslogic.Reference
 import org.sofumar.portal.data.dto.ReferenceDto
 import org.sofumar.portal.data.dto.request.ReferenceSearchRequestDto
-import org.sofumar.portal.data.dto.response.ReferenceDataDto
+import org.sofumar.portal.data.dto.response.ReferenceDescDto
 import org.sofumar.portal.framework.data.response.GlobalResponse
 import org.sofumar.portal.testbase.BaseSpecification
 import org.springframework.http.HttpStatus
@@ -65,12 +65,12 @@ class ReferenceControllerSpec extends BaseSpecification {
         String referenceName = "feeType"
         String referenceCode = "F1"
         Integer expectedSize = 1
-        List<ReferenceDataDto> dtoList = [new ReferenceDataDto(referenceCode: referenceCode)]
-        GlobalResponse<List<ReferenceDataDto>> responseBody = GlobalResponse.withResponseData(dtoList)
-        ResponseEntity<GlobalResponse<List<ReferenceDataDto>>> expectedResponse = new ResponseEntity<>(responseBody, HttpStatus.OK)
+        List<ReferenceDescDto> dtoList = [new ReferenceDescDto(referenceCode: referenceCode)]
+        GlobalResponse<List<ReferenceDescDto>> responseBody = GlobalResponse.withResponseData(dtoList)
+        ResponseEntity<GlobalResponse<List<ReferenceDescDto>>> expectedResponse = new ResponseEntity<>(responseBody, HttpStatus.OK)
 
         when: "The target method executed"
-        ResponseEntity<GlobalResponse<List<ReferenceDataDto>>> result = referenceController.getReferencesByName(referenceName)
+        ResponseEntity<GlobalResponse<List<ReferenceDescDto>>> result = referenceController.getReferencesByName(referenceName)
 
         then: "The expected calls are made"
         1 * referenceService.getReferencesByName(referenceName) >> expectedResponse

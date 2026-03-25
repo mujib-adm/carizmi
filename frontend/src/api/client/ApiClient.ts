@@ -1,3 +1,8 @@
+import axios, { AxiosError, AxiosResponse } from 'axios';
+import { AUTH_LOGIN, AUTH_REFRESH } from '../constants/customEndpoints';
+import { GlobalResponse } from '../generated/types/index';
+import { setGlobalLoading } from '../../context/LoadingContext';
+
 /**
  * ApiClient.ts — Centralised Axios HTTP Client
  *
@@ -22,11 +27,6 @@
  *   with every request automatically. On 401, the client attempts a silent
  *   refresh by calling the refresh endpoint (also cookie-based).
  */
-
-import axios, { AxiosError, AxiosResponse } from 'axios';
-import { AUTH_LOGIN, AUTH_REFRESH } from '../api/constants/customEndpoints';
-import { GlobalResponse } from '../api/generated/types/index';
-import { setGlobalLoading } from '../context/LoadingContext';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Base URL Resolution

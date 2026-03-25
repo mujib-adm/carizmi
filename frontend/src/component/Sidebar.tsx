@@ -12,7 +12,7 @@ import type { MenuProps } from 'antd';
 import { Menu } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { RoleConstants } from '../constants/RoleConstants';
-import './Sidebar.css';
+import styles from '../styles/components/Sidebar.module.css';
 
 export default function Sidebar() {
   const role = localStorage.getItem('role') || 'USER';
@@ -38,13 +38,13 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="sidebar-container">
+    <aside className={styles.sidebarContainer}>
       <Menu
         onClick={onClick}
         selectedKeys={[location.pathname === '/' ? '/dashboard' : location.pathname]}
         mode="inline"
         items={items}
-        className="modern-sidebar-menu"
+        className={styles.sidebarMenu}
       />
     </aside>
   );

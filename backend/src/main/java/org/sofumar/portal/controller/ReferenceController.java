@@ -3,7 +3,7 @@ package org.sofumar.portal.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.sofumar.portal.data.dto.response.ReferenceDataDto;
+import org.sofumar.portal.data.dto.response.ReferenceDescDto;
 import org.sofumar.portal.data.dto.ReferenceDto;
 import org.sofumar.portal.data.dto.request.ReferenceSearchRequestDto;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
@@ -45,7 +45,7 @@ public class ReferenceController {
     @GetMapping("/list/{referenceName}")
     @Operation(summary = "Get list of references by name (e.g. feeType)")
     @IsAuthenticated
-    public ResponseEntity<GlobalResponse<List<ReferenceDataDto>>> getReferencesByName(
+    public ResponseEntity<GlobalResponse<List<ReferenceDescDto>>> getReferencesByName(
             @PathVariable String referenceName) {
         return reference.getReferencesByName(referenceName);
     }
