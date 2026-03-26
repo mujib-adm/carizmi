@@ -94,6 +94,8 @@ export default function PaymentModal({
       title={title}
       destroyOnHidden
       centered
+      width="90vw"
+      style={{ maxWidth: 500 }}
     >
       <Form
         form={form}

@@ -26,42 +26,10 @@
   box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.12) !important;
 }
 
-.metricLabel {
-  font-family: 'Poppins', sans-serif;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: #40916c;
-  margin-bottom: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.metricValue {
-  font-family: 'Outfit', sans-serif;
-  font-size: 2.8rem;
-  font-weight: 800;
-  color: #1e5631;
-  margin: 0;
-  line-height: 1;
-}
-
-.metricSubtext {
-  font-size: 0.8rem;
-  color: #52665d;
-  margin-top: 8px;
-}
-
 .chartContainer {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-}
-
-.chartTitle {
-  align-self: flex-start;
-  font-family: 'Federo', sans-serif;
-  font-size: 1.2rem;
-  color: #1e5631;
 }
 
 .metricTrendDown {

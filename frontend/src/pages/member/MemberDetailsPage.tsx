@@ -85,7 +85,7 @@ export default function MemberDetailsPage() {
     <div className="dashboard-layout">
       <Sidebar />
       <main className="content fade-in">
-        <div style={{ padding: 24 }}>
+        <div>
           <Space style={{ marginBottom: 24 }}>
             <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/members')}>
               Back to Members
@@ -131,8 +131,8 @@ export default function MemberDetailsPage() {
                         style={{ background: 'var(--vibrant-gradient)' }}
                       />
                       <div>
-                        <div className="stat-label">Total Paid</div>
-                        <div className="stat-value">${(summary?.totalPaid ?? 0).toFixed(2)}</div>
+                        <div className="metric-label">Total Paid</div>
+                        <div className="metric-value">${(summary?.totalPaid ?? 0).toFixed(2)}</div>
                         <div className="metric-subtext">Total contributions up to date</div>
                       </div>
                     </Space>
@@ -146,8 +146,8 @@ export default function MemberDetailsPage() {
                         style={{ background: 'orange' }}
                       />
                       <div>
-                        <div className="stat-label">Outstanding</div>
-                        <div className="stat-value" style={{ color: 'orange' }}>
+                        <div className="metric-label">Outstanding</div>
+                        <div className="metric-value" style={{ color: 'orange' }}>
                           ${(summary?.outstanding ?? 0).toFixed(2)}
                         </div>
                         <div className="metric-subtext"> Unpaid - Current Quarter </div>
@@ -160,8 +160,8 @@ export default function MemberDetailsPage() {
                     <Space align="center">
                       <Avatar icon={<ExclamationCircleOutlined />} style={{ background: 'red' }} />
                       <div>
-                        <div className="stat-label">Overdues</div>
-                        <div className="stat-value" style={{ color: 'red' }}>
+                        <div className="metric-label">Overdues</div>
+                        <div className="metric-value" style={{ color: 'red' }}>
                           ${(summary?.overdue ?? 0).toFixed(2)}
                         </div>
                         <div className="metric-subtext"> Unpaid - Overall </div>
@@ -174,6 +174,7 @@ export default function MemberDetailsPage() {
               <Card className="glass-card">
                 <div className="chart-title" style={{ marginBottom: '28px' }}>Recent Payment History</div>
                 <Table
+                  scroll={{ x: 'max-content' }}
                   dataSource={payments}
                   columns={columns}
                   rowKey="paymentID"

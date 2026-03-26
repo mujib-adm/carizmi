@@ -39,7 +39,7 @@ export default function Register() {
         if (msg.type === MessageType.SUCCESS) {
           notify.success({ message: 'Success', description: msg.message }, '/login');
         } else {
-          handleResponse(responseBody as any);
+          handleResponse(responseBody);
         }
       }
     } catch (error: any) {

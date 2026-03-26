@@ -111,7 +111,7 @@ export default function SystemSettingsPage() {
     <div className="dashboard-layout">
       <Sidebar />
       <main className="content fade-in">
-        <div style={{ padding: 24 }}>
+        <div>
           <div className="page-header">
             <Title level={2} className="page-title">
               <SettingOutlined /> System Settings
@@ -130,6 +130,7 @@ export default function SystemSettingsPage() {
 
           <Card className="glass-card" style={{ padding: 0 }}>
             <Table<SystemSettingsDto>
+              scroll={{ x: 'max-content' }}
               dataSource={settings}
               columns={columns}
               rowKey="systemSettingsID"

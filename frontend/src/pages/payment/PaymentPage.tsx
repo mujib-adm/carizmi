@@ -197,7 +197,7 @@ export default function PaymentPage() {
     <div className="dashboard-layout">
       <Sidebar />
       <main className="content fade-in">
-        <div style={{ padding: 24 }}>
+        <div>
           <div className="page-header">
             <Title level={2} className="page-title">
               <DollarOutlined /> Payments
@@ -216,6 +216,7 @@ export default function PaymentPage() {
 
           <Card className="glass-card" style={{ padding: 0 }}>
             <Table<PaymentDto>
+              scroll={{ x: 'max-content' }}
               size="small"
               rowKey="paymentID"
               dataSource={payments}

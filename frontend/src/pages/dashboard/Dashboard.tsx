@@ -171,53 +171,53 @@ export default function Dashboard() {
           <Row gutter={[24, 24]} style={{ marginBottom: 32 }}>
             <Col xs={24} md={6}>
               <Card className="glass-card">
-                <div className={styles.metricLabel}>Total Members</div>
-                <div className={styles.metricValue}>{(metrics.totalMembers || 0).toLocaleString()}</div>
-                <div className={styles.metricSubtext}> Total Active Members</div>
+                <div className="metric-label">Total Members</div>
+                <div className="metric-value">{(metrics.totalMembers || 0).toLocaleString()}</div>
+                <div className="metric-subtext"> Total Active Members</div>
                 <TeamOutlined style={{ position: 'absolute', bottom: 20, right: 20, fontSize: 48, color: '#1E5631', opacity: 0.15 }} />
               </Card>
             </Col>
             <Col xs={24} md={6}>
               <Card className="glass-card">
-                <div className={styles.metricLabel}>Total Revenue</div>
-                <div className={styles.metricValue}>
+                <div className="metric-label">Total Revenue</div>
+                <div className="metric-value">
                   $
                   {metrics.totalRevenue?.toLocaleString(undefined, {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
                   }) ?? '0.00'}
                 </div>
-                <div className={styles.metricSubtext}> Total Amount in account </div>
+                <div className="metric-subtext"> Total Amount in account </div>
                 <DollarOutlined style={{ position: 'absolute', bottom: 20, right: 20, fontSize: 48, color: '#40916C', opacity: 0.15 }} />
               </Card>
             </Col>
             <Col xs={24} md={6}>
               <Card className="glass-card">
-                <div className={styles.metricLabel} style={{ color: 'orange' }}>
+                <div className="metric-label" style={{ color: 'orange' }}>
                   Dues
                 </div>
-                <div className={styles.metricValue} style={{ color: 'orange' }}>
+                <div className="metric-value" style={{ color: 'orange' }}>
                   $
                   {metrics.duesThisQuarter?.toLocaleString(undefined, {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
                   }) ?? '0.00'}
                 </div>
-                <div className={styles.metricSubtext}> Unpaid - Current Quarter </div>
+                <div className="metric-subtext"> Unpaid - Current Quarter </div>
                 <DollarOutlined style={{ position: 'absolute', bottom: 20, right: 20, fontSize: 48, color: 'orange', opacity: 0.15 }} />
               </Card>
             </Col>
             <Col xs={24} md={6}>
               <Card className="glass-card">
-                <div className={styles.metricLabel} style={{ color: 'red' }}>Overdues</div>
-                <div className={styles.metricValue} style={{ color: 'red' }}>
+                <div className="metric-label" style={{ color: 'red' }}>Overdues</div>
+                <div className="metric-value" style={{ color: 'red' }}>
                   $
                   {metrics.overdueTotal?.toLocaleString(undefined, {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
                   }) ?? '0.00'}
                 </div>
-                <div className={styles.metricSubtext}> Unpaid - Overall </div>
+                <div className="metric-subtext"> Unpaid - Overall </div>
                 <DollarOutlined style={{ position: 'absolute', bottom: 20, right: 20, fontSize: 48, color: 'red', opacity: 0.15 }} />
               </Card>
             </Col>
@@ -228,7 +228,7 @@ export default function Dashboard() {
             <Col xs={24} md={12}>
               <Card className="glass-card" style={{ height: '100%' }}>
                 <div className={styles.chartContainer} style={{ position: 'relative' }}>
-                  <div className={styles.chartTitle}>Quarterly Fee Collection (%)</div>
+                  <div className="chart-title">Quarterly Fee Collection (%)</div>
                   <div style={{ width: '100%', height: 350, position: 'relative' }}>
                     <ResponsiveContainer>
                       <PieChart>
@@ -291,8 +291,9 @@ export default function Dashboard() {
             <Col xs={24} md={12}>
               <Card className="glass-card" style={{ height: '100%' }}>
                 <div className={styles.chartContainer} style={{ position: 'relative' }}>
-                  <div className={styles.chartTitle} style={{ marginBottom: '28px' }}>Recent Payments</div>
+                  <div className="chart-title" style={{ marginBottom: '28px' }}>Recent Payments</div>
                   <Table
+                    scroll={{ x: 'max-content' }}
                     columns={columns}
                     dataSource={payments}
                     rowKey="paymentID"

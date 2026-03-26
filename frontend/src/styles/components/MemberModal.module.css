@@ -20,3 +20,10 @@
   grid-template-columns: 1fr 120px 120px;
   gap: 12px;
 }
+
+@media (max-width: 576px) {
+  .twoCol,
+  .threeCol {
+    grid-template-columns: 1fr;
+  }
+}

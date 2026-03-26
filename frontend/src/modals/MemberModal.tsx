@@ -79,11 +79,12 @@ export function MemberModal({ open, onCancel, onSubmit, initial, statusOptions }
       title={title}
       destroyOnHidden
       centered
-      width={520}
+      width="90vw"
+      style={{ maxWidth: 500 }}
     >
       <Form form={form} layout="vertical" className={styles.memberForm} requiredMark={false}>
         <Row gutter={12}>
-          <Col span={12}>
+          <Col xs={24} sm={12}>
             <AntdFormItem
               name="firstName"
               label="First Name"
@@ -91,7 +92,7 @@ export function MemberModal({ open, onCancel, onSubmit, initial, statusOptions }
               placeholder="First Name"
             />
           </Col>
-          <Col span={12}>
+          <Col xs={24} sm={12}>
             <AntdFormItem
               name="lastName"
               label="Last Name"
@@ -102,7 +103,7 @@ export function MemberModal({ open, onCancel, onSubmit, initial, statusOptions }
         </Row>
 
         <Row gutter={12}>
-          <Col span={12}>
+          <Col xs={24} sm={12}>
             <AntdFormItem
               name="phone"
               label="Phone"
@@ -111,13 +112,13 @@ export function MemberModal({ open, onCancel, onSubmit, initial, statusOptions }
               placeholder="Phone"
             />
           </Col>
-          <Col span={12}>
+          <Col xs={24} sm={12}>
             <AntdFormItem name="email" label="Email" type="email" placeholder="Email" />
           </Col>
         </Row>
 
         <Row gutter={12}>
-          <Col span={12}>
+          <Col xs={24} sm={12}>
             <AntdFormItem
               name="status"
               label="Status"
@@ -127,7 +128,7 @@ export function MemberModal({ open, onCancel, onSubmit, initial, statusOptions }
               placeholder="Pick status"
             />
           </Col>
-          <Col span={12}>
+          <Col xs={24} sm={12}>
             <AntdFormItem
               name="joinDate"
               label="Join Date"
@@ -142,10 +143,10 @@ export function MemberModal({ open, onCancel, onSubmit, initial, statusOptions }
         <AntdFormItem name="address2" label="Address 2" placeholder="Address 2" />
 
         <Row gutter={12}>
-          <Col span={14}>
+          <Col xs={24} sm={14}>
             <AntdFormItem name="city" label="City" placeholder="City" />
           </Col>
-          <Col span={5}>
+          <Col xs={12} sm={5}>
             <AntdFormItem
               name="state"
               label="State"
@@ -153,7 +154,7 @@ export function MemberModal({ open, onCancel, onSubmit, initial, statusOptions }
               placeholder="MN"
             />
           </Col>
-          <Col span={5}>
+          <Col xs={12} sm={5}>
             <AntdFormItem name="zip" label="ZIP" placeholder="ZIP" />
           </Col>
         </Row>

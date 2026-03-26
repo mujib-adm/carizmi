@@ -183,7 +183,7 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
                 .orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
 
         if (!encoder.matches(requestDto.getOldPassword(), userVO.getPassword())) {
-            return ResponseUtils.badRequest("Incorrect old password.");
+            return ResponseUtils.badRequest("Incorrect current password.");
         }
 
         if (!requestDto.getNewPassword().equals(requestDto.getConfirmPassword())) {

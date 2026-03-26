@@ -71,6 +71,8 @@ export default function ExpenseModal({ open, onCancel, onSubmit, initialValues, 
       title={title}
       destroyOnHidden
       centered
+      width="90vw"
+      style={{ maxWidth: 500 }}
     >
       <Form form={form} layout="vertical">
         <Row gutter={16}>

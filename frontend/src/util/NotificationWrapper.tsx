@@ -33,6 +33,8 @@ export function useNotificationWrapper() {
       onCancel={closeModal}
       cancelButtonProps={{ style: { display: 'none' } }}
       okButtonProps={{ size: 'large', style: { width: '100px' } }}
+      centered
+      className="modern-modal"
     >
       <p>{modal.description}</p>
     </Modal>

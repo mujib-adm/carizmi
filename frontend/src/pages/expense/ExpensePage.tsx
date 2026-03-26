@@ -181,7 +181,7 @@ export default function ExpensePage() {
     <div className="dashboard-layout">
       <Sidebar />
       <main className="content fade-in">
-        <div style={{ padding: 24 }}>
+        <div>
           <div className="page-header">
             <Title level={2} className="page-title">
               <ShoppingCartOutlined /> Expenses
@@ -200,6 +200,7 @@ export default function ExpensePage() {
 
           <Card className="glass-card" style={{ padding: 0 }}>
             <Table<ExpenseDto>
+              scroll={{ x: 'max-content' }}
               size="small"
               rowKey="expenseID"
               dataSource={expenses}

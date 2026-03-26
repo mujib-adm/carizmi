@@ -106,7 +106,7 @@
 .ant-select-focused:not(.ant-select-disabled):not(.member-lookup-select) .ant-select-selector,
 .ant-picker-focused,
 .ant-input-number-focused {
-  border-color: #40916c !important;
+  border-color: var(--priColorLight) !important;
   box-shadow: 0 0 0 2px rgba(64, 145, 108, 0.1) !important;
 }
 
@@ -124,4 +124,48 @@
 /* Hide old header */
 .header {
   display: none !important;
+}
+
+/* ── Form Validation Error States ─────────────────────────
+   Ant Design v5 applies error classes directly on components:
+   - Input/TextArea: parent .ant-form-item-has-error
+   - Select:         .ant-select-status-error
+   - DatePicker:     .ant-picker-status-error
+   - InputNumber:    .ant-input-number-status-error
+   ────────────────────────────────────────────────────────── */
+
+/* Red border — Input & Input.Password */
+.ant-form-item-has-error .ant-input,
+.ant-form-item-has-error .ant-input-affix-wrapper {
+  border-color: #ff4d4f !important;
+}
+
+/* Red border — Select (specificity must match green selector above) */
+.ant-select.ant-select-status-error:not(.ant-select-disabled):not(.member-lookup-select) .ant-select-selector {
+  border-color: #ff4d4f !important;
+}
+
+/* Red border — DatePicker */
+.ant-picker-status-error.ant-picker {
+  border-color: #ff4d4f !important;
+}
+
+/* Red border — InputNumber */
+.ant-input-number-status-error:not(.ant-input-number-disabled) {
+  border-color: #ff4d4f !important;
+}
+
+/* Red glow on focus — all input types in error state */
+.ant-form-item-has-error .ant-input:focus,
+.ant-form-item-has-error .ant-input-affix-wrapper-focused,
+.ant-select.ant-select-status-error.ant-select-focused:not(.member-lookup-select) .ant-select-selector,
+.ant-picker-status-error.ant-picker-focused,
+.ant-input-number-status-error.ant-input-number-focused {
+  border-color: #ff4d4f !important;
+  box-shadow: 0 0 0 3px rgba(255, 77, 79, 0.25) !important;
+}
+
+/* Error message spacing — gap between error text and next field */
+.ant-form-item-explain-error {
+  padding-bottom: 6px;
 }

@@ -54,7 +54,7 @@ export function ModalField({
             id={name}
             type={type}
             placeholder={placeholder}
-            className={`modals-form ${showError ? 'error' : ''}`}
+            className={`form_field ${showError ? 'error' : ''}`}
             {...registerProps}
             style={{ width: '100%', ...(style || {}) }}
             disabled={disabled}
@@ -65,7 +65,7 @@ export function ModalField({
           <textarea
             id={name}
             placeholder={placeholder}
-            className={`modals-form ${showError ? 'error' : ''}`}
+            className={`form_field ${showError ? 'error' : ''}`}
             {...registerProps}
             style={{ width: '100%', minHeight: 96, ...(style || {}) }}
             disabled={disabled}

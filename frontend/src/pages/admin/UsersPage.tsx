@@ -115,7 +115,7 @@ export default function UsersPage() {
     <div className="dashboard-layout">
       <Sidebar />
       <main className="content fade-in">
-        <div style={{ padding: 24 }}>
+        <div>
           <div className="page-header">
             <Title level={2} className="page-title">
               <UserOutlined /> User Management
@@ -125,7 +125,7 @@ export default function UsersPage() {
           <Row gutter={[24, 24]} justify="center">
             <Col xs={24} xl={16}>
               <Card className="glass-card">
-                <div className="chart-title" style={{ marginBottom: '28px' }}>
+                <div className="chart-title">
                   Users List
                 </div>
                 <Divider />
@@ -133,6 +133,7 @@ export default function UsersPage() {
                 {globalMessages && <MessageBanner messages={globalMessages} />}
 
                 <Table
+                  scroll={{ x: 'max-content' }}
                   loading={loading}
                   dataSource={users}
                   columns={columns}

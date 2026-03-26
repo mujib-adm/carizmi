@@ -1,6 +1,5 @@
 import {
   LockOutlined,
-  SaveOutlined,
   UserOutlined,
   MailOutlined,
   IdcardOutlined,
@@ -12,18 +11,16 @@ import {
   Col,
   Descriptions,
   Divider,
-  Form,
-  Modal,
   Row,
   Typography,
 } from 'antd';
 import { useEffect, useState } from 'react';
 import { authenticationApi } from '../../api/generated/authentication/authentication';
-import { AntdFormItem } from '../../component/AntdFormItem';
 import { MessageBanner } from '../../component/MessageBanner';
 import { useNotification } from '../../context/NotificationContext';
 import { useApiMessages } from '../../hook/ApiResponseHandler';
 import Sidebar from '../../component/Sidebar';
+import ChangePasswordModal from '../../modals/ChangePasswordModal';
 
 import {
   MessageType,
@@ -35,17 +32,11 @@ const { Title, Text } = Typography;
 
 export default function ProfilePage() {
   const [profileData, setProfileData] = useState<UserProfileDto | null>(null);
-  const [passwordForm] = Form.useForm();
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const notify = useNotification();
 
-  const { globalMessages, handleResponse, handleError, resetMessages } = useApiMessages(
-    undefined,
-    (field, msg) => {
-      passwordForm.setFields([{ name: field, errors: [msg] }]);
-    }
-  );
+  const { globalMessages, handleResponse, handleError, resetMessages } = useApiMessages();
 
   const fetchProfile = async () => {
     setLoading(true);
@@ -66,21 +57,13 @@ export default function ProfilePage() {
     fetchProfile();
   }, []);
 
-  const onUpdatePassword = async (values: PasswordUpdateRequestDto) => {
-    try {
-      resetMessages();
-      const res = await authenticationApi.updatePassword(values);
-      if (res.globalMessages && res.globalMessages.length > 0) {
-        const msg = res.globalMessages[0];
-        if (msg.type === MessageType.SUCCESS) {
-          setIsModalOpen(false);
-          notify.success({ message: 'Success', description: msg.message }, '/logout');
-        } else {
-          handleResponse(res as any);
-        }
-      }
-    } catch (err: any) {
-      handleError(err);
+  const handleSubmit = async (values: PasswordUpdateRequestDto) => {
+    const res = await authenticationApi.updatePassword(values);
+    if (res.globalMessages?.[0]?.type === MessageType.SUCCESS) {
+      setIsModalOpen(false);
+      notify.success({ message: 'Success', description: res.globalMessages[0].message }, '/logout');
+    } else {
+      handleResponse(res);
     }
   };
 
@@ -199,102 +182,11 @@ export default function ProfilePage() {
           </Row>
         </div>
 
-        <Modal
-          title={
-            <Title level={4} style={{ margin: 0 }}>
-              <LockOutlined /> Change Password
-            </Title>
-          }
+        <ChangePasswordModal
           open={isModalOpen}
-          onCancel={() => {
-            setIsModalOpen(false);
-            passwordForm.resetFields();
-            resetMessages();
-          }}
-          footer={null}
-          centered
-          className="modern-modal"
-          width={500}
-        >
-          <Form
-            form={passwordForm}
-            layout="vertical"
-            onFinish={onUpdatePassword}
-            requiredMark="optional"
-            style={{ marginTop: '24px' }}
-          >
-            <Divider style={{ margin: '24px 0' }}>
-              <Text type="secondary" style={{ fontSize: '12px' }}>
-                CURRENT PASSWORD
-              </Text>
-            </Divider>
-
-            <AntdFormItem
-              name="oldPassword"
-              label="Current Password"
-              type="password"
-              rules={[{ required: true, message: 'Current password is required' }]}
-              placeholder="Enter current password"
-            />
-
-            <Divider style={{ margin: '24px 0' }}>
-              <Text type="secondary" style={{ fontSize: '12px' }}>
-                NEW PASSWORD
-              </Text>
-            </Divider>
-
-            <AntdFormItem
-              name="newPassword"
-              label="New Password"
-              type="password"
-              rules={[
-                { required: true, message: 'New password is required' },
-                { min: 5, message: 'Password must be at least 5 characters' },
-              ]}
-              placeholder="Enter new password"
-            />
-
-            <AntdFormItem
-              name="confirmPassword"
-              label="Confirm New Password"
-              type="password"
-              dependencies={['newPassword']}
-              rules={[
-                { required: true, message: 'Please confirm your new password' },
-                ({ getFieldValue }) => ({
-                  validator(_, value) {
-                    if (!value || getFieldValue('newPassword') === value) {
-                      return Promise.resolve();
-                    }
-                    return Promise.reject(new Error('The two passwords do not match!'));
-                  },
-                }),
-              ]}
-              placeholder="Confirm new password"
-            />
-
-            {globalMessages && <MessageBanner messages={globalMessages} />}
-
-            <div style={{ marginTop: '32px' }}>
-              <Button
-                type="primary"
-                htmlType="submit"
-                icon={<SaveOutlined />}
-                block
-                size="large"
-                style={{
-                  borderRadius: '12px',
-                  height: '48px',
-                  background: 'linear-gradient(135deg, #2D6A4F 0%, #1E5631 100%)',
-                  border: 'none',
-                  boxShadow: '0 4px 12px rgba(30, 86, 49, 0.2)',
-                }}
-              >
-                Update Password
-              </Button>
-            </div>
-          </Form>
-        </Modal>
+          onCancel={() => setIsModalOpen(false)}
+          onSubmit={handleSubmit}
+        />
       </main>
     </div>
   );

@@ -34,12 +34,6 @@
   font-size: 0.95rem;
 }
 
-.auth-link a {
-  color: var(--priColor);
-  text-decoration: none;
-  font-weight: 500;
-}
-
 /* Modern Login Enhancement (glassmorphism) */
 .modern-login-container {
   display: flex;
@@ -121,6 +115,7 @@
 }
 
 .modern-login-container .global_btn {
+  max-width: 100%;
   width: 100%;
   height: 52px;
   margin-top: 24px;
@@ -147,16 +142,4 @@
   margin-top: 24px;
   color: #52665d;
   font-size: 0.95rem;
-}
-
-.modern-login-container .auth-link a {
-  color: #2d6a4f;
-  font-weight: 700;
-  text-decoration: none;
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s ease;
-}
-
-.modern-login-container .auth-link a:hover {
-  border-bottom-color: #2d6a4f;
 }

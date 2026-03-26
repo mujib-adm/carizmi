@@ -45,7 +45,7 @@
 .titleMain {
   font-size: 1.9rem;
   font-family: var(--fontSecondary);
-  color: #1e5631 !important;
+  color: var(--priColor) !important;
   margin: 0 !important;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -54,7 +54,7 @@
 .titleSub {
   font-size: 0.66rem !important;
   font-family: var(--fontSecondary);
-  color: #000000 !important;
+  color: var(--bodyColor) !important;
   margin: 0 !important;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -70,5 +70,28 @@
   .glassHeader {
     width: 100% !important;
     padding: 0 16px !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .glassHeader {
+    height: 60px !important;
+    padding: 0 12px !important;
+  }
+
+  .logo {
+    height: 48px !important;
+  }
+
+  .titleMain {
+    font-size: 1.3rem;
+  }
+
+  .titleSub {
+    display: none;
+  }
+
+  .titleStack {
+    margin-left: 8px;
   }
 }
