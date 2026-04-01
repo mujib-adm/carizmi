@@ -5,7 +5,7 @@ import { membersApi } from '../api/generated/members/members';
 import type { MemberLookupDto } from '../api/generated/types/index';
 
 import type { SelectProps } from 'antd';
-import '../styles/components/member-lookup.css';
+import '../styles/components/MemberLookup.css';
 
 interface MemberLookupProps extends SelectProps<number> {
   onSelectMember?: (member: MemberLookupDto) => void;
@@ -90,7 +90,13 @@ export default function MemberLookup({
           filterOption={false}
           onSearch={debouncedSearch}
           onChange={handleChange}
-          notFoundContent={fetching ? (<Spin size="small" />) : (<Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Type 3+ chars" />)}
+          notFoundContent={
+            fetching ? (
+              <Spin size="small" />
+            ) : (
+              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Type 3+ chars" />
+            )
+          }
           suffixIcon={<UserOutlined className="member-lookup-suffix-icon" />}
           options={(data || []).map((d: MemberLookupDto) => ({
             value: d.memberID,
@@ -109,10 +115,15 @@ export default function MemberLookup({
                     ID: <span className="member-id-mono">{d.memberID}</span> • Phone: {d.phone}
                   </span>
                 </div>
-                {d.status == '01'
-                  ? (<Tag className="member-tag" color="success">Active</Tag>)
-                  : (<Tag className="member-tag" color="error">{d.status}</Tag>)
-                }
+                {d.status == '01' ? (
+                  <Tag className="member-tag" color="success">
+                    Active
+                  </Tag>
+                ) : (
+                  <Tag className="member-tag" color="error">
+                    {d.status}
+                  </Tag>
+                )}
               </div>
             );
           }}

@@ -9,6 +9,8 @@ import org.sofumar.portal.core.vo.MemberVO;
 import org.sofumar.portal.framework.bl.BusinessLogic;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
 import org.sofumar.portal.data.dto.request.MemberSearchRequestDto;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.lang.NonNull;
 import org.springframework.http.ResponseEntity;
 
@@ -31,5 +33,7 @@ public interface Member extends BusinessLogic<MemberVO> {
     long countActiveMembers();
 
     List<MemberVO> findAllActiveMembers();
+
+    Page<MemberVO> findActiveMembers(@NonNull Pageable pageable);
 
 }

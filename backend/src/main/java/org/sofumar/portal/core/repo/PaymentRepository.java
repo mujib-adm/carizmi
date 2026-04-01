@@ -31,6 +31,9 @@ public interface PaymentRepository extends JpaRepository<PaymentVO, Integer>, Jp
     @Query("select p.year as year, p.quarter as quarter, sum(p.amount) as totalPaid from PaymentVO p where p.member.memberID = :memberID and p.feeType = :feeType group by p.year, p.quarter")
     List<PaymentSummary> findMemberPaymentSummaries(@Param("memberID") Integer memberID, @Param("feeType") String feeType);
 
+    @Query("select p.member.memberID as memberID, p.year as year, p.quarter as quarter, sum(p.amount) as totalPaid from PaymentVO p where p.member.memberID in :memberIds and p.feeType = :feeType and p.year = :year group by p.member.memberID, p.year, p.quarter")
+    List<PaymentSummary> findMembersPaymentSummaries(@Param("memberIds") List<Integer> memberIds, @Param("feeType") String feeType, @Param("year") Integer year);
+
     @Query("select p.member.memberID as memberID, p.year as year, p.quarter as quarter, sum(p.amount) as totalPaid from PaymentVO p where p.feeType = :feeType and p.year = :year group by p.member.memberID, p.year, p.quarter")
     List<PaymentSummary> findPaymentSummaries(@Param("feeType") String feeType, @Param("year") Integer year);
 

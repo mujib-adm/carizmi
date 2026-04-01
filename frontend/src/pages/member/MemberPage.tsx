@@ -5,22 +5,21 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { membersApi } from '../../api/generated/members/members';
 import { MemberModal } from '../../modals/MemberModal';
-import { MessageBanner } from '../../component/MessageBanner';
-import SearchFilterBar from '../../component/SearchFilterBar';
-import Sidebar from '../../component/Sidebar';
-import { memberSearchFiltersConfig } from '../../constants/memberSearchFiltersConfig';
+import { MessageBanner } from '../../components/MessageBanner';
+import SearchFilterBar from '../../components/SearchFilterBar';
+import { memberSearchFiltersConfig } from '../../config/memberSearchFiltersConfig';
 import { ReferenceConstants } from '../../constants/ReferenceConstants';
 import {
   GlobalResponse,
   MemberDto,
   MemberSearchRequestDto,
-  MessageType
+  MessageType,
 } from '../../api/generated/types';
-import { useNotification } from '../../context/NotificationContext';
-import { useReference } from '../../context/ReferenceContext';
-import { useApiMessages } from '../../hook/ApiResponseHandler';
-import { usePaginatedMembers } from '../../hook/PaginatedMembers';
-import { useAuthorization } from '../../hook/useAuthorization';
+import { useNotification } from '../../hooks/useNotification';
+import { useReference } from '../../hooks/useReference';
+import { useApiMessages } from '../../hooks/useApiMessages';
+import { usePaginatedMembers } from '../../hooks/usePaginatedMembers';
+import { useAuthorization } from '../../hooks/useAuthorization';
 
 const { Title } = Typography;
 
@@ -149,11 +148,21 @@ export default function MemberPage() {
             title: 'Action',
             key: 'action',
             render: (_: any, record: MemberDto) => (
-                <Space>
-                    <Button icon={<EyeOutlined />} onClick={() => navigate(`/members/${record.memberID}`)} />
-                    <Button icon={<EditOutlined />} onClick={() => openEdit(record)} />
-                    <Button icon={<DeleteOutlined />} danger onClick={() => record.memberID && handleDelete(record.memberID, `${record.firstName} ${record.lastName}`)} />
-                </Space>
+              <Space>
+                <Button
+                  icon={<EyeOutlined />}
+                  onClick={() => navigate(`/members/${record.memberID}`)}
+                />
+                <Button icon={<EditOutlined />} onClick={() => openEdit(record)} />
+                <Button
+                  icon={<DeleteOutlined />}
+                  danger
+                  onClick={() =>
+                    record.memberID &&
+                    handleDelete(record.memberID, `${record.firstName} ${record.lastName}`)
+                  }
+                />
+              </Space>
             ),
           },
         ]
@@ -161,66 +170,61 @@ export default function MemberPage() {
   ];
 
   return (
-    <div className="dashboard-layout">
-      <Sidebar />
-      <main className="content fade-in">
-        <div>
-          <div className="page-header">
-            <Title level={2} className="page-title">
-              <TeamOutlined /> Members
-            </Title>
-          </div>
+    <div>
+      <div className="page-header">
+        <Title level={2} className="page-title">
+          <TeamOutlined /> Members
+        </Title>
+      </div>
 
-          <SearchFilterBar
-            config={memberSearchFiltersConfig as any}
-            filters={filters}
-            onChange={setFilters}
-            onSearch={handleSearch}
-            onAdd={canWrite ? openAdd : undefined}
-          />
+      <SearchFilterBar
+        config={memberSearchFiltersConfig as any}
+        filters={filters}
+        onChange={setFilters}
+        onSearch={handleSearch}
+        onAdd={canWrite ? openAdd : undefined}
+      />
 
-          {globalMessages && <MessageBanner messages={globalMessages} />}
+      {globalMessages && <MessageBanner messages={globalMessages} />}
 
-          <Card className="glass-card" style={{ padding: 0 }}>
-            <Table<MemberDto>
-              scroll={{ x: 'max-content' }}
-              size="small"
-              rowKey="memberID"
-              columns={columns}
-              dataSource={members}
-              loading={loading}
-              pagination={{
-                current: (meta?.page ?? 0) + 1,
-                pageSize: meta?.pageSize ?? 10,
-                total: meta?.totalRecords ?? 0,
-                showSizeChanger: true,
-              }}
-              onChange={(pagination, _filters, sorter) => {
-                const sortField = Array.isArray(sorter) ? sorter[0].field : sorter.field;
-                const sortOrder = Array.isArray(sorter) ? sorter[0].order : sorter.order;
+      <Card className="glass-card" style={{ padding: 0 }}>
+        <Table<MemberDto>
+          scroll={{ x: 'max-content' }}
+          size="small"
+          rowKey="memberID"
+          columns={columns}
+          dataSource={members}
+          loading={loading}
+          pagination={{
+            current: (meta?.page ?? 0) + 1,
+            pageSize: meta?.pageSize ?? 10,
+            total: meta?.totalRecords ?? 0,
+            showSizeChanger: true,
+          }}
+          onChange={(pagination, _filters, sorter) => {
+            const sortField = Array.isArray(sorter) ? sorter[0].field : sorter.field;
+            const sortOrder = Array.isArray(sorter) ? sorter[0].order : sorter.order;
 
-                resetMessages();
-                fetchMembers({
-                  ...filters, // use the state-level search filters
-                  page: (pagination.current ?? 1) - 1,
-                  size: pagination.pageSize ?? 10,
-                  sortField: sortField as string,
-                  sortOrder:
-                    sortOrder === 'ascend' ? 'asc' : sortOrder === 'descend' ? 'desc' : undefined,
-                }).catch(handleError);
-              }}
-            />
-          </Card>
+            resetMessages();
+            fetchMembers({
+              ...filters, // use the state-level search filters
+              page: (pagination.current ?? 1) - 1,
+              size: pagination.pageSize ?? 10,
+              sortField: sortField as string,
+              sortOrder:
+                sortOrder === 'ascend' ? 'asc' : sortOrder === 'descend' ? 'desc' : undefined,
+            }).catch(handleError);
+          }}
+        />
+      </Card>
 
-          <MemberModal
-            open={modalOpenInd}
-            onCancel={() => setModalOpenInd(false)}
-            onSubmit={handleSubmit}
-            initial={selectedRecord}
-            statusOptions={statusOptions}
-          />
-        </div>
-      </main>
+      <MemberModal
+        open={modalOpenInd}
+        onCancel={() => setModalOpenInd(false)}
+        onSubmit={handleSubmit}
+        initial={selectedRecord}
+        statusOptions={statusOptions}
+      />
     </div>
   );
 }

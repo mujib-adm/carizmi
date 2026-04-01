@@ -141,7 +141,8 @@
 }
 
 /* Red border — Select (specificity must match green selector above) */
-.ant-select.ant-select-status-error:not(.ant-select-disabled):not(.member-lookup-select) .ant-select-selector {
+.ant-select.ant-select-status-error:not(.ant-select-disabled):not(.member-lookup-select)
+  .ant-select-selector {
   border-color: #ff4d4f !important;
 }
 
@@ -158,7 +159,8 @@
 /* Red glow on focus — all input types in error state */
 .ant-form-item-has-error .ant-input:focus,
 .ant-form-item-has-error .ant-input-affix-wrapper-focused,
-.ant-select.ant-select-status-error.ant-select-focused:not(.member-lookup-select) .ant-select-selector,
+.ant-select.ant-select-status-error.ant-select-focused:not(.member-lookup-select)
+  .ant-select-selector,
 .ant-picker-status-error.ant-picker-focused,
 .ant-input-number-status-error.ant-input-number-focused {
   border-color: #ff4d4f !important;
@@ -168,4 +170,84 @@
 /* Error message spacing — gap between error text and next field */
 .ant-form-item-explain-error {
   padding-bottom: 6px;
+}
+
+/* ──────────────────────────────────────────────────────────
+   Notification Modal Theming
+   ────────────────────────────────────────────────────────── */
+
+/* Colored accent strip along top of modal */
+.notify-modal .ant-modal-content {
+  overflow: hidden;
+  border-top: 4px solid transparent;
+}
+
+.notify-modal--success .ant-modal-content {
+  border-top-color: #2d6a4f;
+}
+
+.notify-modal--warning .ant-modal-content {
+  border-top-color: #e9a820;
+}
+
+/* Body layout: icon + description */
+.notify-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 8px 0;
+  animation: notifySlideIn 0.35s ease-out;
+}
+
+/* Shared icon base */
+.notify-icon {
+  flex-shrink: 0;
+  font-size: 1.75rem;
+  margin-top: 1px;
+}
+
+/* Type-specific icon colors */
+.notify-icon--success {
+  color: #2d6a4f;
+}
+
+.notify-icon--warning {
+  color: #e9a820;
+}
+
+/* Description text */
+.notify-description {
+  margin: 0;
+  font-family: var(--fontPrimary);
+  font-size: 1rem;
+  line-height: 1.65;
+  color: #3a3a3a;
+  letter-spacing: 0.01em;
+}
+
+/* Entrance animation */
+@keyframes notifySlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Warning modal OK button — amber gradient instead of green */
+.notify-modal--warning .ant-modal-footer .ant-btn-primary {
+  background: linear-gradient(135deg, #d4910a 0%, #e9a820 100%) !important;
+  box-shadow: 0 4px 12px rgba(212, 145, 10, 0.25) !important;
+}
+
+.notify-modal--warning .ant-modal-footer .ant-btn-primary:hover {
+  box-shadow: 0 6px 16px rgba(212, 145, 10, 0.35) !important;
+}
+
+/* Warning modal title — amber instead of green */
+.notify-modal--warning .ant-modal-title {
+  color: #b8860b !important;
 }

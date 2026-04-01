@@ -54,7 +54,12 @@ body {
   overflow-x: hidden;
 }
 
-h1, h2, h3, h4, p, ul {
+h1,
+h2,
+h3,
+h4,
+p,
+ul {
   margin: 0;
   padding: 0;
   list-style: none;
@@ -79,11 +84,13 @@ img {
   vertical-align: top;
 }
 
-b, strong {
+b,
+strong {
   font-weight: 700;
 }
 
-em, i {
+em,
+i {
   font-style: italic;
 }
 
@@ -139,6 +146,9 @@ ul {
   background-color: var(--content-bg);
   min-width: 0;
   box-sizing: border-box;
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
 }
 
 @media (max-width: 768px) {

@@ -1,5 +1,5 @@
 import React, { createContext, useEffect, useState } from 'react';
-import GradientSpinner from './GradientSpinnerContext';
+import GradientSpinner from '../components/GradientSpinner';
 
 type LoadingContextType = {
   isLoading: boolean;

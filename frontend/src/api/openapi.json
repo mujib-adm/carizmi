@@ -6,7 +6,7 @@
     "version" : "1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:52985",
+    "url" : "http://localhost:62652",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -21,6 +21,9 @@
   }, {
     "name" : "System Settings",
     "description" : "System Settings APIs"
+  }, {
+    "name" : "Checklist",
+    "description" : "Membership fee checklist APIs"
   }, {
     "name" : "Authentication",
     "description" : "Authentication and account management APIs"
@@ -455,6 +458,35 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/GlobalResponseInteger"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/checklist/quarterly-fee" : {
+      "post" : {
+        "tags" : [ "Checklist" ],
+        "summary" : "Search quarterly membership fee checklist",
+        "operationId" : "getQuarterlyChecklist",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ChecklistSearchRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GlobalResponseQuarterlyChecklistDto"
                 }
               }
             }
@@ -1700,6 +1732,144 @@
           "meta" : {
             "$ref" : "#/components/schemas/PaginationMeta",
             "description" : "Pagination metadata"
+          }
+        }
+      },
+      "ChecklistSearchRequestDto" : {
+        "type" : "object",
+        "properties" : {
+          "page" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0,
+            "description" : "Page number (0-based)",
+            "example" : 0
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 10,
+            "description" : "Page size",
+            "example" : 10
+          },
+          "sortField" : {
+            "type" : "string",
+            "description" : "Sort field name",
+            "example" : "firstName"
+          },
+          "sortOrder" : {
+            "$ref" : "#/components/schemas/SortOrder",
+            "description" : "Sort direction",
+            "example" : "asc"
+          },
+          "year" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "GlobalResponseQuarterlyChecklistDto" : {
+        "type" : "object",
+        "description" : "Unified API response envelope",
+        "properties" : {
+          "statusCode" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "HTTP status code",
+            "example" : 200
+          },
+          "statusDesc" : {
+            "type" : "string",
+            "description" : "HTTP status description",
+            "example" : "OK"
+          },
+          "globalMessages" : {
+            "type" : "array",
+            "description" : "Global-level messages (errors, warnings, info)",
+            "items" : {
+              "$ref" : "#/components/schemas/GlobalMsg"
+            }
+          },
+          "fieldMessages" : {
+            "type" : "array",
+            "description" : "Field-level validation messages",
+            "items" : {
+              "$ref" : "#/components/schemas/FieldMsg"
+            }
+          },
+          "responseData" : {
+            "$ref" : "#/components/schemas/QuarterlyChecklistDto",
+            "description" : "Response payload"
+          },
+          "meta" : {
+            "$ref" : "#/components/schemas/PaginationMeta",
+            "description" : "Pagination metadata"
+          }
+        }
+      },
+      "MemberQuarterlyRowDto" : {
+        "type" : "object",
+        "properties" : {
+          "memberID" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "memberName" : {
+            "type" : "string"
+          },
+          "quarters" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/QuarterCellDto"
+            }
+          },
+          "totalPaid" : {
+            "type" : "number"
+          },
+          "balance" : {
+            "type" : "number"
+          }
+        }
+      },
+      "QuarterCellDto" : {
+        "type" : "object",
+        "properties" : {
+          "quarter" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "status" : {
+            "$ref" : "#/components/schemas/QuarterCellStatus"
+          },
+          "amountPaid" : {
+            "type" : "number"
+          }
+        }
+      },
+      "QuarterCellStatus" : {
+        "type" : "string",
+        "description" : "Payment status of a member for a specific quarter",
+        "enum" : [ "PAID", "UNPAID", "NOT_APPLICABLE", "FUTURE" ]
+      },
+      "QuarterlyChecklistDto" : {
+        "type" : "object",
+        "properties" : {
+          "year" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "currentQuarter" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "quarterlyFeeAmount" : {
+            "type" : "number"
+          },
+          "rows" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/MemberQuarterlyRowDto"
+            }
           }
         }
       },

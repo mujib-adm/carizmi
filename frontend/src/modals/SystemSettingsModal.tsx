@@ -1,9 +1,9 @@
 import { Col, Form, Modal, Row } from 'antd';
 import { useEffect } from 'react';
 import { SystemSettingsDto } from '../api/generated/types';
-import { useApiMessages } from '../hook/ApiResponseHandler';
-import { AntdFormItem } from '../component/AntdFormItem';
-import { MessageBanner } from '../component/MessageBanner';
+import { useApiMessages } from '../hooks/useApiMessages';
+import { AntdFormItem } from '../components/AntdFormItem';
+import { MessageBanner } from '../components/MessageBanner';
 
 type Props = {
   open: boolean;

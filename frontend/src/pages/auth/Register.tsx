@@ -1,17 +1,14 @@
 import { useForm } from 'react-hook-form';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import '../../styles/pages/auth-form.css';
+import { useAuth } from '../../hooks/useAuth';
+import '../../styles/pages/AuthForm.css';
 
 import { authenticationApi } from '../../api/generated/authentication/authentication';
-import { FormField } from '../../component/FormField';
-import { MessageBanner } from '../../component/MessageBanner';
-import {
-  MessageType,
-  UserDto
-} from '../../api/generated/types';
-import { useNotification } from '../../context/NotificationContext';
-import { useApiMessages } from '../../hook/ApiResponseHandler';
+import { FormField } from '../../components/FormField';
+import { MessageBanner } from '../../components/MessageBanner';
+import { MessageType, UserDto } from '../../api/generated/types';
+import { useNotification } from '../../hooks/useNotification';
+import { useApiMessages } from '../../hooks/useApiMessages';
 
 export default function Register() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -25,7 +22,6 @@ export default function Register() {
   } = useForm<UserDto>();
   const { globalMessages, handleResponse, handleError, resetMessages } =
     useApiMessages<UserDto>(setError);
-
 
   const onSubmit = async (formValues: UserDto) => {
     try {

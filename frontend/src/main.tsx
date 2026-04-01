@@ -1,5 +1,5 @@
 import { ConfigProvider, theme } from 'antd';
-import { LoadingProvider } from './context/LoadingContext.tsx';
+import { LoadingProvider } from './contexts/LoadingContext.tsx';
 import ReactDOM from 'react-dom/client';
 import './styles/global.css';
 import './styles/design-system.css';

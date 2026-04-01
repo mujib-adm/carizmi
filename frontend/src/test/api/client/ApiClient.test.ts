@@ -9,7 +9,7 @@ describe('ApiClient Runtime Configuration', () => {
 
   it('should use window.APP_CONFIG.API_URL if present', async () => {
     (window as any).APP_CONFIG = { API_URL: 'http://runtime-api.com' };
-    
+
     // Dynamically import ApiClient to pick up the global state
     const { default: apiClient } = await import('../../../api/client/ApiClient.ts');
     expect(apiClient.defaults.baseURL).toBe('http://runtime-api.com');

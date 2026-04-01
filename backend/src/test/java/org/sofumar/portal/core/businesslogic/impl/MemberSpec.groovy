@@ -447,4 +447,36 @@ class MemberSpec extends BaseSpecification {
                 [new MemberVO(memberID: 1), new MemberVO(memberID: 2)]
         ]
     }
+
+    @Unroll
+    def "test - findActiveMembers: Should delegate to repo with active status criteria and pageable [listSize: #expectedList.size()]"() {
+        given: "Setup"
+        JpaSpecification capturedSpec = null
+        Page<MemberVO> mockPage = Mock(Page)
+        PageRequest pageable = PageRequest.of(0, 10)
+
+        when: "The target method executed"
+        Page<MemberVO> result = memberImpl.findActiveMembers(pageable)
+
+        then: "The expected calls are made"
+        1 * memberRepo.findAll(_ as JpaSpecification, pageable) >> { JpaSpecification spec, PageRequest pr ->
+            capturedSpec = spec
+            mockPage
+        }
+        0 * _
+
+        and: "The expected result"
+        result == mockPage
+        Map<String, List> inspection = inspectSpecification(capturedSpec)
+        inspection.filters.contains(FieldConstants.STATUS)
+        inspection.values.contains(ReferenceConstants.MEMBER_STATUS.ACTIVE)
+        noExceptionThrown()
+
+        where:
+        expectedList << [
+                [],
+                [new MemberVO(memberID: 1)],
+                [new MemberVO(memberID: 1), new MemberVO(memberID: 2)]
+        ]
+    }
 }

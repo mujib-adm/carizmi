@@ -17,6 +17,6 @@ export default defineConfig({
       provider: 'istanbul',
       reporter: ['html', 'text', 'json', 'lcov'],
       reportsDirectory: './coverage-vitest/',
-    }
+    },
   },
 });

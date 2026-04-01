@@ -109,6 +109,17 @@ public final class ApiEndpoints {
         }
     }
 
+    public static final class Checklist {
+        public static final String QUARTERLY_FEE = "/checklist/quarterly-fee";
+
+        public static String quarterlyFee(int year) {
+            return "/checklist/quarterly-fee?year=%d".formatted(year);
+        }
+
+        private Checklist() {
+        }
+    }
+
     public static final class Auth {
         public static final String LOGIN = "/auth/login";
         public static final String REGISTER = "/auth/register";

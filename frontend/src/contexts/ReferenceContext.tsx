@@ -1,25 +1,10 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { referenceDataApi } from '../api/generated/reference-data/reference-data';
 import { STARTUP_REFERENCES } from '../constants/ReferenceConstants';
 import { ReferenceDescDto } from '../api/generated/types';
-import { useAuth } from './AuthContext';
-import { useNotification } from './NotificationContext';
-
-type ReferenceContextType = {
-  references: Record<string, ReferenceDescDto[]>;
-  getReference: (name: string) => ReferenceDescDto[];
-  toCode: (name: string, display: string) => string | undefined;
-  toDisplay: (name: string, code: string) => string | undefined;
-  isLoading: boolean;
-};
-
-const ReferenceContext = createContext<ReferenceContextType>({
-  references: {},
-  getReference: () => [],
-  toCode: () => undefined,
-  toDisplay: () => undefined,
-  isLoading: true,
-});
+import { useAuth } from '../hooks/useAuth';
+import { useNotification } from '../hooks/useNotification';
+import { ReferenceContext } from '../hooks/useReference';
 
 export function ReferenceProvider({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -89,8 +74,4 @@ export function ReferenceProvider({ children }: { children: React.ReactNode }) {
       {children}
     </ReferenceContext.Provider>
   );
-}
-
-export function useReference() {
-  return useContext(ReferenceContext);
 }

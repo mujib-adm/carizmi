@@ -1,0 +1,58 @@
+/* ──────────────────────────────────────────────────────────
+   Quarterly Checklist Page Styles
+   ────────────────────────────────────────────────────────── */
+
+/* Quarter cell status icons */
+.statusCell {
+  text-align: center;
+  font-size: 1.1rem;
+}
+
+.statusPaid {
+  color: #2d6a4f;
+  font-weight: 700;
+}
+
+.statusUnpaid {
+  color: #c62828;
+  font-weight: 700;
+}
+
+.statusNA {
+  color: #999;
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+.statusFuture {
+  color: #ccc;
+}
+
+/* Summary row */
+.summaryRow {
+  background-color: rgba(30, 86, 49, 0.05) !important;
+  font-weight: 700;
+}
+
+.summaryRow td {
+  font-weight: 700 !important;
+}
+
+/* Balance styling */
+.balanceZero {
+  color: #2d6a4f;
+  font-weight: 600;
+}
+
+.balanceDue {
+  color: #c62828;
+  font-weight: 700;
+}
+
+/* Header subtitle */
+.headerSubtitle {
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.85rem;
+  color: var(--textMuted);
+  margin-top: 4px;
+}

@@ -2,20 +2,16 @@ import { EditOutlined, SettingOutlined } from '@ant-design/icons';
 import { Button, Card, Space, Table, Typography } from 'antd';
 import { useEffect, useState } from 'react';
 import { systemSettingsApi } from '../../api/generated/system-settings/system-settings';
-import { MessageBanner } from '../../component/MessageBanner.js';
-import SearchFilterBar from '../../component/SearchFilterBar.jsx';
-import Sidebar from '../../component/Sidebar';
+import { MessageBanner } from '../../components/MessageBanner';
+import SearchFilterBar from '../../components/SearchFilterBar';
 import { SystemSettingsModal } from '../../modals/SystemSettingsModal';
 import { ReferenceConstants } from '../../constants/ReferenceConstants';
-import { systemSettingsSearchFiltersConfig } from '../../constants/systemSettingsSearchFiltersConfig';
-import {
-  SystemSettingsDto,
-  SystemSettingsSearchRequestDto
-} from '../../api/generated/types';
-import { useReference } from '../../context/ReferenceContext';
-import { useApiMessages } from '../../hook/ApiResponseHandler';
-import { usePaginatedSystemSettings } from '../../hook/PaginatedSystemSettings';
-import { useAuthorization } from '../../hook/useAuthorization';
+import { systemSettingsSearchFiltersConfig } from '../../config/systemSettingsSearchFiltersConfig';
+import { SystemSettingsDto, SystemSettingsSearchRequestDto } from '../../api/generated/types';
+import { useReference } from '../../hooks/useReference';
+import { useApiMessages } from '../../hooks/useApiMessages';
+import { usePaginatedSystemSettings } from '../../hooks/usePaginatedSystemSettings';
+import { useAuthorization } from '../../hooks/useAuthorization';
 
 const { Title } = Typography;
 
@@ -108,65 +104,60 @@ export default function SystemSettingsPage() {
   ];
 
   return (
-    <div className="dashboard-layout">
-      <Sidebar />
-      <main className="content fade-in">
-        <div>
-          <div className="page-header">
-            <Title level={2} className="page-title">
-              <SettingOutlined /> System Settings
-            </Title>
-          </div>
+    <div>
+      <div className="page-header">
+        <Title level={2} className="page-title">
+          <SettingOutlined /> System Settings
+        </Title>
+      </div>
 
-          <SearchFilterBar
-            config={systemSettingsSearchFiltersConfig as any}
-            filters={filters}
-            onChange={setFilters as any}
-            onSearch={handleSearch}
-            onAdd={undefined}
-          />
+      <SearchFilterBar
+        config={systemSettingsSearchFiltersConfig as any}
+        filters={filters}
+        onChange={setFilters as any}
+        onSearch={handleSearch}
+        onAdd={undefined}
+      />
 
-          {globalMessages && <MessageBanner messages={globalMessages} />}
+      {globalMessages && <MessageBanner messages={globalMessages} />}
 
-          <Card className="glass-card" style={{ padding: 0 }}>
-            <Table<SystemSettingsDto>
-              scroll={{ x: 'max-content' }}
-              dataSource={settings}
-              columns={columns}
-              rowKey="systemSettingsID"
-              loading={loading}
-              size="small"
-              pagination={{
-                current: (meta?.page ?? 0) + 1,
-                pageSize: meta?.pageSize ?? 10,
-                total: meta?.totalRecords ?? 0,
-                showSizeChanger: true,
-              }}
-              onChange={(pagination, _filters, sorter) => {
-                const sortField = Array.isArray(sorter) ? sorter[0].field : sorter.field;
-                const sortOrder = Array.isArray(sorter) ? sorter[0].order : sorter.order;
+      <Card className="glass-card" style={{ padding: 0 }}>
+        <Table<SystemSettingsDto>
+          scroll={{ x: 'max-content' }}
+          dataSource={settings}
+          columns={columns}
+          rowKey="systemSettingsID"
+          loading={loading}
+          size="small"
+          pagination={{
+            current: (meta?.page ?? 0) + 1,
+            pageSize: meta?.pageSize ?? 10,
+            total: meta?.totalRecords ?? 0,
+            showSizeChanger: true,
+          }}
+          onChange={(pagination, _filters, sorter) => {
+            const sortField = Array.isArray(sorter) ? sorter[0].field : sorter.field;
+            const sortOrder = Array.isArray(sorter) ? sorter[0].order : sorter.order;
 
-                resetMessages();
-                fetchSettings({
-                  ...filters,
-                  page: (pagination.current ?? 1) - 1,
-                  size: pagination.pageSize ?? 10,
-                  sortField: sortField as string,
-                  sortOrder:
-                    sortOrder === 'ascend' ? 'asc' : sortOrder === 'descend' ? 'desc' : undefined,
-                }).catch(handleError);
-              }}
-            />
-          </Card>
+            resetMessages();
+            fetchSettings({
+              ...filters,
+              page: (pagination.current ?? 1) - 1,
+              size: pagination.pageSize ?? 10,
+              sortField: sortField as string,
+              sortOrder:
+                sortOrder === 'ascend' ? 'asc' : sortOrder === 'descend' ? 'desc' : undefined,
+            }).catch(handleError);
+          }}
+        />
+      </Card>
 
-          <SystemSettingsModal
-            open={modalVisible}
-            onCancel={() => setModalVisible(false)}
-            onSubmit={handleSave}
-            initial={editingRecord}
-          />
-        </div>
-      </main>
+      <SystemSettingsModal
+        open={modalVisible}
+        onCancel={() => setModalVisible(false)}
+        onSubmit={handleSave}
+        initial={editingRecord}
+      />
     </div>
   );
 }

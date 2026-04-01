@@ -2,9 +2,9 @@ import { Col, Form, Modal, Row, Select, Switch } from 'antd';
 import { useEffect } from 'react';
 import { RoleConstants } from '../constants/RoleConstants';
 import { UserResponseDto } from '../api/generated/types';
-import { AntdFormItem } from '../component/AntdFormItem';
-import { MessageBanner } from '../component/MessageBanner';
-import { useApiMessages } from '../hook/ApiResponseHandler';
+import { AntdFormItem } from '../components/AntdFormItem';
+import { MessageBanner } from '../components/MessageBanner';
+import { useApiMessages } from '../hooks/useApiMessages';
 
 interface UserModalProps {
   open: boolean;

@@ -1,18 +1,17 @@
 import { EditOutlined, UserOutlined } from '@ant-design/icons';
-import { Button, Card, Col, Divider, Row, Space, Table, Tag, Typography, message } from 'antd';
+import { Button, Card, Divider, Space, Table, Tag, Typography } from 'antd';
 import { useEffect, useState } from 'react';
 import { userManagementApi } from '../../api/generated/user-management/user-management';
-import { MessageBanner } from '../../component/MessageBanner';
-import Sidebar from '../../component/Sidebar';
+import { MessageBanner } from '../../components/MessageBanner';
 import { UserModal } from '../../modals/UserModal';
 import { RoleConstants } from '../../constants/RoleConstants';
 import {
   MessageType,
   UserResponseDto,
-  UserStatusUpdateRequestDto
+  UserStatusUpdateRequestDto,
 } from '../../api/generated/types';
-import { useApiMessages } from '../../hook/ApiResponseHandler';
-import { useNotification } from '../../context/NotificationContext';
+import { useApiMessages } from '../../hooks/useApiMessages';
+import { useNotification } from '../../hooks/useNotification';
 
 const { Title } = Typography;
 
@@ -57,7 +56,9 @@ export default function UsersPage() {
       // Check and update Role if changed
       let resp;
       if (updatedValues.role !== selectedUser?.role) {
-        resp = await userManagementApi.updateRole(selectedUser.userID, { role: updatedValues.role });
+        resp = await userManagementApi.updateRole(selectedUser.userID, {
+          role: updatedValues.role,
+        });
       }
       // Check and update Status if changed
       if (updatedValues.active !== selectedUser?.active) {
@@ -112,47 +113,36 @@ export default function UsersPage() {
   ];
 
   return (
-    <div className="dashboard-layout">
-      <Sidebar />
-      <main className="content fade-in">
-        <div>
-          <div className="page-header">
-            <Title level={2} className="page-title">
-              <UserOutlined /> User Management
-            </Title>
-          </div>
+    <div>
+      <div className="page-header">
+        <Title level={2} className="page-title">
+          <UserOutlined /> User Management
+        </Title>
+      </div>
 
-          <Row gutter={[24, 24]} justify="center">
-            <Col xs={24} xl={16}>
-              <Card className="glass-card">
-                <div className="chart-title">
-                  Users List
-                </div>
-                <Divider />
+      <Card className="glass-card">
+        <div className="chart-title">Users List</div>
+        <Divider />
 
-                {globalMessages && <MessageBanner messages={globalMessages} />}
+        {globalMessages && <MessageBanner messages={globalMessages} />}
 
-                <Table
-                  scroll={{ x: 'max-content' }}
-                  loading={loading}
-                  dataSource={users}
-                  columns={columns}
-                  rowKey="userID"
-                  pagination={{ pageSize: 10 }}
-                  size="small"
-                />
-              </Card>
-            </Col>
-          </Row>
+        <Table
+          scroll={{ x: 'max-content' }}
+          loading={loading}
+          dataSource={users}
+          columns={columns}
+          rowKey="userID"
+          pagination={{ pageSize: 10 }}
+          size="small"
+        />
+      </Card>
 
-          <UserModal
-            open={modalOpen}
-            onCancel={() => setModalOpen(false)}
-            onSubmit={handleUpdateUser}
-            initialValues={selectedUser}
-          />
-        </div>
-      </main>
+      <UserModal
+        open={modalOpen}
+        onCancel={() => setModalOpen(false)}
+        onSubmit={handleUpdateUser}
+        initialValues={selectedUser}
+      />
     </div>
   );
 }

@@ -2,6 +2,7 @@ import {
   DashboardOutlined,
   DatabaseOutlined,
   DollarOutlined,
+  FileSearchOutlined,
   LogoutOutlined,
   SettingOutlined,
   ShoppingCartOutlined,
@@ -11,8 +12,8 @@ import {
 import type { MenuProps } from 'antd';
 import { Menu } from 'antd';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { RoleConstants } from '../constants/RoleConstants';
-import styles from '../styles/components/Sidebar.module.css';
+import { RoleConstants } from '../../constants/RoleConstants';
+import styles from '../../styles/components/Sidebar.module.css';
 
 export default function Sidebar() {
   const role = localStorage.getItem('role') || 'USER';
@@ -22,9 +23,9 @@ export default function Sidebar() {
   const items: MenuProps['items'] = [
     { key: '/dashboard', icon: <DashboardOutlined />, label: 'Dashboard' },
     { key: '/payments', icon: <DollarOutlined />, label: 'Payments' },
+    { key: '/checklist', icon: <FileSearchOutlined />, label: 'Checklist' },
     { key: '/expenses', icon: <ShoppingCartOutlined />, label: 'Expenses' },
     { key: '/members', icon: <TeamOutlined />, label: 'Members' },
-    //         { key: '/reporting', icon: <FileSearchOutlined />, label: 'Reporting' },
     { key: '/references', icon: <DatabaseOutlined />, label: 'Reference' },
     { key: '/settings', icon: <SettingOutlined />, label: 'Settings' },
     ...(role === RoleConstants.ROLE_ADMIN

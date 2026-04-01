@@ -2,13 +2,13 @@ import { Col, Divider, Form, Modal, Row } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect } from 'react';
 import { ReferenceConstants } from '../constants/ReferenceConstants';
-import { SystemSettingConstants } from '../constants/SystemSettingConstants.ts';
+import { SystemSettingConstants } from '../constants/SystemSettingsConstants.ts';
 import { PaymentDto } from '../api/generated/types';
-import { useSystemSettings } from '../context/SystemSettingsContext';
-import { useApiMessages } from '../hook/ApiResponseHandler';
-import { AntdFormItem } from '../component/AntdFormItem';
-import MemberLookup from '../component/MemberLookup';
-import { MessageBanner } from '../component/MessageBanner';
+import { useSystemSettings } from '../hooks/useSystemSettings';
+import { useApiMessages } from '../hooks/useApiMessages';
+import { AntdFormItem } from '../components/AntdFormItem';
+import MemberLookup from '../components/MemberLookup';
+import { MessageBanner } from '../components/MessageBanner';
 
 interface PaymentModalProps {
   open: boolean;

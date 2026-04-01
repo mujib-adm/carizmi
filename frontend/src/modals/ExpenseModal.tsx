@@ -2,9 +2,9 @@ import { Col, Form, Input, Modal, Row } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect } from 'react';
 import { ExpenseDto } from '../api/generated/types';
-import { useApiMessages } from '../hook/ApiResponseHandler';
-import { AntdFormItem } from '../component/AntdFormItem';
-import { MessageBanner } from '../component/MessageBanner';
+import { useApiMessages } from '../hooks/useApiMessages';
+import { AntdFormItem } from '../components/AntdFormItem';
+import { MessageBanner } from '../components/MessageBanner';
 
 interface ExpenseModalProps {
   open: boolean;
@@ -14,14 +14,17 @@ interface ExpenseModalProps {
   categories: { value: string; label: string }[];
 }
 
-export default function ExpenseModal({ open, onCancel, onSubmit, initialValues, categories}: ExpenseModalProps) {
-    const [form] = Form.useForm();
-    const { globalMessages, handleError, resetMessages } = useApiMessages(
-        undefined,
-        (field, msg) => {
-            form.setFields([{ name: field, errors: [msg] }]);
-        }
-    );
+export default function ExpenseModal({
+  open,
+  onCancel,
+  onSubmit,
+  initialValues,
+  categories,
+}: ExpenseModalProps) {
+  const [form] = Form.useForm();
+  const { globalMessages, handleError, resetMessages } = useApiMessages(undefined, (field, msg) => {
+    form.setFields([{ name: field, errors: [msg] }]);
+  });
 
   useEffect(() => {
     if (open) {

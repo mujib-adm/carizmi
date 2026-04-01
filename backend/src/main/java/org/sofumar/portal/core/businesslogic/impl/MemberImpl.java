@@ -25,6 +25,7 @@ import org.sofumar.portal.service.validation.MemberValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
@@ -239,5 +240,11 @@ public non-sealed class MemberImpl extends MemberAbstractBL implements Member {
     @Transactional(readOnly = true)
     public List<MemberVO> findAllActiveMembers() {
         return getRepo().findAll(MemberSpecifications.hasStatus(ReferenceConstants.MEMBER_STATUS.ACTIVE));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<MemberVO> findActiveMembers(@NonNull Pageable pageable) {
+        return getRepo().findAll(MemberSpecifications.hasStatus(ReferenceConstants.MEMBER_STATUS.ACTIVE), pageable);
     }
 }

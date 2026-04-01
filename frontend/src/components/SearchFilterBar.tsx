@@ -4,11 +4,34 @@ import dayjs from 'dayjs';
 
 const { RangePicker } = DatePicker;
 
-export default function SearchFilterBar({ config = [], filters, onChange, onSearch, onAdd }) {
+type FilterFieldConfig = {
+  name: string;
+  label: string;
+  type: 'input' | 'number' | 'select' | 'dateRange';
+  placeholder?: string;
+  width?: number;
+  options?: { value: string; label: string }[];
+};
+
+type SearchFilterBarProps = {
+  config?: FilterFieldConfig[];
+  filters: Record<string, any>;
+  onChange: (updated: Record<string, any>) => void;
+  onSearch: () => void;
+  onAdd?: () => void;
+};
+
+export default function SearchFilterBar({
+  config = [],
+  filters,
+  onChange,
+  onSearch,
+  onAdd,
+}: SearchFilterBarProps) {
   const [form] = Form.useForm();
 
   // Convert filters → initial form values
-  const initialValues = {};
+  const initialValues: Record<string, any> = {};
   config.forEach((field) => {
     if (field.type === 'dateRange') {
       if (filters.dateFrom && filters.dateTo) {
@@ -26,7 +49,7 @@ export default function SearchFilterBar({ config = [], filters, onChange, onSear
         layout="inline"
         initialValues={initialValues}
         onValuesChange={(changed, allValues) => {
-          const updated = { ...filters };
+          const updated: Record<string, any> = { ...filters };
 
           config.forEach((field) => {
             const value = allValues[field.name];

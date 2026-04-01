@@ -9,15 +9,10 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { membersApi } from '../../api/generated/members/members';
 import { paymentsApi } from '../../api/generated/payments/payments';
-import Sidebar from '../../component/Sidebar';
 import { ReferenceConstants } from '../../constants/ReferenceConstants';
-import {
-  MemberDto,
-  MemberSummaryDto,
-  PaymentDto
-} from '../../api/generated/types';
-import { useReference } from '../../context/ReferenceContext';
-import { useApiMessages } from '../../hook/ApiResponseHandler';
+import { MemberDto, MemberSummaryDto, PaymentDto } from '../../api/generated/types';
+import { useReference } from '../../hooks/useReference';
+import { useApiMessages } from '../../hooks/useApiMessages';
 
 const { Title, Text } = Typography;
 
@@ -82,112 +77,106 @@ export default function MemberDetailsPage() {
   ];
 
   return (
-    <div className="dashboard-layout">
-      <Sidebar />
-      <main className="content fade-in">
-        <div>
-          <Space style={{ marginBottom: 24 }}>
-            <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/members')}>
-              Back to Members
-            </Button>
-          </Space>
+    <div>
+      <Space style={{ marginBottom: 24 }}>
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/members')}>
+          Back to Members
+        </Button>
+      </Space>
 
-          {loading ? (
-            <Skeleton active avatar paragraph={{ rows: 4 }} />
-          ) : member ? (
-            <div className="member-profile">
-              <Card className="glass-card" style={{ marginBottom: 12 }}>
-                <Row align="middle" gutter={24}>
-                  <Col>
-                    <Avatar
-                      size={100}
-                      icon={<UserOutlined />}
-                      style={{ backgroundColor: 'var(--priColor)' }}
-                    />
-                  </Col>
-                  <Col flex="auto">
-                    <Title level={2} className="title-wrap" style={{ margin: 0 }}>
-                      {member.firstName} {member.lastName}
-                    </Title>
-                    <Text type="secondary">
-                      {member.email} | {member.phone}
-                    </Text>
-                    <div style={{ marginTop: 8 }}>
-                      <Badge
-                        status={member.status === 'ACTIVE' ? 'success' : 'default'}
-                        text={toDisplay(ReferenceConstants.MEMBER_STATUS.NAME, member.status || '')}
-                      />
-                    </div>
-                  </Col>
-                </Row>
-              </Card>
-
-              <Row gutter={[24, 24]} style={{ marginBottom: 12 }}>
-                <Col xs={24} sm={8}>
-                  <Card className="glass-card">
-                    <Space align="center">
-                      <Avatar
-                        icon={<DollarOutlined />}
-                        style={{ background: 'var(--vibrant-gradient)' }}
-                      />
-                      <div>
-                        <div className="metric-label">Total Paid</div>
-                        <div className="metric-value">${(summary?.totalPaid ?? 0).toFixed(2)}</div>
-                        <div className="metric-subtext">Total contributions up to date</div>
-                      </div>
-                    </Space>
-                  </Card>
-                </Col>
-                <Col xs={24} sm={8}>
-                  <Card className="glass-card">
-                    <Space align="center">
-                      <Avatar
-                        icon={<ExclamationCircleOutlined />}
-                        style={{ background: 'orange' }}
-                      />
-                      <div>
-                        <div className="metric-label">Outstanding</div>
-                        <div className="metric-value" style={{ color: 'orange' }}>
-                          ${(summary?.outstanding ?? 0).toFixed(2)}
-                        </div>
-                        <div className="metric-subtext"> Unpaid - Current Quarter </div>
-                      </div>
-                    </Space>
-                  </Card>
-                </Col>
-                <Col xs={24} sm={8}>
-                  <Card className="glass-card">
-                    <Space align="center">
-                      <Avatar icon={<ExclamationCircleOutlined />} style={{ background: 'red' }} />
-                      <div>
-                        <div className="metric-label">Overdues</div>
-                        <div className="metric-value" style={{ color: 'red' }}>
-                          ${(summary?.overdue ?? 0).toFixed(2)}
-                        </div>
-                        <div className="metric-subtext"> Unpaid - Overall </div>
-                      </div>
-                    </Space>
-                  </Card>
-                </Col>
-              </Row>
-
-              <Card className="glass-card">
-                <div className="chart-title" style={{ marginBottom: '28px' }}>Recent Payment History</div>
-                <Table
-                  scroll={{ x: 'max-content' }}
-                  dataSource={payments}
-                  columns={columns}
-                  rowKey="paymentID"
-                  pagination={{ pageSize: 5 }}
-                  size="small"
+      {loading ? (
+        <Skeleton active avatar paragraph={{ rows: 4 }} />
+      ) : member ? (
+        <div className="member-profile">
+          <Card className="glass-card" style={{ marginBottom: 12 }}>
+            <Row align="middle" gutter={24}>
+              <Col>
+                <Avatar
+                  size={100}
+                  icon={<UserOutlined />}
+                  style={{ backgroundColor: 'var(--priColor)' }}
                 />
+              </Col>
+              <Col flex="auto">
+                <Title level={2} className="title-wrap" style={{ margin: 0 }}>
+                  {member.firstName} {member.lastName}
+                </Title>
+                <Text type="secondary">
+                  {member.email} | {member.phone}
+                </Text>
+                <div style={{ marginTop: 8 }}>
+                  <Badge
+                    status={member.status === 'ACTIVE' ? 'success' : 'default'}
+                    text={toDisplay(ReferenceConstants.MEMBER_STATUS.NAME, member.status || '')}
+                  />
+                </div>
+              </Col>
+            </Row>
+          </Card>
+
+          <Row gutter={[24, 24]} style={{ marginBottom: 12 }}>
+            <Col xs={24} sm={8}>
+              <Card className="glass-card">
+                <Space align="center">
+                  <Avatar
+                    icon={<DollarOutlined />}
+                    style={{ background: 'var(--vibrant-gradient)' }}
+                  />
+                  <div>
+                    <div className="metric-label">Total Paid</div>
+                    <div className="metric-value">${(summary?.totalPaid ?? 0).toFixed(2)}</div>
+                    <div className="metric-subtext">Total contributions up to date</div>
+                  </div>
+                </Space>
               </Card>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Card className="glass-card">
+                <Space align="center">
+                  <Avatar icon={<ExclamationCircleOutlined />} style={{ background: 'orange' }} />
+                  <div>
+                    <div className="metric-label">Outstanding</div>
+                    <div className="metric-value" style={{ color: 'orange' }}>
+                      ${(summary?.outstanding ?? 0).toFixed(2)}
+                    </div>
+                    <div className="metric-subtext"> Unpaid - Current Quarter </div>
+                  </div>
+                </Space>
+              </Card>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Card className="glass-card">
+                <Space align="center">
+                  <Avatar icon={<ExclamationCircleOutlined />} style={{ background: 'red' }} />
+                  <div>
+                    <div className="metric-label">Overdues</div>
+                    <div className="metric-value" style={{ color: 'red' }}>
+                      ${(summary?.overdue ?? 0).toFixed(2)}
+                    </div>
+                    <div className="metric-subtext"> Unpaid - Past Quarter(s) </div>
+                  </div>
+                </Space>
+              </Card>
+            </Col>
+          </Row>
+
+          <Card className="glass-card">
+            <div className="chart-title" style={{ marginBottom: '28px' }}>
+              Recent Payment History
             </div>
-          ) : (
-            <Text type="danger">Member not found.</Text>
-          )}
+            <Table
+              scroll={{ x: 'max-content' }}
+              dataSource={payments}
+              columns={columns}
+              rowKey="paymentID"
+              pagination={{ pageSize: 5 }}
+              size="small"
+            />
+          </Card>
         </div>
-      </main>
+      ) : (
+        <Text type="danger">Member not found.</Text>
+      )}
     </div>
   );
 }

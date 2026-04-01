@@ -611,4 +611,31 @@ class PaymentSpec extends BaseSpecification {
                 [new PaymentVO(paymentID: 1), new PaymentVO(paymentID: 2)]
         ]
     }
+
+    @Unroll
+    def "test - findMembersPaymentSummaries: Should return summaries scoped to member IDs [size: #expectedList.size()]"() {
+        given: "Parameters using dynamic year"
+        List<Integer> memberIds = [1, 2, 3]
+        String feeType = "FEE"
+        int currentYear = LocalDate.now().year
+        Integer year = currentYear
+
+        when: "The target method executed"
+        List<PaymentSummary> result = paymentImpl.findMembersPaymentSummaries(memberIds, feeType, year)
+
+        then: "The expected calls are made"
+        1 * paymentRepo.findMembersPaymentSummaries(memberIds, feeType, year) >> expectedList
+        0 * _
+
+        and: "The expected result"
+        result == expectedList
+        noExceptionThrown()
+
+        where:
+        expectedList << [
+                [],
+                [Mock(PaymentSummary)],
+                [Mock(PaymentSummary), Mock(PaymentSummary)]
+        ]
+    }
 }

@@ -4,22 +4,21 @@ import { ColumnsType } from 'antd/es/table';
 import { useMemo, useState } from 'react';
 import { expensesApi } from '../../api/generated/expenses/expenses';
 import ExpenseModal from '../../modals/ExpenseModal.tsx';
-import { MessageBanner } from '../../component/MessageBanner';
-import SearchFilterBar from '../../component/SearchFilterBar.jsx';
-import Sidebar from '../../component/Sidebar';
-import { expenseSearchFiltersConfig } from '../../constants/expenseSearchFiltersConfig.ts';
+import { MessageBanner } from '../../components/MessageBanner';
+import SearchFilterBar from '../../components/SearchFilterBar';
+import { expenseSearchFiltersConfig } from '../../config/expenseSearchFiltersConfig';
 import { ReferenceConstants } from '../../constants/ReferenceConstants';
 import {
   ExpenseDto,
   ExpenseSearchRequestDto,
   GlobalResponse,
-  MessageType
+  MessageType,
 } from '../../api/generated/types';
-import { useNotification } from '../../context/NotificationContext';
-import { useReference } from '../../context/ReferenceContext';
-import { useApiMessages } from '../../hook/ApiResponseHandler';
-import { usePaginatedExpenses } from '../../hook/PaginatedExpenses';
-import { useAuthorization } from '../../hook/useAuthorization';
+import { useNotification } from '../../hooks/useNotification';
+import { useReference } from '../../hooks/useReference';
+import { useApiMessages } from '../../hooks/useApiMessages';
+import { usePaginatedExpenses } from '../../hooks/usePaginatedExpenses';
+import { useAuthorization } from '../../hooks/useAuthorization';
 
 const { Title } = Typography;
 
@@ -27,7 +26,6 @@ export default function ExpensePage() {
   const notify = useNotification();
   const { expenses, meta, loading, fetchExpenses, setExpenses } = usePaginatedExpenses();
   const { globalMessages, handleResponse, handleError, resetMessages } = useApiMessages<any>();
-
 
   // search filters
   const [filters, setFilters] = useState<ExpenseSearchRequestDto>({});
@@ -65,7 +63,9 @@ export default function ExpensePage() {
   };
 
   const handleDelete = async (record: ExpenseDto) => {
-    const categoryDisplay = record.category ? toDisplay(ReferenceConstants.EXPENSE_CATEGORY.NAME, record.category) : record.category;
+    const categoryDisplay = record.category
+      ? toDisplay(ReferenceConstants.EXPENSE_CATEGORY.NAME, record.category)
+      : record.category;
 
     Modal.confirm({
       title: 'Are you sure you want to delete expense record?',
@@ -112,7 +112,9 @@ export default function ExpensePage() {
 
   const handleSubmit = async (values: ExpenseDto) => {
     const isAdd = !selectedRecord?.expenseID;
-    const resp = isAdd ? await expensesApi.addExpense(values) : await expensesApi.updateExpense(values);
+    const resp = isAdd
+      ? await expensesApi.addExpense(values)
+      : await expensesApi.updateExpense(values);
 
     if (resp.globalMessages?.[0]?.type === MessageType.SUCCESS) {
       notify.success({ message: 'Success', description: resp.globalMessages[0].message });
@@ -178,65 +180,61 @@ export default function ExpensePage() {
   }, [categories]);
 
   return (
-    <div className="dashboard-layout">
-      <Sidebar />
-      <main className="content fade-in">
-        <div>
-          <div className="page-header">
-            <Title level={2} className="page-title">
-              <ShoppingCartOutlined /> Expenses
-            </Title>
-          </div>
+    <div>
+      <div className="page-header">
+        <Title level={2} className="page-title">
+          <ShoppingCartOutlined /> Expenses
+        </Title>
+      </div>
 
-          <SearchFilterBar
-            config={searchConfig as any}
-            filters={filters}
-            onChange={setFilters}
-            onSearch={handleSearch}
-            onAdd={canWrite ? openAdd : undefined}
-          />
+      <SearchFilterBar
+        config={searchConfig as any}
+        filters={filters}
+        onChange={setFilters}
+        onSearch={handleSearch}
+        onAdd={canWrite ? openAdd : undefined}
+      />
 
-          {globalMessages && <MessageBanner messages={globalMessages} />}
+      {globalMessages && <MessageBanner messages={globalMessages} />}
 
-          <Card className="glass-card" style={{ padding: 0 }}>
-            <Table<ExpenseDto>
-              scroll={{ x: 'max-content' }}
-              size="small"
-              rowKey="expenseID"
-              dataSource={expenses}
-              columns={columns}
-              loading={loading}
-              pagination={{
-                current: (meta?.page ?? 0) + 1,
-                pageSize: meta?.pageSize ?? 10,
-                total: meta?.totalRecords ?? 0,
-                showSizeChanger: true,
-              }}
-              onChange={(pagination, _filters, sorter) => {
-                const sortField = Array.isArray(sorter) ? sorter[0].field : sorter.field;
-                const sortOrder = Array.isArray(sorter) ? sorter[0].order : sorter.order;
+      <Card className="glass-card" style={{ padding: 0 }}>
+        <Table<ExpenseDto>
+          scroll={{ x: 'max-content' }}
+          size="small"
+          rowKey="expenseID"
+          dataSource={expenses}
+          columns={columns}
+          loading={loading}
+          pagination={{
+            current: (meta?.page ?? 0) + 1,
+            pageSize: meta?.pageSize ?? 10,
+            total: meta?.totalRecords ?? 0,
+            showSizeChanger: true,
+          }}
+          onChange={(pagination, _filters, sorter) => {
+            const sortField = Array.isArray(sorter) ? sorter[0].field : sorter.field;
+            const sortOrder = Array.isArray(sorter) ? sorter[0].order : sorter.order;
 
-                resetMessages();
-                fetchExpenses({
-                  ...filters,
-                  page: (pagination.current ?? 1) - 1,
-                  size: pagination.pageSize ?? 10,
-                  sortField: sortField as string,
-                  sortOrder: sortOrder === 'ascend' ? 'asc' : sortOrder === 'descend' ? 'desc' : undefined,
-                }).catch(handleError);
-              }}
-            />
-          </Card>
+            resetMessages();
+            fetchExpenses({
+              ...filters,
+              page: (pagination.current ?? 1) - 1,
+              size: pagination.pageSize ?? 10,
+              sortField: sortField as string,
+              sortOrder:
+                sortOrder === 'ascend' ? 'asc' : sortOrder === 'descend' ? 'desc' : undefined,
+            }).catch(handleError);
+          }}
+        />
+      </Card>
 
-          <ExpenseModal
-            open={modalOpenInd}
-            onCancel={() => setModalOpenInd(false)}
-            onSubmit={handleSubmit}
-            initialValues={selectedRecord}
-            categories={categories}
-          />
-        </div>
-      </main>
+      <ExpenseModal
+        open={modalOpenInd}
+        onCancel={() => setModalOpenInd(false)}
+        onSubmit={handleSubmit}
+        initialValues={selectedRecord}
+        categories={categories}
+      />
     </div>
   );
 }

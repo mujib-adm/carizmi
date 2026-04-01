@@ -1,9 +1,9 @@
 import { UserOutlined } from '@ant-design/icons';
 import { Avatar, Image, Layout, Space, Tooltip } from 'antd';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import Logo from '../assets/images/logo.png';
-import styles from '../styles/pages/AppHeader.module.css';
+import { useAuth } from '../../hooks/useAuth';
+import Logo from '../../assets/images/logo.png';
+import styles from '../../styles/components/AppHeader.module.css';
 
 const { Header } = Layout;
 

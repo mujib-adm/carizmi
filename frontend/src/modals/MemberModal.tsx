@@ -3,10 +3,10 @@ import dayjs from 'dayjs';
 import { useEffect } from 'react';
 import { ReferenceConstants } from '../constants/ReferenceConstants';
 import { MemberDto } from '../api/generated/types';
-import { useApiMessages } from '../hook/ApiResponseHandler';
+import { useApiMessages } from '../hooks/useApiMessages';
 import styles from '../styles/components/MemberModal.module.css';
-import { AntdFormItem } from '../component/AntdFormItem';
-import { MessageBanner } from '../component/MessageBanner';
+import { AntdFormItem } from '../components/AntdFormItem';
+import { MessageBanner } from '../components/MessageBanner';
 
 type Props = {
   open: boolean;

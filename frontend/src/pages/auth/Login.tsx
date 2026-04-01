@@ -1,22 +1,27 @@
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import '../../styles/pages/auth-form.css';
+import { useAuth } from '../../hooks/useAuth';
+import '../../styles/pages/AuthForm.css';
 
 import apiClient from '../../api/client/ApiClient';
-import { FormField } from '../../component/FormField';
-import { MessageBanner } from '../../component/MessageBanner';
+import { FormField } from '../../components/FormField';
+import { MessageBanner } from '../../components/MessageBanner';
 import { AUTH_LOGIN } from '../../api/constants/customEndpoints';
 import { LoginRequestDto } from '../../api/constants/customTypes';
 import { GlobalResponse, MessageType } from '../../api/generated/types/index';
-import { useApiMessages } from '../../hook/ApiResponseHandler';
+import { useApiMessages } from '../../hooks/useApiMessages';
 
 export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const { register, handleSubmit, formState: { errors }, } = useForm<LoginRequestDto>();
-  const { globalMessages, handleResponse, handleError, resetMessages } = useApiMessages<LoginRequestDto>();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginRequestDto>();
+  const { globalMessages, handleResponse, handleError, resetMessages } =
+    useApiMessages<LoginRequestDto>();
 
   const onSubmit = async (formValues: LoginRequestDto) => {
     // clear old messages from MessageBanner before starting new call

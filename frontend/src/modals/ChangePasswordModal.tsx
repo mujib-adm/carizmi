@@ -1,8 +1,8 @@
 import { Col, Divider, Form, Modal, Row, Typography } from 'antd';
 import { PasswordUpdateRequestDto } from '../api/generated/types';
-import { useApiMessages } from '../hook/ApiResponseHandler';
-import { AntdFormItem } from '../component/AntdFormItem';
-import { MessageBanner } from '../component/MessageBanner';
+import { useApiMessages } from '../hooks/useApiMessages';
+import { AntdFormItem } from '../components/AntdFormItem';
+import { MessageBanner } from '../components/MessageBanner';
 
 const { Text } = Typography;
 
@@ -12,16 +12,17 @@ interface ChangePasswordModalProps {
   onSubmit: (values: PasswordUpdateRequestDto) => Promise<void>;
 }
 
-export default function ChangePasswordModal({ open, onCancel, onSubmit }: ChangePasswordModalProps) {
+export default function ChangePasswordModal({
+  open,
+  onCancel,
+  onSubmit,
+}: ChangePasswordModalProps) {
   const [form] = Form.useForm();
-  const { globalMessages, handleError, resetMessages } = useApiMessages(
-    undefined,
-    (field, msg) => {
-      // Backend VO field is "password", but modal form field is "newPassword"
-      const formField = field === 'password' ? 'newPassword' : field;
-      form.setFields([{ name: formField, errors: [msg] }]);
-    }
-  );
+  const { globalMessages, handleError, resetMessages } = useApiMessages(undefined, (field, msg) => {
+    // Backend VO field is "password", but modal form field is "newPassword"
+    const formField = field === 'password' ? 'newPassword' : field;
+    form.setFields([{ name: formField, errors: [msg] }]);
+  });
 
   const handleOk = async () => {
     try {

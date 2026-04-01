@@ -128,23 +128,31 @@ function refactorOrvalTypes() {
     // unwrapped inner type where appropriate.
     const importRegex = /(import(?: type)?)\s*\{([^}]+)\}\s*from\s*'([^']+)';/g;
     content = content.replace(importRegex, (match, importTypeToken, importsStr, fromStr) => {
-      const imports = importsStr.split(',').map(s => s.trim()).filter(Boolean);
+      const imports = importsStr
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
       const filteredImports = [];
       let hadChanges = false;
 
-      imports.forEach(imp => {
+      imports.forEach((imp) => {
         if (imp.startsWith('GlobalResponse') && imp !== 'GlobalResponse') {
           // e.g. GlobalResponseMemberDto → keep MemberDto, GlobalResponseListPaymentDto → keep PaymentDto
           const innerImp = imp.substring('GlobalResponse'.length);
           let unwrappedTarget = innerImp;
           if (innerImp.startsWith('List')) {
-             unwrappedTarget = innerImp.substring(4);
+            unwrappedTarget = innerImp.substring(4);
           }
           // Java primitives map to TS builtins — no import needed
-          if (unwrappedTarget !== 'Void' && unwrappedTarget !== 'Integer' && unwrappedTarget !== 'String' && unwrappedTarget !== 'Boolean') {
-             if (!filteredImports.includes(unwrappedTarget) && !imports.includes(unwrappedTarget)) {
-                 filteredImports.push(unwrappedTarget);
-             }
+          if (
+            unwrappedTarget !== 'Void' &&
+            unwrappedTarget !== 'Integer' &&
+            unwrappedTarget !== 'String' &&
+            unwrappedTarget !== 'Boolean'
+          ) {
+            if (!filteredImports.includes(unwrappedTarget) && !imports.includes(unwrappedTarget)) {
+              filteredImports.push(unwrappedTarget);
+            }
           }
           hadChanges = true;
         } else if (imp.endsWith('SortOrder') && imp !== 'SortOrder') {
@@ -154,12 +162,12 @@ function refactorOrvalTypes() {
           filteredImports.push(imp);
         }
       });
-      
+
       if (hadChanges) {
-         if (imports.some(imp => imp.startsWith('GlobalResponse') && imp !== 'GlobalResponse')) {
-             usesGlobalResponse = true;
-         }
-         hasChanges = true;
+        if (imports.some((imp) => imp.startsWith('GlobalResponse') && imp !== 'GlobalResponse')) {
+          usesGlobalResponse = true;
+        }
+        hasChanges = true;
       }
 
       if (filteredImports.length === 0) {
@@ -201,12 +209,12 @@ function refactorOrvalTypes() {
         if (innerType === 'String') return 'GlobalResponse<string>';
         // List types: GlobalResponseListPaymentDto → GlobalResponse<PaymentDto[]>
         if (innerType.startsWith('List')) {
-             return `GlobalResponse<${innerType.substring(4)}[]>`;
+          return `GlobalResponse<${innerType.substring(4)}[]>`;
         }
         return `GlobalResponse<${innerType}>`;
       });
     }
-    
+
     // ── Step 5: SortOrder normalisation ──────────────────────────────────
     // Collapse per-entity sort enums (e.g. MemberSearchRequestDtoSortOrder)
     // into the shared SortOrder type.
@@ -217,15 +225,22 @@ function refactorOrvalTypes() {
 
     // Delete per-entity SortOrder files (e.g. memberSearchRequestDtoSortOrder.ts)
     if (baseName.endsWith('SortOrder') && baseName !== 'sortOrder') {
-        fs.unlinkSync(file);
-        sortOrderFiles++;
-        return;
+      fs.unlinkSync(file);
+      sortOrderFiles++;
+      return;
     }
 
     // ── Step 6: Auto-import insertion ────────────────────────────────────
     // If the file references SortOrder but has no import for it, prepend one.
-    const hasSortOrderImport = /import(?: type)?\s*\{[^}]*\bSortOrder\b[^}]*\}\s*from/.test(content);
-    if (content.includes('SortOrder') && !content.includes("export type SortOrder") && !content.includes("export enum SortOrder") && !hasSortOrderImport) {
+    const hasSortOrderImport = /import(?: type)?\s*\{[^}]*\bSortOrder\b[^}]*\}\s*from/.test(
+      content
+    );
+    if (
+      content.includes('SortOrder') &&
+      !content.includes('export type SortOrder') &&
+      !content.includes('export enum SortOrder') &&
+      !hasSortOrderImport
+    ) {
       const isEndpoint = file.includes('/endpoints.ts') || !file.includes('/types/');
       const importPath = isEndpoint ? '../types' : '.';
       content = `import type { SortOrder } from '${importPath}';\n` + content;
@@ -234,7 +249,9 @@ function refactorOrvalTypes() {
 
     // If the file references GlobalResponse but has no import for it, prepend one.
     if (usesGlobalResponse) {
-      const relativePathToConstants = file.includes('/types/') ? './globalResponse' : '../types/globalResponse';
+      const relativePathToConstants = file.includes('/types/')
+        ? './globalResponse'
+        : '../types/globalResponse';
       if (!content.includes('import type { GlobalResponse }')) {
         content = `import type { GlobalResponse } from '${relativePathToConstants}';\n` + content;
       }

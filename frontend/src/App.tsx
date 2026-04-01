@@ -1,12 +1,12 @@
 import { Layout } from 'antd';
 import { BrowserRouter } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import { NotificationProvider } from './context/NotificationContext';
-import { ReferenceProvider } from './context/ReferenceContext';
-import { SystemSettingsProvider } from './context/SystemSettingsContext';
-import ErrorBoundary from './component/ErrorBoundary';
-import AppHeader from './pages/AppHeader';
-import Router from './pages/Router';
+import { AuthProvider } from './contexts/AuthContext';
+import { NotificationProvider } from './contexts/NotificationContext';
+import { ReferenceProvider } from './contexts/ReferenceContext';
+import { SystemSettingsProvider } from './contexts/SystemSettingsContext';
+import ErrorBoundary from './components/ErrorBoundary';
+import AppHeader from './components/layout/AppHeader';
+import Router from './Router';
 
 const { Content, Footer } = Layout;
 const year = new Date().getFullYear();

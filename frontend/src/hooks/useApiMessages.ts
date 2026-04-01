@@ -30,9 +30,13 @@ export function useApiMessages<T extends FieldValues>(
    * or calls onFieldError callback if provided.
    * Also extracts globalMessages for display.
    */
-  const handleError = useCallback((error: AxiosError<GlobalResponse<any>>) => {
+  const handleError = useCallback(
+    (error: AxiosError<GlobalResponse<any>>) => {
       // 1. Backend returned a standard GlobalResponse error
-      if (error?.response?.data && (error.response.data.globalMessages || error.response.data.fieldMessages)) {
+      if (
+        error?.response?.data &&
+        (error.response.data.globalMessages || error.response.data.fieldMessages)
+      ) {
         const data = error.response.data;
 
         // Map backend fieldMessages to RHF errors or Generic Callback

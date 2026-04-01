@@ -188,6 +188,12 @@ public non-sealed class PaymentImpl extends PaymentAbstractBL implements Payment
 
     @Override
     @Transactional(readOnly = true)
+    public List<PaymentSummary> findMembersPaymentSummaries(List<Integer> memberIds, String feeType, @NonNull Integer year) {
+        return getRepo().findMembersPaymentSummaries(memberIds, feeType, year);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<PaymentSummary> findPaymentSummaries(String feeType, @NonNull Integer year) {
         return getRepo().findPaymentSummaries(feeType, year);
     }

@@ -41,6 +41,8 @@ public interface Payment extends BusinessLogic<PaymentVO> {
 
     List<PaymentSummary> findMemberPaymentSummaries(@NonNull Integer memberID, String feeType);
 
+    List<PaymentSummary> findMembersPaymentSummaries(List<Integer> memberIds, String feeType, @NonNull Integer year);
+
     List<PaymentSummary> findPaymentSummaries(String feeType, @NonNull Integer year);
 
     List<PaymentVO> findPaymentsByCriteria(Specification<PaymentVO> spec);

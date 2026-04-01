@@ -1,24 +1,9 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { systemSettingsApi } from '../api/generated/system-settings/system-settings';
 import { SystemSettingsDto } from '../api/generated/types/index';
-import { useAuth } from './AuthContext';
-import { useNotification } from './NotificationContext';
-
-type SystemSettingsContextType = {
-  settings: SystemSettingsDto[];
-  getSettingValue: (name: string, key: string) => string | undefined;
-  getNumericSetting: (name: string, key: string) => number;
-  isLoading: boolean;
-  refreshSettings: () => Promise<void>;
-};
-
-const SystemSettingsContext = createContext<SystemSettingsContextType>({
-  settings: [],
-  getSettingValue: () => undefined,
-  getNumericSetting: () => 0,
-  isLoading: true,
-  refreshSettings: async () => {},
-});
+import { useAuth } from '../hooks/useAuth';
+import { useNotification } from '../hooks/useNotification';
+import { SystemSettingsContext } from '../hooks/useSystemSettings';
 
 export function SystemSettingsProvider({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -77,8 +62,4 @@ export function SystemSettingsProvider({ children }: { children: React.ReactNode
       {children}
     </SystemSettingsContext.Provider>
   );
-}
-
-export function useSystemSettings() {
-  return useContext(SystemSettingsContext);
 }

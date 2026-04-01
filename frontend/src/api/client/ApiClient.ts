@@ -1,7 +1,7 @@
 import axios, { AxiosError, AxiosResponse } from 'axios';
 import { AUTH_LOGIN, AUTH_REFRESH } from '../constants/customEndpoints';
 import { GlobalResponse } from '../generated/types/index';
-import { setGlobalLoading } from '../../context/LoadingContext';
+import { setGlobalLoading } from '../../contexts/LoadingContext';
 
 /**
  * ApiClient.ts — Centralised Axios HTTP Client
@@ -182,11 +182,7 @@ apiClient.interceptors.response.use(
 
         try {
           // Call refresh endpoint — cookies are sent automatically via withCredentials
-          await axios.post(
-            `${API_BASE}${AUTH_REFRESH}`,
-            {},
-            { withCredentials: true }
-          );
+          await axios.post(`${API_BASE}${AUTH_REFRESH}`, {}, { withCredentials: true });
 
           // Refresh succeeded — retry all queued requests
           processQueue(null);
