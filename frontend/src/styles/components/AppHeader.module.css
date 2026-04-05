@@ -7,8 +7,8 @@
   height: 80px !important;
   backdrop-filter: blur(20px) !important;
   -webkit-backdrop-filter: blur(20px) !important;
-  background: var(--glass-bg);
-  box-shadow: var(--glass-shadow-hover);
+  background: var(--bg-surface-hover);
+  box-shadow: var(--glass-shadow);
   border-radius: 0 !important;
   display: flex !important;
   align-items: center !important;
@@ -19,7 +19,8 @@
 }
 
 .glassHeader:hover {
-  background: rgba(255, 255, 255, 0.4) !important;
+  background: var(--glass-bg) !important;
+  box-shadow: var(--glass-shadow-hover) !important;
 }
 
 .logoContainer {
@@ -93,5 +94,56 @@
 
   .titleStack {
     margin-left: 8px;
+  }
+}
+
+/* Profile Avatar */
+.avatar {
+  cursor: pointer;
+  border: 2px solid var(--avatar-border) !important;
+}
+
+/* Theme Toggle Button */
+.themeToggle {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: var(--toggle-size) !important;
+  height: var(--toggle-size) !important;
+  border-radius: 20% !important;
+  border: 2px solid var(--toggle-border) !important;
+  background: var(--toggle-bg) !important;
+  color: var(--toggle-icon) !important;
+  font-size: var(--toggle-font-size) !important;
+  cursor: pointer;
+  box-shadow: rgba(9, 30, 66, 0.25) 0 4px 8px -2px,
+              rgba(9, 30, 66, 0.08) 0 0 0 1px;
+  transition: background 0.5s ease-in-out,
+              box-shadow 0.3s ease;
+}
+
+.themeToggle:hover {
+  box-shadow: var(--toggle-shadow-hover);
+}
+
+.themeToggle:active {
+  transform: scale(0.9);
+  transition: transform 0.1s ease;
+}
+
+/* Flip animation on toggle */
+.themeToggleFlip {
+  animation: toggleFlip 0.5s ease-in-out;
+}
+
+@keyframes toggleFlip {
+  0% {
+    transform: perspective(400px) rotateY(0deg);
+  }
+  50% {
+    transform: perspective(400px) rotateY(90deg) scale(0.9);
+  }
+  100% {
+    transform: perspective(400px) rotateY(0deg) scale(1);
   }
 }

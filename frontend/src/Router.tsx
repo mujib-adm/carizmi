@@ -21,18 +21,7 @@ const UsersPage = lazy(() => import('./pages/admin/UsersPage'));
 const Register = lazy(() => import('./pages/auth/Register'));
 
 const PageSpinner = () => (
-  <div
-    style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      width: '100vw',
-      height: '100vh',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-    }}
-  >
+  <div className="page-spinner">
     <GradientSpinner />
   </div>
 );

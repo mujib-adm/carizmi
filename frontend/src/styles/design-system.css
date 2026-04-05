@@ -17,6 +17,22 @@
   --premium-rounding: 12px;
 }
 
+[data-theme="dark"] {
+  --glass-bg: rgba(13, 19, 32, 0.9);
+  --glass-border: rgba(82, 183, 136, 0.2);
+  --glass-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(82, 183, 136, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --glass-shadow-hover:
+    0 16px 48px rgba(0, 0, 0, 0.6),
+    0 0 20px rgba(82, 183, 136, 0.08),
+    0 0 0 1px rgba(82, 183, 136, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --vibrant-gradient: linear-gradient(135deg, #2D6A4F 0%, #52B788 100%);
+  --soft-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
 /* Glassmorphism Card */
 .glass-card {
   background: var(--glass-bg);
@@ -28,6 +44,8 @@
   padding: 24px;
   transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
   width: 100%;
+  position: relative;
+  z-index: 1;
 }
 
 @media (max-width: 576px) {
@@ -78,11 +96,13 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
+  position: relative;
+  z-index: 1;
 }
 
 .page-title {
   margin: 0 !important;
-  color: #1e5631 !important;
+  color: var(--priColor) !important;
   font-family: 'Federo', sans-serif !important;
   letter-spacing: 0.5px;
   display: flex !important;
@@ -124,4 +144,278 @@
   font-size: 0.8rem;
   color: var(--textMuted);
   margin-top: 8px;
+}
+
+/* ── GradientSpinner animation ── */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes spinReverse {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+.gradient-spinner-wrapper {
+  display: block;
+  filter: drop-shadow(0 0 6px var(--spinner-color-2));
+}
+
+.spinner-ring-outer {
+  transform-origin: center;
+  animation: spin 1s linear infinite;
+}
+
+.spinner-ring-inner {
+  transform-origin: center;
+  animation: spinReverse 1.4s linear infinite;
+}
+
+/* ── Shared Status Colors ── */
+.status-avatar-dues {
+  background: var(--color-dues) !important;
+}
+
+.status-avatar-overdue {
+  background: var(--color-overdue) !important;
+}
+
+.status-text-dues {
+  color: var(--color-dues) !important;
+}
+
+.status-text-overdue {
+  color: var(--color-overdue) !important;
+}
+
+/* ── Brand Avatar (shared identity avatar for user/member) ── */
+.brand-avatar.ant-avatar {
+  background-color: var(--priColorLight) !important;
+  box-shadow: 0 4px 12px rgba(64, 145, 108, 0.25);
+}
+
+/* ── Global Action Button ── */
+.action-btn-primary {
+  background: var(--priColor) !important;
+  border: none !important;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+/* ── Danger / Delete confirmation text ── */
+.danger-text {
+  color: var(--color-overdue);
+}
+
+/* ── Outlined Action Button (shared reusable style) ── */
+.outline-action-btn {
+  height: 42px !important;
+  padding: 0 24px !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  font-size: 0.95rem !important;
+  letter-spacing: 0.3px !important;
+  border: 1.5px solid var(--priColor) !important;
+  color: var(--priColor) !important;
+  background: transparent !important;
+  transition: all 0.3s ease !important;
+}
+
+.outline-action-btn:hover {
+  background: var(--priColor) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 14px rgba(64, 145, 108, 0.3) !important;
+  transform: translateY(-1px);
+}
+
+/* ──────────────────────────────────────────────────────────
+   Dark Mode Visual Enhancements
+   ────────────────────────────────────────────────────────── */
+
+/* Subtle dot-grid texture overlay */
+[data-theme="dark"] .app-wrapper::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+  background-size: 20px 20px;
+  pointer-events: none;
+  z-index: 0;
+  animation: twinkle 4s ease-in-out infinite alternate;
+}
+
+@keyframes twinkle {
+  0%   { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+
+/* ── Glowing Metric Cards (dark-mode only) ── */
+
+/* Shared: luminous border for all metric cards */
+[data-theme="dark"] .glass-card[data-metric] {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* -- Total Members: Deep blue → teal glow -- */
+[data-theme="dark"] .glass-card[data-metric="members"] {
+  background:
+    radial-gradient(ellipse at 80% 20%, rgba(56, 189, 248, 0.15) 0%, transparent 60%),
+    radial-gradient(ellipse at 20% 80%, rgba(82, 183, 136, 0.08) 0%, transparent 50%),
+    linear-gradient(135deg, #0c1929 0%, #0f2847 50%, #0a3a5e 100%);
+  border-color: rgba(56, 189, 248, 0.25);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(56, 189, 248, 0.1),
+    inset 0 1px 0 rgba(56, 189, 248, 0.1);
+}
+
+/* -- Total Revenue: Blue → purple gradient -- */
+[data-theme="dark"] .glass-card[data-metric="revenue"] {
+  background:
+    radial-gradient(ellipse at 90% 30%, rgba(167, 139, 250, 0.2) 0%, transparent 55%),
+    radial-gradient(ellipse at 10% 70%, rgba(56, 189, 248, 0.1) 0%, transparent 50%),
+    linear-gradient(135deg, #0f1f4b 0%, #2a1a5e 50%, #4a1a7a 100%);
+  border-color: rgba(167, 139, 250, 0.25);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(167, 139, 250, 0.1),
+    inset 0 1px 0 rgba(167, 139, 250, 0.1);
+}
+
+/* -- Dues: Dark amber / warm glow -- */
+[data-theme="dark"] .glass-card[data-metric="dues"] {
+  background:
+    radial-gradient(ellipse at 75% 25%, rgba(251, 191, 36, 0.15) 0%, transparent 55%),
+    radial-gradient(ellipse at 25% 75%, rgba(255, 167, 38, 0.08) 0%, transparent 50%),
+    linear-gradient(135deg, #1a1508 0%, #2d2210 50%, #3d2f0a 100%);
+  border-color: rgba(251, 191, 36, 0.25);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(251, 191, 36, 0.08),
+    inset 0 1px 0 rgba(251, 191, 36, 0.08);
+}
+
+/* -- Overdues: Dark crimson / red glow -- */
+[data-theme="dark"] .glass-card[data-metric="overdue"] {
+  background:
+    radial-gradient(ellipse at 85% 20%, rgba(239, 83, 80, 0.15) 0%, transparent 55%),
+    radial-gradient(ellipse at 15% 80%, rgba(244, 114, 182, 0.08) 0%, transparent 50%),
+    linear-gradient(135deg, #1a0c0c 0%, #2d1212 50%, #451515 100%);
+  border-color: rgba(239, 83, 80, 0.25);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(239, 83, 80, 0.08),
+    inset 0 1px 0 rgba(239, 83, 80, 0.08);
+}
+
+/* ── Glowing text & icons ── */
+
+/* Glowing metric values — subtle matched glow only */
+[data-theme="dark"] .metric-value {
+  text-shadow: none;
+}
+
+/* Glowing page title */
+[data-theme="dark"] .page-title {
+  color: var(--accent-cyan) !important;
+  text-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
+}
+
+/* Glowing chart title */
+[data-theme="dark"] .chart-title {
+  color: var(--accent-cyan);
+  text-shadow: 0 0 16px rgba(56, 189, 248, 0.2);
+}
+
+/* Glowing metric icon backgrounds */
+[data-theme="dark"] .glass-card[data-metric] .anticon {
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
+}
+
+/* ── Glowing Dashboard Panels (dark-mode only) ── */
+
+/* Chart panel: deep navy with purple/blue ambient glow */
+[data-theme="dark"] .glass-card[data-panel="chart"] {
+  background:
+    radial-gradient(ellipse at 10% 90%, rgba(167, 139, 250, 0.1) 0%, transparent 50%),
+    radial-gradient(ellipse at 90% 10%, rgba(56, 189, 248, 0.06) 0%, transparent 50%),
+    linear-gradient(135deg, #0a0f1e 0%, #0f1730 50%, #0c1428 100%);
+  border: 1px solid rgba(167, 139, 250, 0.12);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 16px rgba(167, 139, 250, 0.05),
+    inset 0 1px 0 rgba(167, 139, 250, 0.06);
+}
+
+/* Recent Payments panel: deep navy with teal/green ambient glow */
+[data-theme="dark"] .glass-card[data-panel="recent-payments"] {
+  background:
+    radial-gradient(ellipse at 85% 15%, rgba(82, 183, 136, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 15% 85%, rgba(56, 189, 248, 0.06) 0%, transparent 50%),
+    linear-gradient(135deg, #0a0f1e 0%, #0c1a28 50%, #0a1420 100%);
+  border: 1px solid rgba(82, 183, 136, 0.12);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 16px rgba(82, 183, 136, 0.05),
+    inset 0 1px 0 rgba(82, 183, 136, 0.06);
+}
+
+/* Member info panel: deep navy with cyan/purple ambient glow */
+[data-theme="dark"] .glass-card[data-panel="member-info"] {
+  background:
+    radial-gradient(ellipse at 80% 20%, rgba(56, 189, 248, 0.1) 0%, transparent 55%),
+    radial-gradient(ellipse at 20% 80%, rgba(167, 139, 250, 0.06) 0%, transparent 50%),
+    linear-gradient(135deg, #0a0f1e 0%, #0f1730 50%, #0c1428 100%);
+  border: 1px solid rgba(56, 189, 248, 0.12);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 16px rgba(56, 189, 248, 0.05),
+    inset 0 1px 0 rgba(56, 189, 248, 0.06);
+}
+
+/* Member info panel — name */
+[data-theme="dark"] .glass-card[data-panel="member-info"] .ant-typography h2,
+[data-theme="dark"] .glass-card[data-panel="member-info"] h2.ant-typography {
+  color: var(--accent-cyan) !important;
+  text-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
+}
+
+/* Member info panel — secondary text (email | phone) */
+[data-theme="dark"] .glass-card[data-panel="member-info"] .ant-typography-secondary {
+  color: var(--text-secondary) !important;
+}
+
+/* Member info panel — status badge */
+[data-theme="dark"] .glass-card[data-panel="member-info"] .ant-badge-status-text {
+  color: var(--textColor);
+}
+
+/* ── Brand Avatar (dark-mode override) ── */
+
+[data-theme="dark"] .brand-avatar.ant-avatar {
+  background-color: var(--accent-indigo) !important;
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+}
+
+[data-theme="dark"] .brand-avatar .anticon {
+  color: #e0e7ff;
+  filter: drop-shadow(0 0 8px rgba(199, 210, 254, 0.4));
+}
+
+/* ── Outlined Action Button (dark-mode override) ── */
+
+[data-theme="dark"] .outline-action-btn {
+  border: 1.5px solid rgba(167, 139, 250, 0.4) !important;
+  color: var(--accent-purple) !important;
+  background: rgba(167, 139, 250, 0.06) !important;
+}
+
+[data-theme="dark"] .outline-action-btn:hover {
+  background: rgba(167, 139, 250, 0.15) !important;
+  border-color: var(--accent-purple) !important;
+  color: #c4b5fd !important;
+  box-shadow: 0 4px 16px rgba(167, 139, 250, 0.25) !important;
 }

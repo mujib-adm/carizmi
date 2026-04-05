@@ -1,0 +1,52 @@
+/* Body layout: icon + description */
+.notify-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 8px 0;
+  animation: notifySlideIn 0.35s ease-out;
+}
+
+/* Shared icon base */
+.notify-icon {
+  flex-shrink: 0;
+  font-size: 1.75rem;
+  margin-top: 1px;
+}
+
+/* Type-specific icon colors */
+.notify-icon--success {
+  color: var(--color-success);
+}
+
+.notify-icon--warning {
+  color: #e9a820;
+}
+
+/* Description text */
+.notify-description {
+  margin: 0;
+  font-family: var(--fontPrimary);
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--textColor);
+  letter-spacing: 0.01em;
+}
+
+/* Entrance animation */
+@keyframes notifySlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Dark Mode ── */
+
+:global([data-theme="dark"]) .notify-icon--warning {
+  color: var(--accent-amber);
+}

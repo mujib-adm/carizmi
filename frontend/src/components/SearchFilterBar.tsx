@@ -126,7 +126,7 @@ export default function SearchFilterBar({
               type="primary"
               icon={<PlusOutlined />}
               onClick={onAdd}
-              style={{ background: '#1E5631', border: 'none', borderRadius: 6, fontWeight: 600 }}
+              className="action-btn-primary"
             >
               Add New
             </Button>

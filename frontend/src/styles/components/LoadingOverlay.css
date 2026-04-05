@@ -1,0 +1,47 @@
+/* ── Loading Overlay ── */
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.overlay.fade-in {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.overlay.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── Page Spinner (Suspense fallback / auth loading) ── */
+
+.page-spinner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: var(--bg-app-gradient);
+}
+
+/* ── Dark Mode ── */
+
+[data-theme="dark"] .overlay {
+  background-color: rgba(0, 0, 0, 0.55);
+}

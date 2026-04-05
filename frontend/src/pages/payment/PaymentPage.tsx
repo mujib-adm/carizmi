@@ -83,8 +83,8 @@ export default function PaymentPage() {
       title: 'Are you sure you want to delete payment record?',
       content: (
         <div
+          className="danger-text"
           style={{
-            color: 'red',
             display: 'grid',
             gridTemplateColumns: 'min-content auto',
             columnGap: '12px',

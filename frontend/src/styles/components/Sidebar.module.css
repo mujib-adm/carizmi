@@ -1,8 +1,8 @@
 .sidebarContainer {
   width: var(--sidebar-width);
   min-height: calc(100vh - var(--header-height));
-  background: white;
-  border-right: 1px solid rgba(0, 0, 0, 0.05);
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--sidebar-border);
   padding: 16px 0;
   transition: all 0.3s ease;
   flex-shrink: 0;
@@ -15,19 +15,50 @@
 .sidebarMenu :global(.ant-menu-item) {
   border-radius: 8px !important;
   margin: 4px 12px !important;
+  width: calc(100% - 24px) !important;
   height: 48px !important;
   line-height: 48px !important;
   font-size: 15px !important;
+  position: relative;
+  z-index: 1;
+}
+
+/* Larger icons for modern look */
+.sidebarMenu :global(.ant-menu-item) :global(.anticon) {
+  font-size: 20px !important;
 }
 
 .sidebarMenu :global(.ant-menu-item-selected) {
   background-color: var(--priColor) !important;
-  color: white !important;
+  color: var(--text-inverse) !important;
 }
 
 .sidebarMenu :global(.ant-menu-item-selected) :global(.anticon) {
-  color: white !important;
+  color: var(--text-inverse) !important;
 }
+
+/* ── Dark Mode ── */
+
+/* Give non-selected items an opaque background so dots don't bleed through text */
+:global([data-theme="dark"]) .sidebarMenu :global(.ant-menu-item):not(:global(.ant-menu-item-selected)) {
+  background: rgba(13, 19, 32, 0.85) !important;
+  color: #94a3b8 !important;
+}
+
+:global([data-theme="dark"]) .sidebarMenu :global(.ant-menu-item):not(:global(.ant-menu-item-selected)) :global(.anticon) {
+  color: #94a3b8 !important;
+}
+
+:global([data-theme="dark"]) .sidebarMenu :global(.ant-menu-item):not(:global(.ant-menu-item-selected)):hover {
+  background: rgba(30, 40, 60, 0.9) !important;
+  color: #e2e8f0 !important;
+}
+
+:global([data-theme="dark"]) .sidebarMenu :global(.ant-menu-item):not(:global(.ant-menu-item-selected)):hover :global(.anticon) {
+  color: #e2e8f0 !important;
+}
+
+/* ── Responsive ── */
 
 @media (max-width: 768px) {
   .sidebarContainer {
@@ -48,8 +79,8 @@
     display: flex;
     justify-content: space-around;
     padding: 8px 0 !important;
-    background: white;
-    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    background: var(--bg-sidebar);
+    border-top: 1px solid var(--sidebar-mobile-border);
   }
 
   .sidebarMenu :global(.ant-menu-item) {

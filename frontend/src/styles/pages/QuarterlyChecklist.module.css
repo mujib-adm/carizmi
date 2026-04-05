@@ -9,23 +9,23 @@
 }
 
 .statusPaid {
-  color: #2d6a4f;
+  color: var(--color-success);
   font-weight: 700;
 }
 
 .statusUnpaid {
-  color: #c62828;
+  color: var(--errorColor);
   font-weight: 700;
 }
 
 .statusNA {
-  color: #999;
+  color: var(--input-placeholder);
   font-style: italic;
   font-size: 0.85rem;
 }
 
 .statusFuture {
-  color: #ccc;
+  color: var(--color-future);
 }
 
 /* Summary row */
@@ -40,12 +40,12 @@
 
 /* Balance styling */
 .balanceZero {
-  color: #2d6a4f;
+  color: var(--color-success);
   font-weight: 600;
 }
 
 .balanceDue {
-  color: #c62828;
+  color: var(--errorColor);
   font-weight: 700;
 }
 

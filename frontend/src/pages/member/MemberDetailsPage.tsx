@@ -88,13 +88,13 @@ export default function MemberDetailsPage() {
         <Skeleton active avatar paragraph={{ rows: 4 }} />
       ) : member ? (
         <div className="member-profile">
-          <Card className="glass-card" style={{ marginBottom: 12 }}>
+          <Card className="glass-card" data-panel="member-info" style={{ marginBottom: 12 }}>
             <Row align="middle" gutter={24}>
               <Col>
                 <Avatar
                   size={100}
                   icon={<UserOutlined />}
-                  style={{ backgroundColor: 'var(--priColor)' }}
+                  className="brand-avatar"
                 />
               </Col>
               <Col flex="auto">
@@ -116,7 +116,7 @@ export default function MemberDetailsPage() {
 
           <Row gutter={[24, 24]} style={{ marginBottom: 12 }}>
             <Col xs={24} sm={8}>
-              <Card className="glass-card">
+              <Card className="glass-card" data-metric="revenue">
                 <Space align="center">
                   <Avatar
                     icon={<DollarOutlined />}
@@ -131,12 +131,12 @@ export default function MemberDetailsPage() {
               </Card>
             </Col>
             <Col xs={24} sm={8}>
-              <Card className="glass-card">
+              <Card className="glass-card" data-metric="dues">
                 <Space align="center">
-                  <Avatar icon={<ExclamationCircleOutlined />} style={{ background: 'orange' }} />
+                  <Avatar icon={<ExclamationCircleOutlined />} className="status-avatar-dues" />
                   <div>
                     <div className="metric-label">Outstanding</div>
-                    <div className="metric-value" style={{ color: 'orange' }}>
+                    <div className="metric-value status-text-dues">
                       ${(summary?.outstanding ?? 0).toFixed(2)}
                     </div>
                     <div className="metric-subtext"> Unpaid - Current Quarter </div>
@@ -145,12 +145,12 @@ export default function MemberDetailsPage() {
               </Card>
             </Col>
             <Col xs={24} sm={8}>
-              <Card className="glass-card">
+              <Card className="glass-card" data-metric="overdue">
                 <Space align="center">
-                  <Avatar icon={<ExclamationCircleOutlined />} style={{ background: 'red' }} />
+                  <Avatar icon={<ExclamationCircleOutlined />} className="status-avatar-overdue" />
                   <div>
                     <div className="metric-label">Overdues</div>
-                    <div className="metric-value" style={{ color: 'red' }}>
+                    <div className="metric-value status-text-overdue">
                       ${(summary?.overdue ?? 0).toFixed(2)}
                     </div>
                     <div className="metric-subtext"> Unpaid - Past Quarter(s) </div>
@@ -160,7 +160,7 @@ export default function MemberDetailsPage() {
             </Col>
           </Row>
 
-          <Card className="glass-card">
+          <Card className="glass-card" data-panel="recent-payments">
             <div className="chart-title" style={{ marginBottom: '28px' }}>
               Recent Payment History
             </div>

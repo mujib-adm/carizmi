@@ -69,7 +69,7 @@ export function FormField({
               height: '100%',
               display: 'flex',
               alignItems: 'center',
-              color: '#d93025',
+              color: 'var(--errorColor)',
               fontSize: '18px',
               pointerEvents: 'none',
             }}

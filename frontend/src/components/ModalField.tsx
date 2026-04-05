@@ -117,7 +117,7 @@ export function ModalField({
               right: 12,
               top: '70%',
               transform: 'translateY(-50%)',
-              color: '#d93025',
+              color: 'var(--errorColor)',
               fontSize: 18,
               pointerEvents: 'none',
             }}

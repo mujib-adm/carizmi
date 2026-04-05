@@ -1,0 +1,24 @@
+/* ProfilePage — page-specific styles */
+
+.profileHeader {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  margin-bottom: 40px;
+  flex-wrap: wrap;
+}
+
+.profileAvatar {
+  flex-shrink: 0;
+}
+
+.profileName {
+  margin: 0 !important;
+  color: var(--priColor) !important;
+}
+
+/* Dark mode */
+:global([data-theme="dark"]) .profileName {
+  color: var(--accent-cyan) !important;
+  text-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
+}

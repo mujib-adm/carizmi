@@ -72,8 +72,8 @@ export default function MemberPage() {
       title: 'Are you sure you want to delete member record?',
       content: (
         <div
+          className="danger-text"
           style={{
-            color: 'red',
             display: 'grid',
             gridTemplateColumns: '100px auto',
             rowGap: '6px',

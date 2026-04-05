@@ -1,6 +1,7 @@
-import { EditOutlined, UserOutlined } from '@ant-design/icons';
+import { EditOutlined, PlusOutlined, UserOutlined } from '@ant-design/icons';
 import { Button, Card, Divider, Space, Table, Tag, Typography } from 'antd';
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { userManagementApi } from '../../api/generated/user-management/user-management';
 import { MessageBanner } from '../../components/MessageBanner';
 import { UserModal } from '../../modals/UserModal';
@@ -16,6 +17,7 @@ import { useNotification } from '../../hooks/useNotification';
 const { Title } = Typography;
 
 export default function UsersPage() {
+  const navigate = useNavigate();
   const [users, setUsers] = useState<UserResponseDto[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -135,6 +137,18 @@ export default function UsersPage() {
           pagination={{ pageSize: 10 }}
           size="small"
         />
+
+        <div style={{ marginTop: 12 }}>
+          <Button
+            type="default"
+            ghost
+            icon={<PlusOutlined />}
+            onClick={() => navigate('/register')}
+            className="outline-action-btn"
+          >
+            Register New User
+          </Button>
+        </div>
       </Card>
 
       <UserModal

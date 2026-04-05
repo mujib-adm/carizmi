@@ -2,6 +2,7 @@ import { Modal } from 'antd';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircleOutlined, WarningOutlined } from '@ant-design/icons';
+import '../styles/hooks/NotificationWrapper.css';
 
 type NotificationType = 'success' | 'warning';
 

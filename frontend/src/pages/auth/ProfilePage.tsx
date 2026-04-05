@@ -8,6 +8,7 @@ import { useApiMessages } from '../../hooks/useApiMessages';
 import ChangePasswordModal from '../../modals/ChangePasswordModal';
 
 import { MessageType, UserProfileDto, PasswordUpdateRequestDto } from '../../api/generated/types';
+import styles from '../../styles/pages/ProfilePage.module.css';
 
 const { Title, Text } = Typography;
 
@@ -63,26 +64,14 @@ export default function ProfilePage() {
             style={{ borderRadius: '24px', overflow: 'hidden' }}
             loading={loading}
           >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '32px',
-                marginBottom: '40px',
-                flexWrap: 'wrap',
-              }}
-            >
+            <div className={styles.profileHeader}>
               <Avatar
                 size={120}
                 icon={<UserOutlined />}
-                style={{
-                  backgroundColor: '#40916C',
-                  boxShadow: '0 8px 24px rgba(64, 145, 108, 0.2)',
-                  flexShrink: 0,
-                }}
+                className={`brand-avatar ${styles.profileAvatar}`}
               />
               <div>
-                <Title level={2} style={{ margin: 0, color: '#1E5631' }}>
+                <Title level={2} className={styles.profileName}>
                   {profileData?.firstName} {profileData?.lastName}
                 </Title>
                 <Text
@@ -101,8 +90,8 @@ export default function ProfilePage() {
             <Descriptions
               title="Personal Information"
               column={{ xxl: 2, xl: 2, lg: 2, md: 1, sm: 1, xs: 1 }}
-              labelStyle={{ fontWeight: 600, color: '#666666' }}
-              contentStyle={{ color: '#1E5631' }}
+              labelStyle={{ fontWeight: 600, color: 'var(--text-secondary)' }}
+              contentStyle={{ color: 'var(--priColor)' }}
             >
               <Descriptions.Item
                 label={
@@ -143,15 +132,12 @@ export default function ProfilePage() {
             </Descriptions>
             <Divider />
             <Button
-              type="primary"
+              type="default"
+              ghost
               icon={<LockOutlined />}
               onClick={() => setIsModalOpen(true)}
-              style={{
-                marginTop: '16px',
-                borderRadius: '8px',
-                background: '#40916C',
-                borderColor: '#40916C',
-              }}
+              className="outline-action-btn"
+              style={{ marginTop: 16 }}
             >
               Change Password
             </Button>

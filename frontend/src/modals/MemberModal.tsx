@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { ReferenceConstants } from '../constants/ReferenceConstants';
 import { MemberDto } from '../api/generated/types';
 import { useApiMessages } from '../hooks/useApiMessages';
-import styles from '../styles/components/MemberModal.module.css';
+import styles from '../styles/modals/MemberModal.module.css';
 import { AntdFormItem } from '../components/AntdFormItem';
 import { MessageBanner } from '../components/MessageBanner';
 

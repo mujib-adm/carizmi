@@ -13,7 +13,7 @@
   width: 100%;
   max-width: 450px;
   padding: 3rem;
-  background-color: #fff;
+  background-color: var(--bg-surface);
   border-radius: 16px;
   box-shadow: 0 0 12px rgba(30, 86, 49, 0.2);
   border: 1px solid var(--secColor);
@@ -40,7 +40,7 @@
   justify-content: center;
   align-items: center;
   min-height: calc(100vh - 80px);
-  background: radial-gradient(circle at top left, #f0fdf4 0%, #dcfce7 40%, #ffffff 80%);
+  background: var(--auth-bg-gradient);
   padding: 20px;
 }
 
@@ -48,15 +48,17 @@
   width: 100%;
   max-width: 440px;
   padding: 48px;
-  background: rgba(255, 255, 255, 0.4);
+  background: var(--auth-card-bg);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border-radius: 32px;
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--auth-card-border);
   box-shadow:
     0 10px 40px rgba(31, 38, 135, 0.1),
     0 1px 3px rgba(0, 0, 0, 0.05);
   animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  z-index: 1;
 }
 
 @keyframes slideUp {
@@ -72,7 +74,7 @@
 
 .login-glass-card h2 {
   font-family: 'Federo', sans-serif;
-  color: #1e5631;
+  color: var(--priColor);
   font-size: 2.2rem;
   font-weight: 400;
   text-align: center;
@@ -85,21 +87,21 @@
   font-family: 'Poppins', sans-serif;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #2d6a4f;
+  color: var(--priColorLight);
   margin-bottom: 0px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .modern-field-label .required {
-  color: #e53e3e;
+  color: var(--errorColor);
   margin-left: 4px;
 }
 
 /* Modern login form field overrides */
 .modern-login-container .form_field {
-  background: rgba(255, 255, 255, 0.6) !important;
-  border: 1px solid rgba(64, 145, 108, 0.2) !important;
+  background: var(--auth-field-bg) !important;
+  border: 1px solid var(--border-focus) !important;
   border-radius: 12px !important;
   height: 52px !important;
   padding: 0 16px !important;
@@ -108,8 +110,8 @@
 }
 
 .modern-login-container .form_field:focus {
-  background: #ffffff !important;
-  border-color: #40916c !important;
+  background: var(--bg-surface) !important;
+  border-color: var(--priColorLight) !important;
   box-shadow: 0 0 0 4px rgba(64, 145, 108, 0.1) !important;
   outline: none !important;
 }
@@ -140,6 +142,26 @@
 
 .modern-login-container .auth-link {
   margin-top: 24px;
-  color: #52665d;
+  color: var(--textMuted);
   font-size: 0.95rem;
+}
+
+/* ── Dark Mode: Auth Button — green-to-purple gradient with glow ── */
+[data-theme="dark"] .modern-login-container .global_btn {
+  background: linear-gradient(135deg, #2d6a4f 0%, #4a1a7a 100%) !important;
+  box-shadow:
+    0 4px 15px rgba(167, 139, 250, 0.25),
+    0 0 24px rgba(167, 139, 250, 0.1) !important;
+  border: 1px solid rgba(167, 139, 250, 0.2) !important;
+}
+
+[data-theme="dark"] .modern-login-container .global_btn:hover {
+  box-shadow:
+    0 6px 24px rgba(167, 139, 250, 0.35),
+    0 0 32px rgba(167, 139, 250, 0.15) !important;
+  filter: brightness(1.15);
+}
+
+[data-theme="dark"] .modern-login-container .auth-link {
+  color: var(--text-secondary);
 }

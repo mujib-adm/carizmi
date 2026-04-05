@@ -1,10 +1,11 @@
-@import url(https://fonts.googleapis.com/css2?family=Federo&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap);
-
 /* ──────────────────────────────────────────────────────────
    Design Tokens
    ────────────────────────────────────────────────────────── */
 
 :root {
+  color-scheme: light;
+
+  /* ── Brand ── */
   --priColor: #1e5631;
   --priColorLight: #40916c;
   --secColor: #aedf88;
@@ -16,17 +17,187 @@
   --fontPrimary: 'Poppins', sans-serif;
   --fontSecondary: 'Federo', sans-serif;
 
-  --inputBg: #ffffff;
+  /* ── Backgrounds ── */
+  --bg-body: #ffffff;
+  --bg-surface: #ffffff;
+  --bg-surface-hover: rgba(255, 255, 255, 0.4);
+  --bg-input: #ffffff;
+  --bg-sidebar: #ffffff;
+  --bg-app-gradient: linear-gradient(180deg, #f0fdf4 0%, #ffffff 400px);
+
+  /* ── Text ── */
   --textColor: #1a1a1a;
   --textMuted: #52665d;
-  --errorColor: #c62828;
+  --text-secondary: #666666;
+  --text-inverse: #ffffff;
 
+  /* ── Semantic / Status ── */
+  --errorColor: #c62828;
+  --color-success: #2d6a4f;
+  --color-warning: orange;
+  --color-dues: orange;
+  --color-overdue: red;
+  --color-future: #E0E0E0;
+
+  /* ── Accent Colors (light-mode equivalents) ── */
+  --accent-cyan: #0891b2;
+  --accent-purple: #7c3aed;
+  --accent-indigo: #4f46e5;
+  --accent-magenta: #db2777;
+  --accent-amber: #d97706;
+
+  /* ── Borders & Shadows ── */
+  --border-default: rgba(0, 0, 0, 0.05);
+  --border-focus: rgba(64, 145, 108, 0.2);
+  --border-error: #ff4d4f;
+  --shadow-card: 0 16px 48px 0 rgba(0, 0, 0, 0.12), 0 2px 12px 0 rgba(31, 38, 135, 0.08);
+  --shadow-card-hover: 0 24px 60px 0 rgba(0, 0, 0, 0.18), 0 4px 16px 0 rgba(31, 38, 135, 0.12);
+
+  /* ── Component-specific ── */
+  --tooltip-bg: #1a3a2a;
+  --tooltip-text: #ffffff;
+  --tooltip-text-muted: rgba(255, 255, 255, 0.75);
+  --sidebar-border: rgba(0, 0, 0, 0.05);
+  --sidebar-mobile-border: rgba(0, 0, 0, 0.1);
+  --input-border: #ced4da;
+  --input-focus-bg: #e9ecef;
+  --input-placeholder: #8c8c8c;
+  --member-name: #262626;
+  --auth-bg-gradient: radial-gradient(circle at top left, #f0fdf4 0%, #dcfce7 40%, #ffffff 80%);
+  --auth-card-bg: rgba(255, 255, 255, 0.4);
+  --auth-card-border: rgba(255, 255, 255, 0.6);
+  --auth-field-bg: rgba(255, 255, 255, 0.6);
+  --bg-error: #fff2f0;
+  --bg-footer: #f5f5f5;
+
+  /* ── Theme Toggle ── */
+  --toggle-bg: #f0f0f0;
+  --toggle-bg-hover: #e4e4e4;
+  --toggle-border: rgba(30, 86, 49, 0.15);
+  --toggle-icon: #555555;
+  --toggle-size: 38px;
+  --toggle-font-size: 20px;
+  --toggle-shadow: 0 2px 8px rgba(35, 29, 29, 0.06);
+  --toggle-shadow-hover: 0 4px 14px rgba(0, 0, 0, 0.12);
+  --avatar-border: rgba(255, 255, 255, 0.8);
+
+  /* ── Layout ── */
   --bodyColor: #1a1a1a;
   --bodyFontSize: clamp(16px, 1vw + 14px, 18px);
   --bodyLineHeight: 1.8;
   --header-height: 74px;
   --sidebar-width: 260px;
   --content-bg: #ffffff;
+
+  /* ── Spinner ── */
+  --spinner-color-1: #FFFFFF;
+  --spinner-color-2: #AEDF88;
+  --spinner-color-3: #1E5631;
+  --spinner-track: rgba(30, 86, 49, 0.12);
+
+  /* ── Legacy aliases (backward-compat) ── */
+  --inputBg: var(--bg-input);
+}
+
+/* ──────────────────────────────────────────────────────────
+   Dark Theme Tokens (activated via data-theme="dark")
+   ────────────────────────────────────────────────────────── */
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* ── Brand ── */
+  --priColor: #52B788;
+  --priColorLight: #74C69D;
+  --secColor: #2D6A4F;
+  --thirdColor: #74C69D;
+  --gradientbg: linear-gradient(180deg, #2D6A4F 7%, #1B4332 99%);
+  --otherColor1: #1B4332;
+  --otherColor2: #8b98a5;
+  --defaultColor: #e7e9ea;
+
+  /* ── Backgrounds (ambient glow) ── */
+  --bg-body: #080c14;
+  --bg-surface: #111827;
+  --bg-surface-hover: rgba(255, 255, 255, 0.06);
+  --bg-input: #111827;
+  --bg-sidebar: transparent;
+  --bg-app-gradient:
+    radial-gradient(ellipse 80% 60% at 85% 5%, rgba(128, 40, 220, 0.35) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 50% at 10% 95%, rgba(30, 100, 255, 0.2) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 40% at 50% 40%, rgba(82, 183, 136, 0.08) 0%, transparent 50%),
+    linear-gradient(180deg, #080c14 0%, #0d1320 100%);
+
+  /* ── Text ── */
+  --textColor: #e7e9ea;
+  --textMuted: #6b7d75;
+  --text-secondary: #8b98a5;
+  --text-inverse: #080c14;
+
+  /* ── Semantic / Status ── */
+  --errorColor: #ef5350;
+  --color-success: #52B788;
+  --color-warning: #ffa726;
+  --color-dues: #ffa726;
+  --color-overdue: #ef5350;
+  --color-future: #1e293b;
+
+  /* ── Accent Colors ── */
+  --accent-cyan: #38bdf8;
+  --accent-purple: #a78bfa;
+  --accent-indigo: #6366f1;
+  --accent-magenta: #f472b6;
+  --accent-amber: #fbbf24;
+
+  /* ── Borders & Shadows ── */
+  --border-default: rgba(255, 255, 255, 0.06);
+  --border-focus: rgba(82, 183, 136, 0.3);
+  --border-error: #ef5350;
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 1px rgba(255, 255, 255, 0.05);
+  --shadow-card-hover: 0 16px 48px rgba(0, 0, 0, 0.6), 0 0 1px rgba(255, 255, 255, 0.08);
+
+  /* ── Component-specific ── */
+  --tooltip-bg: #1a2332;
+  --tooltip-text: #e7e9ea;
+  --tooltip-text-muted: rgba(231, 233, 234, 0.65);
+  --sidebar-border: rgba(255, 255, 255, 0.06);
+  --sidebar-mobile-border: rgba(255, 255, 255, 0.1);
+  --input-border: rgba(255, 255, 255, 0.12);
+  --input-focus-bg: #1e293b;
+  --input-placeholder: #6b7d75;
+  --member-name: #e7e9ea;
+  --auth-bg-gradient:
+    radial-gradient(ellipse 80% 60% at 20% 20%, rgba(128, 40, 220, 0.3) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 40% at 80% 80%, rgba(30, 100, 255, 0.15) 0%, transparent 50%),
+    linear-gradient(180deg, #080c14 0%, #0d1320 100%);
+  --auth-card-bg: rgba(17, 24, 39, 0.85);
+  --auth-card-border: rgba(255, 255, 255, 0.08);
+  --auth-field-bg: rgba(255, 255, 255, 0.05);
+  --bg-error: rgba(239, 83, 80, 0.12);
+  --bg-footer: #060a10;
+
+  /* ── Theme Toggle ── */
+  --toggle-bg: rgba(99, 102, 241, 0.12);
+  --toggle-bg-hover: rgba(99, 102, 241, 0.22);
+  --toggle-border: rgba(99, 102, 241, 0.5);
+  --toggle-icon: #c4b5fd;
+  --toggle-size: 40px;
+  --toggle-font-size: 20px;
+  --toggle-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+
+  /* ── Spinner ── */
+  --spinner-color-1: #6366f1;
+  --spinner-color-2: #a78bfa;
+  --spinner-color-3: #22d3ee;
+  --spinner-track: rgba(167, 139, 250, 0.1);
+
+  /* ── Toggle & Avatar (continued) ── */
+  --toggle-shadow-hover: 0 4px 16px rgba(99, 102, 241, 0.35);
+  --avatar-border: rgba(255, 255, 255, 0.8);
+
+  /* ── Layout ── */
+  --bodyColor: #e7e9ea;
+  --content-bg: transparent;
 }
 
 /* ──────────────────────────────────────────────────────────
@@ -66,7 +237,7 @@ ul {
 }
 
 a {
-  color: #2d6a4f;
+  color: var(--priColorLight);
   text-decoration: none;
   font-weight: 600;
   border-bottom: 2px solid transparent;
@@ -113,7 +284,7 @@ ul {
   min-height: 100vh;
   overflow: visible;
   padding-top: 0 !important;
-  background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 400px) !important;
+  background: var(--bg-app-gradient) !important;
 }
 
 .main-layout {
@@ -163,6 +334,8 @@ ul {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 2px;
+  position: relative;
+  z-index: 1;
 }
 
 /* ──────────────────────────────────────────────────────────
@@ -185,9 +358,10 @@ ul {
   height: 53px;
   padding: 25px;
   border-radius: 20px;
-  color: #5c5c5c;
+  color: var(--textColor);
   box-shadow: 0 7px 10px rgba(182, 182, 182, 0.05);
-  border: 1px solid #ced4da;
+  border: 1px solid var(--input-border);
+  background: var(--bg-input);
   font-size: 16px;
   font-family: Poppins, sans-serif;
   transition:
@@ -197,7 +371,7 @@ ul {
 
 .form_label {
   font-size: 16px;
-  color: #555;
+  color: var(--text-secondary);
 }
 
 /* ──────────────────────────────────────────────────────────
@@ -244,10 +418,12 @@ ul {
   width: 100% !important;
   margin: 0 !important;
   padding: 24px 0;
-  color: var(--bodyColor);
+  color: var(--textMuted);
   font-size: 14px;
-  background: #f5f5f5;
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  background: var(--bg-footer);
+  border-top: 1px solid var(--border-default);
+  position: relative;
+  z-index: 1;
 }
 
 .copyright a {
@@ -276,6 +452,42 @@ ul {
 ::-moz-placeholder {
   opacity: 0.9;
   font-family: Poppins, sans-serif;
+}
+
+/* ──────────────────────────────────────────────────────────
+   Dark Mode: Hyperlinks
+   ────────────────────────────────────────────────────────── */
+
+[data-theme="dark"] a {
+  color: #c4b5fd;
+}
+
+[data-theme="dark"] a:hover {
+  color: var(--accent-purple);
+  border-bottom-color: var(--accent-purple);
+}
+
+[data-theme="dark"] .copyright a {
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .copyright a:hover {
+  color: var(--accent-purple);
+}
+
+/* ──────────────────────────────────────────────────────────
+   Theme Transitions (smooth colour switch on toggle)
+   Applied to targeted elements only — not wildcard * — to
+   avoid jank on complex pages. Automatically disabled by
+   the prefers-reduced-motion media query below.
+   ────────────────────────────────────────────────────────── */
+
+body,
+.app-wrapper,
+.glass-card,
+.content-title,
+.copyright {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
 /* ──────────────────────────────────────────────────────────

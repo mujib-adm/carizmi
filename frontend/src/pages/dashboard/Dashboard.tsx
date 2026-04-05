@@ -10,53 +10,13 @@ import { ReferenceConstants } from '../../constants/ReferenceConstants';
 import { DashboardMetricsDto, LatestPaymentDto, QuarterStatus } from '../../api/generated/types';
 import { useReference } from '../../hooks/useReference';
 import { useApiMessages } from '../../hooks/useApiMessages';
+import { useTheme } from '../../hooks/useTheme';
+import { getPaidColor, getUnpaidColor } from '../../constants/ChartThemeConstants';
+import { ChartGradientDefs, createLabelRenderer } from '../../components/chart/ChartDefs';
 import styles from '../../styles/pages/Dashboard.module.css';
 
 const { Title } = Typography;
 
-// Quarterly Membership Fee Visualization
-// Percentage of total membership fees collected relative to the total number of Active members
-const COLORS = ['#2D6A4F', '#40916C', '#52B788', '#74C69D'];
-
-const RADIAN = Math.PI / 180;
-const renderCustomizedLabel = ({ cx, cy, midAngle, outerRadius, payload }: any) => {
-  if (
-    payload.isGap ||
-    payload.value === 0 ||
-    payload.name?.includes('Future') ||
-    payload.name?.includes('Dues') ||
-    payload.name?.includes('Overdues')
-  )
-    return null;
-
-  const radius = outerRadius + 25; // Move labels further out for the circled look
-  const x = cx + radius * Math.cos(-midAngle * RADIAN);
-  const y = cy + radius * Math.sin(-midAngle * RADIAN);
-
-  return (
-    <g>
-      <circle
-        cx={x}
-        cy={y}
-        r="20"
-        fill="white"
-        stroke="#40916C"
-        strokeWidth="2"
-        style={{ filter: 'drop-shadow(0px 4px 8px rgba(0,0,0,0.12))' }}
-      />
-      <text
-        x={x}
-        y={y}
-        fill="#2f744e"
-        textAnchor="middle"
-        dominantBaseline="central"
-        style={{ fontWeight: 800, fontSize: '13px', fontFamily: 'Outfit, sans-serif' }}
-      >
-        {`${(payload.rate * 100).toFixed(0)}%`}
-      </text>
-    </g>
-  );
-};
 
 export default function Dashboard() {
   const [metrics, setMetrics] = useState<DashboardMetricsDto>({
@@ -71,6 +31,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const { toDisplay } = useReference();
   const { globalMessages, handleError, resetMessages } = useApiMessages<any>();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -148,20 +110,20 @@ export default function Dashboard() {
       name: `${q.quarterLabel} Paid`,
       value: q.collectedAmount || 0,
       rate: q.percentage,
-      color: COLORS[idx % COLORS.length],
+      color: getPaidColor(isDark, idx),
       isGap: false,
     });
 
     // 3. Dues/Overdues/Future Slice
     let unpaidVal = Math.max(0, potentialPerQ - (q.collectedAmount || 0));
-    let unpaidColor = 'orange'; // Orange for current-quarter Dues
+    let unpaidColor = getUnpaidColor(isDark, 'dues');
     let unpaidName = `${q.quarterLabel} Dues`;
 
     if (q.status === QuarterStatus.PAST) {
-      unpaidColor = 'red'; // Red for past-quarter Overdues
+      unpaidColor = getUnpaidColor(isDark, 'overdue');
       unpaidName = `${q.quarterLabel} Overdues`;
     } else if (q.status === QuarterStatus.FUTURE) {
-      unpaidColor = '#E0E0E0'; // Gray for Future
+      unpaidColor = getUnpaidColor(isDark, 'future');
       unpaidName = `${q.quarterLabel} Future`;
     }
 
@@ -190,24 +152,15 @@ export default function Dashboard() {
       {/* First Row — Summary Metric Cards */}
       <Row gutter={[24, 24]} style={{ marginBottom: 32 }}>
         <Col xs={24} md={6}>
-          <Card className="glass-card">
+          <Card className="glass-card" data-metric="members">
             <div className="metric-label">Total Members</div>
             <div className="metric-value">{(metrics.totalMembers || 0).toLocaleString()}</div>
             <div className="metric-subtext"> Total Active Members</div>
-            <TeamOutlined
-              style={{
-                position: 'absolute',
-                bottom: 20,
-                right: 20,
-                fontSize: 48,
-                color: '#2f744e',
-                opacity: 0.15,
-              }}
-            />
+            <TeamOutlined className={styles.metricIconDefault} />
           </Card>
         </Col>
         <Col xs={24} md={6}>
-          <Card className="glass-card">
+          <Card className="glass-card" data-metric="revenue">
             <div className="metric-label">Total Revenue</div>
             <div className="metric-value">
               $
@@ -217,24 +170,15 @@ export default function Dashboard() {
               }) ?? '0.00'}
             </div>
             <div className="metric-subtext"> Total Amount in Account </div>
-            <DollarOutlined
-              style={{
-                position: 'absolute',
-                bottom: 20,
-                right: 20,
-                fontSize: 48,
-                color: '#40916C',
-                opacity: 0.15,
-              }}
-            />
+            <DollarOutlined className={styles.metricIconRevenue} />
           </Card>
         </Col>
         <Col xs={24} md={6}>
-          <Card className="glass-card">
-            <div className="metric-label" style={{ color: 'orange' }}>
+          <Card className="glass-card" data-metric="dues">
+            <div className={`metric-label ${styles.metricDues}`}>
               Dues
             </div>
-            <div className="metric-value" style={{ color: 'orange' }}>
+            <div className={`metric-value ${styles.metricDues}`}>
               $
               {metrics.duesThisQuarter?.toLocaleString(undefined, {
                 minimumFractionDigits: 2,
@@ -242,24 +186,15 @@ export default function Dashboard() {
               }) ?? '0.00'}
             </div>
             <div className="metric-subtext"> Unpaid - Current Quarter </div>
-            <DollarOutlined
-              style={{
-                position: 'absolute',
-                bottom: 20,
-                right: 20,
-                fontSize: 48,
-                color: 'orange',
-                opacity: 0.15,
-              }}
-            />
+            <DollarOutlined className={styles.metricIconDues} />
           </Card>
         </Col>
         <Col xs={24} md={6}>
-          <Card className="glass-card">
-            <div className="metric-label" style={{ color: 'red' }}>
+          <Card className="glass-card" data-metric="overdue">
+            <div className={`metric-label ${styles.metricOverdue}`}>
               Overdues
             </div>
-            <div className="metric-value" style={{ color: 'red' }}>
+            <div className={`metric-value ${styles.metricOverdue}`}>
               $
               {metrics.overdueTotal?.toLocaleString(undefined, {
                 minimumFractionDigits: 2,
@@ -267,16 +202,7 @@ export default function Dashboard() {
               }) ?? '0.00'}
             </div>
             <div className="metric-subtext"> Unpaid - Past Quarter(s) </div>
-            <DollarOutlined
-              style={{
-                position: 'absolute',
-                bottom: 20,
-                right: 20,
-                fontSize: 48,
-                color: 'red',
-                opacity: 0.15,
-              }}
-            />
+            <DollarOutlined className={styles.metricIconOverdue} />
           </Card>
         </Col>
       </Row>
@@ -284,18 +210,19 @@ export default function Dashboard() {
       {/* Second Row — Quarterly Membership Fee Visualization & Recent Payments */}
       <Row gutter={[24, 24]} style={{ marginBottom: 32 }}>
         <Col xs={24} md={12}>
-          <Card className="glass-card" style={{ height: '100%' }}>
+          <Card className="glass-card" data-panel="chart" style={{ height: '100%' }}>
             <div className={styles.chartContainer} style={{ position: 'relative' }}>
               <div className="chart-title">Quarterly Fee Collection (%)</div>
               <div style={{ width: '100%', height: 350, position: 'relative' }}>
                 <ResponsiveContainer>
                   <PieChart>
+                    {isDark && <ChartGradientDefs />}
                     <Pie
                       data={pieData}
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={renderCustomizedLabel}
+                      label={createLabelRenderer(isDark)}
                       innerRadius="35%"
                       outerRadius="75%"
                       startAngle={90}
@@ -317,42 +244,12 @@ export default function Dashboard() {
                           maximumFractionDigits: 2,
                         });
                         return (
-                          <div
-                            style={{
-                              background: '#1a3a2a',
-                              borderRadius: '10px',
-                              padding: '10px 16px',
-                              borderLeft: `4px solid ${sliceColor}`,
-                              boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
-                              fontSize: '0.85rem',
-                              lineHeight: 1.7,
-                              minWidth: '120px',
-                            }}
-                          >
-                            <div style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '8px',
-                              fontWeight: 600,
-                              color: '#fff',
-                            }}>
-                              <span style={{
-                                width: 8,
-                                height: 8,
-                                borderRadius: '50%',
-                                backgroundColor: sliceColor,
-                                display: 'inline-block',
-                                flexShrink: 0,
-                              }} />
+                          <div className={styles.tooltipBox} style={{ borderLeft: `4px solid ${sliceColor}` }}>
+                            <div className={styles.tooltipLabel}>
+                              <span className={styles.tooltipDot} style={{ backgroundColor: sliceColor }} />
                               {entry.name}
                             </div>
-                            <div style={{
-                              color: 'rgba(255,255,255,0.75)',
-                              fontFamily: 'Outfit, sans-serif',
-                              fontWeight: 700,
-                              fontSize: '1rem',
-                              paddingLeft: '16px',
-                            }}>
+                            <div className={styles.tooltipValue}>
                               ${formatted}
                             </div>
                           </div>
@@ -363,87 +260,44 @@ export default function Dashboard() {
                   </PieChart>
                 </ResponsiveContainer>
                 {/* Central Statistic */}
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    textAlign: 'center',
-                    pointerEvents: 'none',
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: '24px',
-                      color: '#2f744e',
-                      fontWeight: 800,
-                      fontFamily: 'Outfit, sans-serif',
-                      lineHeight: 1.2,
-                    }}
-                  >
+                <div className={styles.centerLabel}>
+                  <div className={styles.centerRate}>
                     {(currentQRate * 100).toFixed(1)}%
                   </div>
-                  <div
-                    style={{
-                      fontSize: '11px',
-                      color: '#52665D',
-                      fontWeight: 600,
-                      fontFamily: 'Poppins, sans-serif',
-                      letterSpacing: '0.5px',
-                      textTransform: 'uppercase',
-                      marginTop: '2px',
-                    }}
-                  >
+                  <div className={styles.centerSubtext}>
                     Current Qtr
                   </div>
                 </div>
               </div>
 
               {/* Custom Legend */}
-              <div
-                style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '4px', flexWrap: 'wrap' }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div
-                    style={{ width: 12, height: 12, backgroundColor: '#2f744e', borderRadius: 2 }}
-                  ></div>
-                  <span style={{ fontSize: '0.9rem', color: '#2f744e', fontWeight: 500 }}>
-                    Paid
-                  </span>
+              <div className={styles.legendContainer}>
+                <div className={styles.legendItem}>
+                  <div className={styles.legendSwatchPaid}></div>
+                  <span className={styles.legendTextPaid}>Paid</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div
-                    style={{ width: 12, height: 12, backgroundColor: 'orange', borderRadius: 2 }}
-                  ></div>
-                  <span style={{ fontSize: '0.9rem', color: 'orange', fontWeight: 500 }}>
-                    Dues
-                  </span>
+                <div className={styles.legendItem}>
+                  <div className={styles.legendSwatchDues}></div>
+                  <span className={styles.legendTextDues}>Dues</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div
-                    style={{ width: 12, height: 12, backgroundColor: 'red', borderRadius: 2 }}
-                  ></div>
-                  <span style={{ fontSize: '0.9rem', color: 'red', fontWeight: 500 }}>
-                    Overdues
-                  </span>
+                <div className={styles.legendItem}>
+                  <div className={styles.legendSwatchOverdue}></div>
+                  <span className={styles.legendTextOverdue}>Overdues</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div
-                    style={{ width: 12, height: 12, backgroundColor: '#E0E0E0', borderRadius: 2 }}
-                  ></div>
-                  <span style={{ fontSize: '0.9rem', color: '#999', fontWeight: 500 }}>Future</span>
+                <div className={styles.legendItem}>
+                  <div className={styles.legendSwatchFuture}></div>
+                  <span className={styles.legendTextFuture}>Future</span>
                 </div>
               </div>
             </div>
           </Card>
         </Col>
         <Col xs={24} md={12}>
-          <Card className="glass-card" style={{ height: '100%' }}>
+          <Card className="glass-card" data-panel="recent-payments" style={{ height: '100%' }}>
             <div className={styles.chartContainer} style={{ position: 'relative' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
+              <div className={styles.recentHeader}>
                 <div className="chart-title">Recent Payments</div>
-                <Link to="/payments" state={{ fromDashboard: true }} style={{ fontSize: '0.85rem', fontWeight: 600, color: '#40916C' }}>
+                <Link to="/payments" state={{ fromDashboard: true }} className={styles.viewAllLink}>
                   View All →
                 </Link>
               </div>

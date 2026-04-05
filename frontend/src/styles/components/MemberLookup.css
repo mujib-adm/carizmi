@@ -20,14 +20,14 @@
   top: 50%;
   transform: translateY(-50%);
   z-index: 10;
-  color: #8c8c8c;
+  color: var(--input-placeholder);
   font-size: 16px;
   pointer-events: none;
 }
 
 /* Override the selector border and shadow */
 .member-lookup-select .ant-select-selector {
-  border: 1px solid #ced4da !important;
+  border: 1px solid var(--input-border) !important;
   border-radius: 35px !important;
   box-shadow: 0 5px 5px rgba(182, 182, 182, 0.05) !important;
   transition:
@@ -46,30 +46,30 @@
 }
 
 .member-lookup-select:hover .ant-select-selector {
-  border-color: #323232 !important;
+  border-color: var(--textColor) !important;
 }
 
 .member-lookup-select.ant-select-focused .ant-select-selector {
-  border-color: #323232 !important;
+  border-color: var(--textColor) !important;
   box-shadow: 0 0 0 1px rgba(50, 50, 50, 0.2) !important;
-  background-color: #e9ecef !important;
+  background-color: var(--input-focus-bg) !important;
 }
 
 /* Error State */
 .member-lookup-select.ant-select-status-error .ant-select-selector {
-  border-color: #ff4d4f !important;
-  background-color: #fff2f0 !important;
+  border-color: var(--border-error) !important;
+  background-color: var(--bg-error) !important;
 }
 
 .member-lookup-select.ant-select-status-error.ant-select-focused .ant-select-selector {
-  box-shadow: 0 0 0 1px #ff4d4f !important;
+  box-shadow: 0 0 0 1px var(--border-error) !important;
 }
 
 /* Custom Placeholder */
 .member-lookup-placeholder {
   display: flex;
   align-items: center;
-  color: #8c8c8c;
+  color: var(--input-placeholder);
   margin-left: 10px;
 }
 
@@ -80,7 +80,7 @@
 /* Suffix Icon */
 .member-lookup-suffix-icon {
   font-size: 18px;
-  color: #8c8c8c;
+  color: var(--input-placeholder);
 }
 
 /* Option Render */
@@ -100,13 +100,13 @@
 .member-name {
   font-weight: 600;
   font-size: 15px;
-  color: #262626;
+  color: var(--member-name);
   line-height: 1.1;
 }
 
 .member-details {
   font-size: 12px;
-  color: #8c8c8c;
+  color: var(--input-placeholder);
   line-height: 1.1;
 }
 

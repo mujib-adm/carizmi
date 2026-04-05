@@ -1,7 +1,9 @@
-import { UserOutlined } from '@ant-design/icons';
+import { MoonOutlined, SunOutlined, UserOutlined } from '@ant-design/icons';
 import { Avatar, Image, Layout, Space, Tooltip } from 'antd';
+import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { useTheme } from '../../hooks/useTheme';
 import Logo from '../../assets/images/logo.png';
 import styles from '../../styles/components/AppHeader.module.css';
 
@@ -9,6 +11,21 @@ const { Header } = Layout;
 
 export default function AppHeader() {
   const { isAuthenticated, firstName } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+  const [flipping, setFlipping] = useState(false);
+
+  const handleToggle = useCallback(() => {
+    setFlipping(true);
+    // Switch theme at the midpoint of the flip (when icon is hidden)
+    setTimeout(() => toggleTheme(), 250);
+    // Remove animation class after it completes so it can re-trigger
+    setTimeout(() => setFlipping(false), 500);
+  }, [toggleTheme]);
+
+  const toggleClasses = [
+    styles.themeToggle,
+    flipping ? styles.themeToggleFlip : '',
+  ].filter(Boolean).join(' ');
 
   return (
     <Header className={styles.glassHeader}>
@@ -21,19 +38,24 @@ export default function AppHeader() {
       </div>
 
       <div className={styles.headerActions}>
-        <Space size={24}>
+        <Space size={16}>
+          <div
+            role="button"
+            tabIndex={0}
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            onClick={handleToggle}
+            onKeyDown={(e) => e.key === 'Enter' && handleToggle()}
+            className={toggleClasses}
+          >
+            {theme === 'dark' ? <SunOutlined /> : <MoonOutlined />}
+          </div>
           {isAuthenticated && (
             <Tooltip title={`Welcome, ${firstName}`} placement="bottom">
               <Link to="/profile">
                 <Avatar
                   size={44}
                   icon={<UserOutlined />}
-                  style={{
-                    backgroundColor: '#40916C',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 12px rgba(64, 145, 108, 0.25)',
-                    border: '2px solid rgba(255, 255, 255, 0.8)',
-                  }}
+                  className={`brand-avatar ${styles.avatar}`}
                 />
               </Link>
             </Tooltip>

@@ -71,8 +71,8 @@ export default function ExpensePage() {
       title: 'Are you sure you want to delete expense record?',
       content: (
         <div
+          className="danger-text"
           style={{
-            color: 'red',
             display: 'grid',
             gridTemplateColumns: 'min-content auto',
             columnGap: '12px',

@@ -1,57 +1,81 @@
+import { useMemo } from 'react';
+
 interface GradientSpinnerProps {
-  size?: number; // diameter in px
-  strokeWidth?: number; // thickness of the ring
-  colors?: string[]; // gradient colors
-  speed?: number; // animation duration in seconds
+  size?: number;
+  strokeWidth?: number;
 }
 
-export default function GradientSpinner({
-  size = 80,
-  strokeWidth = 18,
-  colors = ['#FFFFFF', '#AEDF88', '#1E5631'],
-  speed = 1.2,
-}: GradientSpinnerProps) {
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
+export default function GradientSpinner({ size = 80, strokeWidth = 10 }: GradientSpinnerProps) {
+  const outerRadius = (size - strokeWidth) / 2;
+  const innerRadius = outerRadius - strokeWidth - 4;
+
+  const outerCircumference = useMemo(() => 2 * Math.PI * outerRadius, [outerRadius]);
+  const innerCircumference = useMemo(() => 2 * Math.PI * innerRadius, [innerRadius]);
 
   return (
     <svg
-      className="gradient-spinner"
+      className="gradient-spinner-wrapper"
       width={size}
       height={size}
       viewBox={`0 0 ${size} ${size}`}
-      style={{
-        animation: `spin ${speed}s linear infinite`,
-      }}
     >
       <defs>
-        <linearGradient id="spinnerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-          {colors.map((color, i) => (
-            <stop key={i} offset={`${(i / (colors.length - 1)) * 100}%`} stopColor={color} />
-          ))}
+        <linearGradient id="spinnerGradientOuter" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="var(--spinner-color-1)" />
+          <stop offset="50%" stopColor="var(--spinner-color-2)" />
+          <stop offset="100%" stopColor="var(--spinner-color-3)" />
+        </linearGradient>
+        <linearGradient id="spinnerGradientInner" x1="100%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="var(--spinner-color-3)" />
+          <stop offset="100%" stopColor="var(--spinner-color-1)" />
         </linearGradient>
       </defs>
+
+      {/* Outer track */}
       <circle
         cx={size / 2}
         cy={size / 2}
-        r={radius}
-        stroke="url(#spinnerGradient)"
+        r={outerRadius}
+        stroke="var(--spinner-track)"
+        strokeWidth={strokeWidth}
+        fill="none"
+      />
+
+      {/* Inner track */}
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={innerRadius}
+        stroke="var(--spinner-track)"
+        strokeWidth={strokeWidth}
+        fill="none"
+      />
+
+      {/* Outer arc — clockwise */}
+      <circle
+        className="spinner-ring-outer"
+        cx={size / 2}
+        cy={size / 2}
+        r={outerRadius}
+        stroke="url(#spinnerGradientOuter)"
         strokeWidth={strokeWidth}
         fill="none"
         strokeLinecap="round"
-        strokeDasharray={circumference}
+        strokeDasharray={`${outerCircumference * 0.65} ${outerCircumference * 0.35}`}
+      />
+
+      {/* Inner arc — counter-clockwise */}
+      <circle
+        className="spinner-ring-inner"
+        cx={size / 2}
+        cy={size / 2}
+        r={innerRadius}
+        stroke="url(#spinnerGradientInner)"
+        strokeWidth={strokeWidth}
+        fill="none"
+        strokeLinecap="round"
+        strokeDasharray={`${innerCircumference * 0.45} ${innerCircumference * 0.55}`}
       />
     </svg>
   );
 }
-
-// CSS (global or module)
-const styles = `
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-.gradient-spinner {
-  display: block;
-}
-`;
-document.head.insertAdjacentHTML('beforeend', `<style>${styles}</style>`);
