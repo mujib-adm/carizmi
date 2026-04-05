@@ -62,7 +62,7 @@ class UserSpec extends BaseSpecification {
 
     def "test - register: Success"() {
         given: "A valid registration request"
-        UserDto request = new UserDto(username: 'user', password: 'password', email: 'email@example.com')
+        UserDto request = new UserDto(username: 'user', password: 'password', email: 'email@example.com', role: Role.MANAGER)
         UserVO vo = new UserVO(username: 'user', password: 'password', email: 'email@example.com')
         UserVO savedVo = null
 

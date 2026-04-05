@@ -17,7 +17,7 @@ class AuthApiITSpec extends BaseIntegrationSpecification {
         login()
     }
 
-    def "test /auth/register - 200/401"() {
+    def "test /auth/register - 200/401/403"() {
         given:
         UserDto newUser = new UserDto(
                 firstName: "New",
@@ -34,7 +34,39 @@ class AuthApiITSpec extends BaseIntegrationSpecification {
         then: "status is 401 (not logged in)"
         anonResponse.statusCode == HttpStatus.UNAUTHORIZED
 
+        when: "admin registers a MEMBER user first"
+        UserDto memberUser = new UserDto(
+                firstName: "Member",
+                lastName: "Tester",
+                email: "member@test.com",
+                username: "membertester",
+                password: "Security123!",
+                role: "MEMBER"
+        )
+        ResponseEntity<GlobalResponse> memberCreateResponse = restTemplate.exchange(
+                ApiEndpoints.Auth.REGISTER,
+                HttpMethod.POST,
+                new HttpEntity<>(memberUser, authHeaders),
+                GlobalResponse
+        )
+
+        then: "member user created successfully"
+        memberCreateResponse.statusCode == HttpStatus.OK
+
+        when: "non-admin (MEMBER) attempts to register a new user"
+        login([username: "membertester", password: "Security123!"])
+        ResponseEntity<GlobalResponse> forbiddenResponse = restTemplate.exchange(
+                ApiEndpoints.Auth.REGISTER,
+                HttpMethod.POST,
+                new HttpEntity<>(newUser, authHeaders),
+                GlobalResponse
+        )
+
+        then: "status is 403 (authenticated but not authorized)"
+        forbiddenResponse.statusCode == HttpStatus.FORBIDDEN
+
         when: "admin attempts to register a new user"
+        login() // re-login as admin
         ResponseEntity<GlobalResponse> successResponse = restTemplate.exchange(
                 ApiEndpoints.Auth.REGISTER,
                 HttpMethod.POST,

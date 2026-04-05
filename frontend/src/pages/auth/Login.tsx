@@ -83,10 +83,6 @@ export default function Login() {
           <button className="global_btn" type="submit">
             LOGIN
           </button>
-
-          <p className="auth-link">
-            Don't have an account? <a href="/register">Register here</a>
-          </p>
         </form>
       </div>
     </div>

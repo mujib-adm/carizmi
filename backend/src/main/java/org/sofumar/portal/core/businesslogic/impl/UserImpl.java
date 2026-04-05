@@ -108,11 +108,21 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
     @Transactional
     public ResponseEntity<GlobalResponse<Void>> register(UserDto requestDto) {
         UserVO userVO = voTransformer.transform(requestDto);
-        userVO.setRole(Role.ANONYMOUS);
+        // Use provided role if valid, otherwise default to MEMBER
+        Role assignedRole = Role.MEMBER;
+        if (StringUtils.isNotBlank(requestDto.getRole())) {
+            try {
+                assignedRole = Role.valueOf(requestDto.getRole());
+            } catch (IllegalArgumentException e) {
+                logger.error("Invalid role '{}' provided during registration, defaulting to MEMBER", requestDto.getRole());
+            }
+        }
+
+        userVO.setRole(assignedRole);
         userVO.setActive(true);
         validator.validatePassword(userVO);
         add(userVO);
-        return ResponseUtils.ok("Registered. Await role assignment.");
+        return ResponseUtils.ok("User registered successfully with role: " + assignedRole.name());
     }
 
     @Override

@@ -36,7 +36,6 @@ export default function Router() {
       <Suspense fallback={<PageSpinner />}>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
           <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
       </Suspense>
@@ -59,10 +58,10 @@ export default function Router() {
           <Route path="/settings" element={<SystemSettingsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           {role === RoleConstants.ROLE_ADMIN && <Route path="/users" element={<UsersPage />} />}
+          {role === RoleConstants.ROLE_ADMIN && <Route path="/register" element={<Register />} />}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
 
-        <Route path="/register" element={<Register />} />
         <Route path="/logout" element={<Logout />} />
       </Routes>
     </Suspense>

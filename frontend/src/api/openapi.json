@@ -6,7 +6,7 @@
     "version" : "1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:62652",
+    "url" : "http://localhost:50376",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -1899,6 +1899,9 @@
             "type" : "string",
             "maxLength" : 50,
             "minLength" : 5
+          },
+          "role" : {
+            "type" : "string"
           }
         },
         "required" : [ "email", "firstName", "lastName", "password", "username" ]

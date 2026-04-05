@@ -32,4 +32,6 @@ public class UserDto {
     @NotBlank
     @Size(min = 5, max = 50) // TODO: minimum length 5 is for local testing convenience, increase for production
     private String password;
+
+    private String role;
 }
