@@ -8,10 +8,9 @@ import org.sofumar.portal.data.dto.ReferenceDto;
 import org.sofumar.portal.data.dto.request.ReferenceSearchRequestDto;
 import org.sofumar.portal.data.transformer.ReferenceDtoTransformer;
 import org.sofumar.portal.core.vo.ReferenceVO;
-import org.sofumar.portal.framework.data.response.GlobalResponse;
+import org.sofumar.portal.framework.data.response.PagedResult;
 import org.sofumar.portal.framework.data.response.PaginationMeta;
 import org.sofumar.portal.framework.exception.RecordNotFoundException;
-import org.sofumar.portal.framework.util.ResponseUtils;
 import org.sofumar.portal.core.repo.ReferenceRepository;
 import org.sofumar.portal.core.repo.jpaspec.ReferenceSpecifications;
 import org.sofumar.portal.core.businesslogic.Reference;
@@ -19,7 +18,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,28 +45,28 @@ public non-sealed class ReferenceImpl extends ReferenceAbstractBL implements Ref
     protected Logger getLogger() {
         return logger;
     }
-    
+
     @Override
     protected void performDomainValidation(ReferenceVO vo, boolean isUpdate) {
         // No domain validation implementation for reference data currently
     }
 
     @Override
-    public ResponseEntity<GlobalResponse<ReferenceDto>> getReference(Integer referenceID) {
+    public ReferenceDto getReference(Integer referenceID) {
         ReferenceVO existing = getRepo().findById(referenceID)
                 .orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
-        return ResponseUtils.okWithData(dtoTransformer.transform(existing));
+        return dtoTransformer.transform(existing);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public ResponseEntity<GlobalResponse<List<ReferenceDescDto>>> getReferencesByName(String referenceName) {
+    public List<ReferenceDescDto> getReferencesByName(String referenceName) {
         Specification<ReferenceVO> spec = Specification.allOf(
                 ReferenceSpecifications.hasReferenceName(referenceName),
                 ReferenceSpecifications.isActive(true));
         // We typically want all of them, no paging, maybe sorted by Code
         List<ReferenceVO> list = getRepo().findAll(spec, Sort.by(FieldConstants.REFERENCE_CODE));
-        return ResponseUtils.okWithData(dtoTransformer.transformDataList(list));
+        return dtoTransformer.transformDataList(list);
     }
 
     @Override
@@ -80,7 +78,7 @@ public non-sealed class ReferenceImpl extends ReferenceAbstractBL implements Ref
 
     @Override
     @Transactional(readOnly = true)
-    public ResponseEntity<GlobalResponse<List<ReferenceDto>>> searchReferences(ReferenceSearchRequestDto request) {
+    public PagedResult<ReferenceDto> searchReferences(ReferenceSearchRequestDto request) {
 
         List<Specification<ReferenceVO>> specs = new ArrayList<>();
         if (request.getReferenceName() != null)
@@ -91,7 +89,7 @@ public non-sealed class ReferenceImpl extends ReferenceAbstractBL implements Ref
         PaginationMeta meta = PaginationMeta.of(result.getNumber(), result.getSize(), result.getTotalElements(),
                 result.getTotalPages());
 
-        return ResponseUtils.okWithDataPageable(dtoTransformer.transformList(result.toList()), meta);
+        return PagedResult.of(dtoTransformer.transformList(result.toList()), meta);
     }
 
     @Override

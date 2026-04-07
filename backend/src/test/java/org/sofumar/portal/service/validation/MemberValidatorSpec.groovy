@@ -60,7 +60,7 @@ class MemberValidatorSpec extends BaseSpecification {
 
         then: "The expected calls are made"
         if (field != fieldName || value) {
-            def arg = (field == fieldName) ? value : defaultStatus
+            String arg = (field == fieldName) ? value : defaultStatus
             1 * referenceValidator.validate(vo, fieldName, referenceName, arg)
         }
         0 * _

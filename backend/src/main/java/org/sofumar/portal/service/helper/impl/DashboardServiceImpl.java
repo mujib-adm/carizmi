@@ -12,11 +12,8 @@ import org.sofumar.portal.core.vo.MemberVO;
 import org.sofumar.portal.data.dto.response.DashboardMetricsDto;
 import org.sofumar.portal.data.dto.response.PaymentSummary;
 import org.sofumar.portal.data.dto.response.QuarterlyCollectionDto;
-import org.sofumar.portal.framework.data.response.GlobalResponse;
-import org.sofumar.portal.framework.util.ResponseUtils;
 import org.sofumar.portal.service.helper.BaselineService;
 import org.sofumar.portal.service.helper.DashboardService;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -41,7 +38,7 @@ public class DashboardServiceImpl implements DashboardService {
     private final BaselineService baselineService;
 
     @Override
-    public ResponseEntity<GlobalResponse<DashboardMetricsDto>> getMetrics() {
+    public DashboardMetricsDto getMetrics() {
         logger.info("Fetching dashboard metrics");
 
         LocalDate now = LocalDate.now();
@@ -128,7 +125,7 @@ public class DashboardServiceImpl implements DashboardService {
             collections.add(computeQuarterData(currentYear, q, currentQuarter, totalActiveMembers));
         }
 
-        DashboardMetricsDto metrics = DashboardMetricsDto.builder()
+        return DashboardMetricsDto.builder()
                 .totalMembers(totalActiveMembers)
                 .totalRevenue(totalRevenue)
                 .duesThisQuarter(duesThisQuarter)
@@ -136,8 +133,6 @@ public class DashboardServiceImpl implements DashboardService {
                 .quarterlyFeeAmt(quarterlyFeeAmt)
                 .quarterlyCollections(collections)
                 .build();
-
-        return ResponseUtils.okWithData(metrics);
     }
 
     private QuarterlyCollectionDto computeQuarterData(int year, int quarter, int currentQuarter, long totalActiveMembers) {

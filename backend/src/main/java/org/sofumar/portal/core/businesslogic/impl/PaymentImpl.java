@@ -15,17 +15,15 @@ import org.sofumar.portal.data.dto.response.LatestPaymentDto;
 import org.sofumar.portal.data.dto.response.PaymentSummary;
 import org.sofumar.portal.data.transformer.PaymentDtoTransformer;
 import org.sofumar.portal.data.transformer.PaymentVOTransformer;
-import org.sofumar.portal.framework.data.response.GlobalResponse;
+import org.sofumar.portal.framework.data.response.PagedResult;
 import org.sofumar.portal.framework.data.response.PaginationMeta;
 import org.sofumar.portal.framework.exception.RecordNotFoundException;
-import org.sofumar.portal.framework.util.ResponseUtils;
 import org.sofumar.portal.service.validation.PaymentValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,10 +33,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.sofumar.portal.message.ValidationMessages.RECORD_ADDED;
-import static org.sofumar.portal.message.ValidationMessages.RECORD_DELETED;
 import static org.sofumar.portal.message.ValidationMessages.RECORD_NOT_FOUND;
-import static org.sofumar.portal.message.ValidationMessages.RECORD_UPDATED;
 
 @Service
 public non-sealed class PaymentImpl extends PaymentAbstractBL implements Payment {
@@ -75,20 +70,20 @@ public non-sealed class PaymentImpl extends PaymentAbstractBL implements Payment
 
     @Override
     @Transactional
-    public ResponseEntity<GlobalResponse<Integer>> addPayment(PaymentDto requestDto) {
+    public Integer addPayment(PaymentDto requestDto) {
         PaymentVO vo = voTransformer.transform(requestDto);
         PaymentVO savedPayment = add(vo);
-        return ResponseUtils.okWithData(savedPayment.getPaymentID(), RECORD_ADDED.addMessageArgs("Payment").getMessageString());
+        return savedPayment.getPaymentID();
     }
 
     @Override
     @Transactional(readOnly = true)
-    public ResponseEntity<GlobalResponse<List<LatestPaymentDto>>> getLatestPayments(int limit) {
+    public List<LatestPaymentDto> getLatestPayments(int limit) {
         logger.info("Fetching {} latest payments", limit);
         PageRequest pageRequest = PageRequest.of(0, limit,
                 Sort.by(Sort.Direction.DESC, FieldConstants.DATE_RECEIVED, FieldConstants.PAYMENT_ID));
 
-        List<LatestPaymentDto> latest = getRepo().findAll(pageRequest).getContent().stream()
+        return getRepo().findAll(pageRequest).getContent().stream()
                 .map(p -> LatestPaymentDto.builder()
                         .paymentID(p.getPaymentID())
                         .memberID(p.getMember().getMemberID())
@@ -98,13 +93,11 @@ public non-sealed class PaymentImpl extends PaymentAbstractBL implements Payment
                         .paymentDate(p.getDateReceived())
                         .build())
                 .toList();
-
-        return ResponseUtils.okWithData(latest);
     }
 
     @Override
     @Transactional
-    public ResponseEntity<GlobalResponse<Void>> updatePayment(PaymentDto requestDto) {
+    public void updatePayment(PaymentDto requestDto) {
         logger.info("Updating payment: {}", requestDto.getPaymentID());
 
         PaymentVO existingVO = getRepo().findById(requestDto.getPaymentID())
@@ -112,29 +105,27 @@ public non-sealed class PaymentImpl extends PaymentAbstractBL implements Payment
 
         PaymentVO updatedVO = voTransformer.transformForUpdate(requestDto, existingVO);
         update(updatedVO);
-        return ResponseUtils.ok(RECORD_UPDATED.addMessageArgs("Payment").getMessageString());
     }
 
     @Override
     @Transactional
-    public ResponseEntity<GlobalResponse<Void>> deletePayment(@NonNull Integer paymentID) {
+    public void deletePayment(@NonNull Integer paymentID) {
         PaymentVO existingVO = getRepo().findById(paymentID)
                 .orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
         delete(existingVO);
-        return ResponseUtils.ok(RECORD_DELETED.addMessageArgs("Payment").getMessageString());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public ResponseEntity<GlobalResponse<PaymentDto>> getPayment(@NonNull Integer paymentID) {
+    public PaymentDto getPayment(@NonNull Integer paymentID) {
         PaymentVO existingVO = getRepo().findById(paymentID)
                 .orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
-        return ResponseUtils.okWithData(dtoTransformer.transform(existingVO));
+        return dtoTransformer.transform(existingVO);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public ResponseEntity<GlobalResponse<List<PaymentDto>>> searchPayments(PaymentSearchRequestDto request) {
+    public PagedResult<PaymentDto> searchPayments(PaymentSearchRequestDto request) {
 
         List<Specification<PaymentVO>> specs = new ArrayList<>();
         if (request.getMemberID() != null)
@@ -153,7 +144,7 @@ public non-sealed class PaymentImpl extends PaymentAbstractBL implements Payment
         PaginationMeta meta = PaginationMeta.of(result.getNumber(), result.getSize(), result.getTotalElements(),
                 result.getTotalPages());
 
-        return ResponseUtils.okWithDataPageable(dtoTransformer.transformList(result.toList()), meta);
+        return PagedResult.of(dtoTransformer.transformList(result.toList()), meta);
     }
 
     @Override

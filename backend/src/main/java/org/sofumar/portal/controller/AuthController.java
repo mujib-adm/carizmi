@@ -16,7 +16,6 @@ import org.sofumar.portal.framework.util.ResponseUtils;
 import org.sofumar.portal.security.CookieService;
 import org.sofumar.portal.security.annotation.IsAdmin;
 import org.sofumar.portal.security.annotation.IsAuthenticated;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -39,7 +38,8 @@ public class AuthController {
     @Operation(summary = "Register a new user")
     @IsAdmin
     public ResponseEntity<GlobalResponse<Void>> register(@Valid @RequestBody UserDto requestDto) {
-        return user.register(requestDto);
+        user.register(requestDto);
+        return ResponseUtils.ok("User registered successfully.");
     }
 
     @PostMapping("/logout")
@@ -60,38 +60,30 @@ public class AuthController {
 
     @PostMapping("/refresh")
     @Operation(summary = "Refresh access token")
-    public ResponseEntity<GlobalResponse<TokenDto>> refreshToken(HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<GlobalResponse<Void>> refreshToken(HttpServletRequest request, HttpServletResponse response) {
         String refreshToken = cookieService.getRefreshToken(request).orElse(null);
         if (refreshToken == null) {
-            return ResponseUtils.badRequestWithData("Refresh token is required.");
+            return ResponseUtils.badRequest("Refresh token is required.");
         }
-        ResponseEntity<GlobalResponse<TokenDto>> result = user.refreshToken(refreshToken);
 
-        // If refresh was successful, set new cookies from the response
-        if (result.getStatusCode() == HttpStatus.OK) {
-            GlobalResponse<TokenDto> body = result.getBody();
-            if (body != null) {
-                TokenDto tokenDto = body.getResponseData();
-                if (tokenDto != null) {
-                    if (tokenDto.getToken() != null) {
-                        cookieService.addAccessTokenCookie(response, tokenDto.getToken());
-                    }
-                    if (tokenDto.getRefreshToken() != null) {
-                        cookieService.addRefreshTokenCookie(response, tokenDto.getRefreshToken());
-                    }
-                    // Remove tokens from response body (they're in cookies)
-                    body.setResponseData(null);
-                }
-            }
+        TokenDto tokenDto = user.refreshToken(refreshToken);
+
+        if (tokenDto.getToken() != null) {
+            cookieService.addAccessTokenCookie(response, tokenDto.getToken());
         }
-        return result;
+        if (tokenDto.getRefreshToken() != null) {
+            cookieService.addRefreshTokenCookie(response, tokenDto.getRefreshToken());
+        }
+
+        // Don't expose tokens in response body (they're in cookies)
+        return ResponseUtils.ok("Token refreshed successfully");
     }
 
     @GetMapping("/profile")
     @Operation(summary = "Get current user profile")
     @IsAuthenticated
     public ResponseEntity<GlobalResponse<UserProfileDto>> getCurrentUser(@AuthenticationPrincipal UserDetails userDetails) {
-        return user.getProfile(userDetails.getUsername());
+        return ResponseUtils.okWithData(user.getProfile(userDetails.getUsername()));
     }
 
     @PostMapping("/password-update")
@@ -105,13 +97,11 @@ public class AuthController {
 
         // Read access token from cookie for blacklisting after password change
         String token = cookieService.getAccessToken(request).orElse(null);
+        user.updatePassword(userDetails.getUsername(), token, requestDto);
 
-        ResponseEntity<GlobalResponse<Void>> result = user.updatePassword(userDetails.getUsername(), token, requestDto);
+        // If we reach here, password update was successful — clear cookies to force re-login
+        cookieService.clearAuthCookies(response);
 
-        // If password update was successful, clear cookies to force re-login
-        if (result.getStatusCode() == HttpStatus.OK) {
-            cookieService.clearAuthCookies(response);
-        }
-        return result;
+        return ResponseUtils.ok("Password updated successfully! Please log in again.");
     }
 }

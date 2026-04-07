@@ -8,6 +8,7 @@ import org.sofumar.portal.data.dto.response.UserResponseDto;
 import org.sofumar.portal.data.dto.request.UserRoleUpdateRequestDto;
 import org.sofumar.portal.data.dto.request.UserStatusUpdateRequestDto;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
+import org.sofumar.portal.framework.util.ResponseUtils;
 import org.sofumar.portal.security.annotation.IsAdmin;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,6 +22,8 @@ import org.springframework.lang.NonNull;
 import jakarta.validation.Valid;
 import java.util.List;
 
+import static org.sofumar.portal.message.ValidationMessages.*;
+
 @RestController
 @RequestMapping("/users")
 @Tag(name = "User Management", description = "User administration APIs")
@@ -30,10 +33,10 @@ public class UserController {
 
     private final User user;
 
-    @GetMapping
+    @GetMapping("/")
     @Operation(summary = "Get all users")
     public ResponseEntity<GlobalResponse<List<UserResponseDto>>> getAllUsers() {
-        return user.getAllUsers();
+        return ResponseUtils.okWithData(user.getAllUsers());
     }
 
     @PutMapping("/{id}/role")
@@ -41,7 +44,8 @@ public class UserController {
     public ResponseEntity<GlobalResponse<Void>> updateRole(
             @PathVariable @NonNull Integer id,
             @Valid @RequestBody UserRoleUpdateRequestDto request) {
-        return user.updateUserRole(id, request.getRole());
+        user.updateUserRole(id, request.getRole());
+        return ResponseUtils.ok(RECORD_UPDATED.addMessageArgs("User role").getMessageString());
     }
 
     @PutMapping("/{id}/status")
@@ -49,6 +53,7 @@ public class UserController {
     public ResponseEntity<GlobalResponse<Void>> toggleStatus(
             @PathVariable @NonNull Integer id,
             @Valid @RequestBody UserStatusUpdateRequestDto request) {
-        return user.toggleUserStatus(id, request.getActive());
+        user.toggleUserStatus(id, request.getActive());
+        return ResponseUtils.ok(RECORD_UPDATED.addMessageArgs("User status").getMessageString());
     }
 }

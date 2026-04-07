@@ -7,28 +7,27 @@ import org.sofumar.portal.data.dto.response.MemberLookupDto;
 import org.sofumar.portal.data.dto.response.MemberSummaryDto;
 import org.sofumar.portal.core.vo.MemberVO;
 import org.sofumar.portal.framework.bl.BusinessLogic;
-import org.sofumar.portal.framework.data.response.GlobalResponse;
+import org.sofumar.portal.framework.data.response.PagedResult;
 import org.sofumar.portal.data.dto.request.MemberSearchRequestDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.lang.NonNull;
-import org.springframework.http.ResponseEntity;
 
 public interface Member extends BusinessLogic<MemberVO> {
 
-    ResponseEntity<GlobalResponse<Integer>> addMember(MemberDto requestDto);
+    Integer addMember(MemberDto requestDto);
 
-    ResponseEntity<GlobalResponse<Void>> updateMember(MemberDto requestDto);
+    void updateMember(MemberDto requestDto);
 
-    ResponseEntity<GlobalResponse<Void>> deleteMember(Integer memberID);
+    void deleteMember(Integer memberID);
 
-    ResponseEntity<GlobalResponse<MemberDto>> getMember(Integer memberID);
+    MemberDto getMember(Integer memberID);
 
-    ResponseEntity<GlobalResponse<List<MemberDto>>> searchMembers(MemberSearchRequestDto request);
+    PagedResult<MemberDto> searchMembers(MemberSearchRequestDto request);
 
-    ResponseEntity<GlobalResponse<List<MemberLookupDto>>> lookupMembers(String query);
+    List<MemberLookupDto> lookupMembers(String query);
 
-    ResponseEntity<GlobalResponse<MemberSummaryDto>> getMemberSummary(@NonNull Integer memberID);
+    MemberSummaryDto getMemberSummary(@NonNull Integer memberID);
 
     long countActiveMembers();
 

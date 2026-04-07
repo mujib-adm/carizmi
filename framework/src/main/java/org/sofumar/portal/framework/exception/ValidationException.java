@@ -13,4 +13,9 @@ public class ValidationException extends RuntimeException {
         this.vo = vo;
     }
 
+    public ValidationException(String message) {
+        super(message);
+        this.vo = null;
+    }
+
 }

@@ -31,7 +31,7 @@ export default function MemberLookup({
     }
     setFetching(true);
     try {
-      const result = await membersApi.memberLookup({ query: newValue });
+      const result = await membersApi.lookupMembers({ query: newValue });
       if (result && result.responseData) {
         setData(result.responseData);
       } else {

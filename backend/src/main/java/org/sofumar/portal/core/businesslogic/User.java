@@ -8,27 +8,25 @@ import org.sofumar.portal.data.dto.request.PasswordUpdateRequestDto;
 import org.sofumar.portal.data.dto.UserDto;
 import org.sofumar.portal.core.vo.UserVO;
 import org.sofumar.portal.framework.bl.BusinessLogic;
-import org.sofumar.portal.framework.data.response.GlobalResponse;
-import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 
 public interface User extends BusinessLogic<UserVO> {
 
-    ResponseEntity<GlobalResponse<Void>> register(UserDto requestDto);
+    void register(UserDto requestDto);
 
     void logout(String accessToken, String refreshToken);
 
-    ResponseEntity<GlobalResponse<TokenDto>> refreshToken(String refreshToken);
+    TokenDto refreshToken(String refreshToken);
 
-    ResponseEntity<GlobalResponse<UserProfileDto>> getProfile(String username);
+    UserProfileDto getProfile(String username);
 
-    ResponseEntity<GlobalResponse<Void>> updatePassword(String username, String token, PasswordUpdateRequestDto requestDto);
+    void updatePassword(String username, String token, PasswordUpdateRequestDto requestDto);
 
-    ResponseEntity<GlobalResponse<List<UserResponseDto>>> getAllUsers();
+    List<UserResponseDto> getAllUsers();
 
-    ResponseEntity<GlobalResponse<Void>> updateUserRole(@NonNull Integer userId, String newRole);
+    void updateUserRole(@NonNull Integer userId, String newRole);
 
-    ResponseEntity<GlobalResponse<Void>> toggleUserStatus(@NonNull Integer userId, boolean active);
+    void toggleUserStatus(@NonNull Integer userId, boolean active);
 
     boolean adminUserExists();
 

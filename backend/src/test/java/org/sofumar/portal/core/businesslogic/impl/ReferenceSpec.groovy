@@ -6,7 +6,7 @@ import org.sofumar.portal.constants.FieldConstants
 import org.sofumar.portal.data.dto.request.SortOrder
 import org.sofumar.portal.data.transformer.ReferenceDtoTransformer
 import org.sofumar.portal.core.vo.ReferenceVO
-import org.sofumar.portal.framework.data.response.GlobalResponse
+import org.sofumar.portal.framework.data.response.PagedResult
 import org.sofumar.portal.framework.exception.RecordNotFoundException
 import org.sofumar.portal.core.repo.ReferenceRepository
 import org.sofumar.portal.testbase.BaseSpecification
@@ -14,7 +14,6 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.jpa.domain.Specification as JpaSpecification
-import org.springframework.http.ResponseEntity
 import spock.lang.Subject
 import spock.lang.Unroll
 
@@ -31,10 +30,9 @@ class ReferenceSpec extends BaseSpecification {
         Integer id = 1
         ReferenceVO vo = new ReferenceVO(referenceID: id)
         ReferenceDto dto = new ReferenceDto(referenceID: id)
-        ResponseEntity<GlobalResponse<ReferenceDto>> response
 
         when: "The target method executed"
-        response = referenceImpl.getReference(id)
+        ReferenceDto result = referenceImpl.getReference(id)
 
         then: "The expected calls are made"
         1 * referenceRepo.findById(1) >> Optional.of(vo)
@@ -42,7 +40,7 @@ class ReferenceSpec extends BaseSpecification {
         0 * _
 
         and: "The expected result"
-        response.body.responseData == dto
+        result == dto
         noExceptionThrown()
     }
 
@@ -117,7 +115,7 @@ class ReferenceSpec extends BaseSpecification {
         request.setSortOrder(SortOrder.asc)
 
         when: "The target method executed"
-        referenceImpl.searchReferences(request)
+        PagedResult<ReferenceDto> result = referenceImpl.searchReferences(request)
 
         then: "The expected calls are made"
         1 * referenceRepo.findAll(_ as JpaSpecification, _ as PageRequest) >> { JpaSpecification spec, PageRequest page ->
@@ -134,6 +132,7 @@ class ReferenceSpec extends BaseSpecification {
         0 * _
 
         and: "The expected result"
+        result != null
         noExceptionThrown()
         capturedSpec != null
         Map<String, List> inspection = inspectSpecification(capturedSpec)
@@ -191,5 +190,4 @@ class ReferenceSpec extends BaseSpecification {
         inspection.values.containsAll([name, code, true])
         noExceptionThrown()
     }
-
 }

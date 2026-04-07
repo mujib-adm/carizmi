@@ -17,10 +17,9 @@ import org.sofumar.portal.data.dto.response.MemberSummaryDto;
 import org.sofumar.portal.data.dto.response.PaymentSummary;
 import org.sofumar.portal.data.transformer.MemberDtoTransformer;
 import org.sofumar.portal.data.transformer.MemberVOTransformer;
-import org.sofumar.portal.framework.data.response.GlobalResponse;
+import org.sofumar.portal.framework.data.response.PagedResult;
 import org.sofumar.portal.framework.data.response.PaginationMeta;
 import org.sofumar.portal.framework.exception.RecordNotFoundException;
-import org.sofumar.portal.framework.util.ResponseUtils;
 import org.sofumar.portal.service.validation.MemberValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -28,7 +27,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,10 +40,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.sofumar.portal.message.ValidationMessages.RECORD_ADDED;
-import static org.sofumar.portal.message.ValidationMessages.RECORD_DELETED;
 import static org.sofumar.portal.message.ValidationMessages.RECORD_NOT_FOUND;
-import static org.sofumar.portal.message.ValidationMessages.RECORD_UPDATED;
 
 @Service
 public non-sealed class MemberImpl extends MemberAbstractBL implements Member {
@@ -83,39 +78,34 @@ public non-sealed class MemberImpl extends MemberAbstractBL implements Member {
 
     @Override
     @Transactional
-    public ResponseEntity<GlobalResponse<Integer>> addMember(MemberDto requestDto) {
+    public Integer addMember(MemberDto requestDto) {
         MemberVO memberVO = voTransformer.transform(requestDto);
         MemberVO savedMember = add(memberVO);
-        logger.info("Member added successfully with ID: {}", savedMember.getMemberID());
-        return ResponseUtils.okWithData(savedMember.getMemberID(), RECORD_ADDED.addMessageArgs("Member").getMessageString());
+        return savedMember.getMemberID();
     }
 
     @Override
     @Transactional
-    public ResponseEntity<GlobalResponse<Void>> updateMember(MemberDto requestDto) {
+    public void updateMember(MemberDto requestDto) {
         MemberVO existingMember = getRepo().findById(requestDto.getMemberID())
                 .orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
 
-        MemberVO updatedMember = voTransformer.transformForUpdate(requestDto, existingMember);
-        MemberVO savedMember = update(updatedMember);
-        logger.info("Member updated successfully, memberID: {}", savedMember.getMemberID());
-        return ResponseUtils.ok(RECORD_UPDATED.addMessageArgs("Member").getMessageString());
+        MemberVO updatedVO = voTransformer.transformForUpdate(requestDto, existingMember);
+        update(updatedVO);
     }
 
     @Override
     @Transactional
-    public ResponseEntity<GlobalResponse<Void>> deleteMember(Integer memberID) {
+    public void deleteMember(Integer memberID) {
         MemberVO existingMember = getRepo().findById(memberID)
                 .orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
 
         delete(existingMember);
-        logger.info("Member deleted successfully, memberID: {}", memberID);
-        return ResponseUtils.ok(RECORD_DELETED.addMessageArgs("Member").getMessageString());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public ResponseEntity<GlobalResponse<List<MemberDto>>> searchMembers(MemberSearchRequestDto request) {
+    public PagedResult<MemberDto> searchMembers(MemberSearchRequestDto request) {
         List<Specification<MemberVO>> specList = new ArrayList<>();
         if (StringUtils.isNotBlank(request.getFirstName()))
             specList.add(MemberSpecifications.hasFirstName(request.getFirstName()));
@@ -129,26 +119,26 @@ public non-sealed class MemberImpl extends MemberAbstractBL implements Member {
         Specification<MemberVO> spec = Specification.allOf(specList);
         Page<MemberVO> members = getRepo().findAll(spec, request.toPageable());
         PaginationMeta meta = PaginationMeta.of(members.getNumber(), members.getSize(), members.getTotalElements(), members.getTotalPages());
-        return ResponseUtils.okWithDataPageable(dtoTransformer.transformList(members.toList()), meta);
+        return PagedResult.of(dtoTransformer.transformList(members.toList()), meta);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public ResponseEntity<GlobalResponse<MemberDto>> getMember(Integer memberID) {
+    public MemberDto getMember(Integer memberID) {
         MemberVO member = getRepo().findById(memberID)
                 .orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
 
-        return ResponseUtils.okWithData(dtoTransformer.transform(member));
+        return dtoTransformer.transform(member);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public ResponseEntity<GlobalResponse<List<MemberLookupDto>>> lookupMembers(String query) {
+    public List<MemberLookupDto> lookupMembers(String query) {
         Specification<MemberVO> spec = MemberSpecifications.lookup(query);
         PageRequest pageRequest = PageRequest.of(0, 10, Sort.by(FieldConstants.FIRST_NAME, FieldConstants.LAST_NAME));
         Page<MemberVO> members = getRepo().findAll(spec, pageRequest);
 
-        List<MemberLookupDto> dtos = members.getContent().stream()
+        return members.getContent().stream()
                 .map(memberVO -> MemberLookupDto.builder()
                         .memberID(memberVO.getMemberID())
                         .firstName(memberVO.getFirstName())
@@ -157,21 +147,19 @@ public non-sealed class MemberImpl extends MemberAbstractBL implements Member {
                         .status(memberVO.getStatus())
                         .build())
                 .collect(Collectors.toList());
-
-        return ResponseUtils.okWithData(dtos);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public ResponseEntity<GlobalResponse<MemberSummaryDto>> getMemberSummary(@NonNull Integer memberID) {
+    public MemberSummaryDto getMemberSummary(@NonNull Integer memberID) {
 
         Optional<MemberVO> memberOpt = getRepo().findById(memberID);
         if (memberOpt.isEmpty()) {
-            return ResponseUtils.okWithData(MemberSummaryDto.builder()
+            return MemberSummaryDto.builder()
                     .totalPaid(BigDecimal.ZERO)
                     .outstanding(BigDecimal.ZERO)
                     .overdue(BigDecimal.ZERO)
-                    .build());
+                    .build();
         }
 
         MemberVO member = memberOpt.get();
@@ -221,13 +209,11 @@ public non-sealed class MemberImpl extends MemberAbstractBL implements Member {
             }
         }
 
-        MemberSummaryDto summary = MemberSummaryDto.builder()
+        return MemberSummaryDto.builder()
                 .totalPaid(totalPaid)
                 .outstanding(outstanding)
                 .overdue(overdue)
                 .build();
-
-        return ResponseUtils.okWithData(summary);
     }
 
     @Override

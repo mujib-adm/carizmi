@@ -8,6 +8,7 @@ import org.sofumar.portal.framework.exception.RecordNotFoundException;
 import org.sofumar.portal.framework.exception.ValidationException;
 import org.sofumar.portal.framework.message.MessageType;
 import org.sofumar.portal.framework.data.response.FieldMsg;
+import org.sofumar.portal.framework.data.response.GlobalMsg;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
 import org.sofumar.portal.framework.util.ResponseUtils;
 import org.sofumar.portal.framework.vo.ValueObject;
@@ -52,7 +53,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<GlobalResponse<Void>> handleValidation(ValidationException ex) {
         ValueObject vo = ex.getVo();
         GlobalResponse<Void> response = GlobalResponse.getInstance();
-        ResponseUtils.populateResponseFromVO(response, vo);
+
+        if (vo != null) {
+            ResponseUtils.populateResponseFromVO(response, vo);
+        } else {
+            response.setGlobalMessages(List.of(new GlobalMsg(MessageType.ERROR, ex.getMessage())));
+        }
+
         response.setStatusCode(HttpStatus.BAD_REQUEST.value());
         response.setStatusDesc(HttpStatus.BAD_REQUEST.getReasonPhrase());
         return ResponseUtils.withStatus(HttpStatus.BAD_REQUEST, response);

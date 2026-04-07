@@ -12,13 +12,13 @@ import org.springframework.data.jpa.domain.Specification as JpaSpecification
 class BaseSpecification extends Specification {
 
     Map<String, List> inspectSpecification(JpaSpecification jpaSpec) {
-        def cb = Stub(CriteriaBuilder)
-        def root = Stub(Root)
-        def path = Stub(Path)
-        def expression = Stub(Expression)
+        CriteriaBuilder cb = Stub(CriteriaBuilder)
+        Root root = Stub(Root)
+        Path path = Stub(Path)
+        Expression expression = Stub(Expression)
 
-        def fields = []
-        def values = []
+        List fields = []
+        List values = []
 
         // Recursive path handling for nested properties (e.g. member.memberID)
         // This ensures root.get() returns path, and path.get() also returns path (capturing both fields)

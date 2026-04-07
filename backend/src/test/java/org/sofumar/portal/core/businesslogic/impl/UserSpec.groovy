@@ -11,7 +11,6 @@ import org.sofumar.portal.data.dto.response.UserResponseDto
 import org.sofumar.portal.data.dto.response.TokenDto
 import org.sofumar.portal.data.transformer.UserResponseDtoTransformer
 import org.sofumar.portal.data.transformer.UserVOTransformer
-import org.sofumar.portal.framework.data.response.GlobalResponse
 import org.sofumar.portal.framework.exception.AuthenticationException
 import org.sofumar.portal.framework.exception.RecordNotFoundException
 import org.sofumar.portal.framework.exception.ValidationException
@@ -23,8 +22,6 @@ import org.sofumar.portal.security.SofumarUserDetails
 import org.sofumar.portal.service.validation.UserValidator
 import org.sofumar.portal.testbase.BaseSpecification
 import org.springframework.data.jpa.domain.Specification as JpaSpecification
-import org.springframework.http.HttpStatus
-import org.springframework.http.ResponseEntity
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.test.util.ReflectionTestUtils
 import spock.lang.Subject
@@ -55,7 +52,7 @@ class UserSpec extends BaseSpecification {
     }
 
     private UserVO createUserVO(Integer id = null) {
-        def vo = new UserVO(userID: id, username: "user", email: "user@test.com", role: Role.MEMBER, active: true, password: "encodedPassword")
+        UserVO vo = new UserVO(userID: id, username: "user", email: "user@test.com", role: Role.MEMBER, active: true, password: "encodedPassword")
         vo.postLoad()
         return vo
     }
@@ -141,7 +138,7 @@ class UserSpec extends BaseSpecification {
         String newAccess = "newAccess"
 
         when: "The target method executed"
-        ResponseEntity<GlobalResponse<Void>> response = userImpl.refreshToken(token)
+        TokenDto result = userImpl.refreshToken(token)
 
         then: "The expected calls are made"
         1 * refreshTokenService.rotateRefreshToken(token) >> rotatedToken
@@ -150,10 +147,9 @@ class UserSpec extends BaseSpecification {
         1 * jwtService.generateAccessToken(_ as SofumarUserDetails) >> newAccess
         0 * _
 
-        and: "Response contains new tokens in responseData"
-        response.statusCode == HttpStatus.OK
-        response.body.responseData.token == newAccess
-        response.body.responseData.refreshToken == rotatedToken
+        and: "Response contains new tokens"
+        result.token == newAccess
+        result.refreshToken == rotatedToken
     }
 
     @Unroll
@@ -198,15 +194,15 @@ class UserSpec extends BaseSpecification {
         UserVO vo = new UserVO(username: username, role: Role.ADMIN, firstName: "F", lastName: "L", email: "E")
 
         when: "The target method executed"
-        ResponseEntity<GlobalResponse<UserProfileDto>> response = userImpl.getProfile(username)
+        UserProfileDto result = userImpl.getProfile(username)
 
         then: "The expected calls are made"
         1 * userRepo.findOne(_ as JpaSpecification) >> Optional.of(vo)
         0 * _
 
         and: "Profile data is correct"
-        response.body.responseData.username == username
-        response.body.responseData.role == "ADMIN"
+        result.username == username
+        result.role == "ADMIN"
     }
 
     def "test - getProfile: Not Found"() {
@@ -256,15 +252,15 @@ class UserSpec extends BaseSpecification {
         UserVO vo = new UserVO(userID: 1, password: 'encodedOld')
 
         when: "The target method executed"
-        ResponseEntity<GlobalResponse<Void>> response = userImpl.updatePassword("u", "t", request)
+        userImpl.updatePassword("u", "t", request)
 
         then: "The expected calls"
         1 * userRepo.findOne(_) >> Optional.of(vo)
         1 * encoder.matches('o', 'encodedOld') >> (failCase != "WrongOld")
         0 * _
 
-        and: "Bad Request"
-        response.statusCode == HttpStatus.BAD_REQUEST
+        and: "ValidationException is thrown"
+        thrown(ValidationException)
 
         where:
         failCase   | confirm
@@ -278,7 +274,7 @@ class UserSpec extends BaseSpecification {
         List<UserResponseDto> dtos = [UserResponseDto.builder().username('u1').build()]
 
         when: "The target method executed"
-        ResponseEntity<GlobalResponse<List<UserResponseDto>>> response = userImpl.getAllUsers()
+        List<UserResponseDto> result = userImpl.getAllUsers()
 
         then: "The expected calls"
         1 * userRepo.findAll() >> users
@@ -286,7 +282,7 @@ class UserSpec extends BaseSpecification {
         0 * _
 
         and: "Result is correct"
-        response.body.responseData == dtos
+        result == dtos
     }
 
     @Unroll
@@ -516,5 +512,4 @@ class UserSpec extends BaseSpecification {
         vo.password == "hashed"
         vo.passwordUpdatedAt != null
     }
-
 }

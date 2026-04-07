@@ -15,20 +15,20 @@ class DashboardControllerSpec extends BaseSpecification {
     @Subject
     DashboardController dashboardController = new DashboardController(dashboardService)
 
-    def "test - getMetrics: Should delegate to dashboard service"() {
+    def "test - getMetrics: Should delegate to dashboard service and wrap result"() {
         given: "A metrics request"
-        ResponseEntity<GlobalResponse<DashboardMetricsDto>> serviceResponse = new ResponseEntity<>(HttpStatus.OK)
+        DashboardMetricsDto metricsDto = DashboardMetricsDto.builder().totalMembers(10).build()
 
         when: "The target method executed"
         ResponseEntity<GlobalResponse<DashboardMetricsDto>> result = dashboardController.getMetrics()
 
         then: "The expected calls are made"
-        1 * dashboardService.getMetrics() >> serviceResponse
+        1 * dashboardService.getMetrics() >> metricsDto
         0 * _
 
         and: "The expected result"
-        result == serviceResponse
         result.statusCode == HttpStatus.OK
+        result.body.responseData.totalMembers == 10
         noExceptionThrown()
     }
 }

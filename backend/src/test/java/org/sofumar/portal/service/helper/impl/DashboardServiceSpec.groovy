@@ -6,7 +6,6 @@ import org.sofumar.portal.constants.QuarterStatus
 import org.sofumar.portal.constants.ReferenceConstants
 import org.sofumar.portal.data.dto.response.DashboardMetricsDto
 import org.sofumar.portal.core.vo.MemberVO
-import org.sofumar.portal.framework.data.response.GlobalResponse
 import org.sofumar.portal.core.businesslogic.Expense
 import org.sofumar.portal.core.businesslogic.Member
 import org.sofumar.portal.core.businesslogic.Payment
@@ -14,7 +13,6 @@ import org.sofumar.portal.data.dto.response.PaymentSummary
 import org.sofumar.portal.service.helper.BaselineService
 import org.sofumar.portal.testbase.BaseSpecification
 import org.springframework.data.jpa.domain.Specification as JpaSpecification
-import org.springframework.http.ResponseEntity
 import spock.lang.Subject
 
 import java.time.LocalDate
@@ -48,10 +46,9 @@ class DashboardServiceSpec extends BaseSpecification {
         PaymentSummary ps1 = Mock(PaymentSummary)
 
         List<JpaSpecification> capturedSpecs = []
-        ResponseEntity<GlobalResponse<DashboardMetricsDto>> response
 
         when: "The target method executed"
-        response = dashboardService.getMetrics()
+        DashboardMetricsDto result = dashboardService.getMetrics()
 
         then: "The expected calls are made"
         1 * member.countActiveMembers() >> activeMemberCount
@@ -70,12 +67,12 @@ class DashboardServiceSpec extends BaseSpecification {
         0 * _
 
         and: "The expected result"
-        response != null
-        response.body.responseData.totalRevenue == yearlyBaseline
-        response.body.responseData.overdueTotal >= paidAmount
-        response.body.responseData.quarterlyCollections[0].status == QuarterStatus.PAST
-        response.body.responseData.quarterlyCollections[1].status == QuarterStatus.CURRENT
-        response.body.responseData.quarterlyCollections[2].status == QuarterStatus.FUTURE
+        result != null
+        result.totalRevenue == yearlyBaseline
+        result.overdueTotal >= paidAmount
+        result.quarterlyCollections[0].status == QuarterStatus.PAST
+        result.quarterlyCollections[1].status == QuarterStatus.CURRENT
+        result.quarterlyCollections[2].status == QuarterStatus.FUTURE
         noExceptionThrown()
 
         cleanup:
@@ -90,10 +87,8 @@ class DashboardServiceSpec extends BaseSpecification {
         localDateMock.when(LocalDate::now).thenReturn(fixedDate)
         BigDecimal collectionAmount = new BigDecimal("100.00")
 
-        ResponseEntity<GlobalResponse<DashboardMetricsDto>> response
-
         when: "The target method executed"
-        response = dashboardService.getMetrics()
+        DashboardMetricsDto result = dashboardService.getMetrics()
 
         then: "The expected calls are made"
         1 * member.countActiveMembers() >> 0
@@ -107,8 +102,8 @@ class DashboardServiceSpec extends BaseSpecification {
         0 * _
 
         and: "The expected result"
-        response.body.responseData.duesThisQuarter == BigDecimal.ZERO
-        response.body.responseData.quarterlyCollections[0].percentage == 0.0
+        result.duesThisQuarter == BigDecimal.ZERO
+        result.quarterlyCollections[0].percentage == 0.0
         noExceptionThrown()
 
         cleanup:

@@ -6,7 +6,7 @@
     "version" : "1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:50376",
+    "url" : "http://localhost:50437",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -534,7 +534,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/GlobalResponseTokenDto"
+                  "$ref" : "#/components/schemas/GlobalResponseVoid"
                 }
               }
             }
@@ -590,7 +590,7 @@
         }
       }
     },
-    "/users" : {
+    "/users/" : {
       "get" : {
         "tags" : [ "User Management" ],
         "summary" : "Get all users",
@@ -779,7 +779,7 @@
     "/members/{memberID}/summary" : {
       "get" : {
         "tags" : [ "Members" ],
-        "summary" : "Get financial summary for a member",
+        "summary" : "Get member summary (total paid, outstanding, overdue)",
         "operationId" : "getMemberSummary",
         "parameters" : [ {
           "name" : "memberID",
@@ -807,8 +807,8 @@
     "/members/lookup" : {
       "get" : {
         "tags" : [ "Members" ],
-        "summary" : "Lookup member by first name, last name or ID (fuzzy search)",
-        "operationId" : "memberLookup",
+        "summary" : "Lookup members - fuzzy search by first name, last name or ID",
+        "operationId" : "lookupMembers",
         "parameters" : [ {
           "name" : "query",
           "in" : "query",
@@ -1905,56 +1905,6 @@
           }
         },
         "required" : [ "email", "firstName", "lastName", "password", "username" ]
-      },
-      "GlobalResponseTokenDto" : {
-        "type" : "object",
-        "description" : "Unified API response envelope",
-        "properties" : {
-          "statusCode" : {
-            "type" : "integer",
-            "format" : "int32",
-            "description" : "HTTP status code",
-            "example" : 200
-          },
-          "statusDesc" : {
-            "type" : "string",
-            "description" : "HTTP status description",
-            "example" : "OK"
-          },
-          "globalMessages" : {
-            "type" : "array",
-            "description" : "Global-level messages (errors, warnings, info)",
-            "items" : {
-              "$ref" : "#/components/schemas/GlobalMsg"
-            }
-          },
-          "fieldMessages" : {
-            "type" : "array",
-            "description" : "Field-level validation messages",
-            "items" : {
-              "$ref" : "#/components/schemas/FieldMsg"
-            }
-          },
-          "responseData" : {
-            "$ref" : "#/components/schemas/TokenDto",
-            "description" : "Response payload"
-          },
-          "meta" : {
-            "$ref" : "#/components/schemas/PaginationMeta",
-            "description" : "Pagination metadata"
-          }
-        }
-      },
-      "TokenDto" : {
-        "type" : "object",
-        "properties" : {
-          "token" : {
-            "type" : "string"
-          },
-          "refreshToken" : {
-            "type" : "string"
-          }
-        }
       },
       "PasswordUpdateRequestDto" : {
         "type" : "object",

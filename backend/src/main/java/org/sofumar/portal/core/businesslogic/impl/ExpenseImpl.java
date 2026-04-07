@@ -13,25 +13,20 @@ import org.sofumar.portal.data.dto.request.ExpenseSearchRequestDto;
 import org.sofumar.portal.data.transformer.ExpenseDtoTransformer;
 import org.sofumar.portal.data.transformer.ExpenseVOTransformer;
 import org.sofumar.portal.core.vo.ExpenseVO;
-import org.sofumar.portal.framework.data.response.GlobalResponse;
+import org.sofumar.portal.framework.data.response.PagedResult;
 import org.sofumar.portal.framework.data.response.PaginationMeta;
 import org.sofumar.portal.framework.exception.RecordNotFoundException;
-import org.sofumar.portal.framework.util.ResponseUtils;
 import org.sofumar.portal.core.repo.ExpenseRepository;
 import org.sofumar.portal.core.repo.jpaspec.ExpenseSpecifications;
 import org.sofumar.portal.service.validation.ExpenseValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import static org.sofumar.portal.message.ValidationMessages.RECORD_ADDED;
-import static org.sofumar.portal.message.ValidationMessages.RECORD_DELETED;
 import static org.sofumar.portal.message.ValidationMessages.RECORD_NOT_FOUND;
-import static org.sofumar.portal.message.ValidationMessages.RECORD_UPDATED;
 
 @Service
 public non-sealed class ExpenseImpl extends ExpenseAbstractBL implements Expense {
@@ -67,16 +62,15 @@ public non-sealed class ExpenseImpl extends ExpenseAbstractBL implements Expense
 
     @Override
     @Transactional
-    public ResponseEntity<GlobalResponse<Integer>> addExpense(ExpenseDto requestDto) {
+    public Integer addExpense(ExpenseDto requestDto) {
         ExpenseVO vo = voTransformer.transform(requestDto);
         ExpenseVO savedExpense = add(vo);
-        return ResponseUtils.okWithData(savedExpense.getExpenseID(),
-                RECORD_ADDED.addMessageArgs("Expense").getMessageString());
+        return savedExpense.getExpenseID();
     }
 
     @Override
     @Transactional
-    public ResponseEntity<GlobalResponse<Void>> updateExpense(ExpenseDto requestDto) {
+    public void updateExpense(ExpenseDto requestDto) {
         logger.info("Updating expense: {}", requestDto.getExpenseID());
 
         ExpenseVO existing = getRepo().findById(requestDto.getExpenseID())
@@ -84,29 +78,27 @@ public non-sealed class ExpenseImpl extends ExpenseAbstractBL implements Expense
 
         ExpenseVO updated = voTransformer.transformForUpdate(requestDto, existing);
         update(updated);
-        return ResponseUtils.ok(RECORD_UPDATED.addMessageArgs("Expense").getMessageString());
     }
 
     @Override
     @Transactional
-    public ResponseEntity<GlobalResponse<Void>> deleteExpense(@NonNull Integer expenseID) {
+    public void deleteExpense(@NonNull Integer expenseID) {
         ExpenseVO existing = getRepo().findById(expenseID)
                 .orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
         delete(existing);
-        return ResponseUtils.ok(RECORD_DELETED.addMessageArgs("Expense").getMessageString());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public ResponseEntity<GlobalResponse<ExpenseDto>> getExpense(@NonNull Integer expenseID) {
+    public ExpenseDto getExpense(@NonNull Integer expenseID) {
         ExpenseVO existing = getRepo().findById(expenseID)
                 .orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
-        return ResponseUtils.okWithData(dtoTransformer.transform(existing));
+        return dtoTransformer.transform(existing);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public ResponseEntity<GlobalResponse<List<ExpenseDto>>> searchExpenses(ExpenseSearchRequestDto request) {
+    public PagedResult<ExpenseDto> searchExpenses(ExpenseSearchRequestDto request) {
 
         List<Specification<ExpenseVO>> specs = new ArrayList<>();
         if (request.getCategory() != null)
@@ -119,7 +111,7 @@ public non-sealed class ExpenseImpl extends ExpenseAbstractBL implements Expense
         PaginationMeta meta = PaginationMeta.of(result.getNumber(), result.getSize(), result.getTotalElements(),
                 result.getTotalPages());
 
-        return ResponseUtils.okWithDataPageable(dtoTransformer.transformList(result.toList()), meta);
+        return PagedResult.of(dtoTransformer.transformList(result.toList()), meta);
     }
 
     @Override

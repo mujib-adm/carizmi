@@ -14,15 +14,13 @@ import org.sofumar.portal.data.dto.response.MemberQuarterlyRowDto;
 import org.sofumar.portal.data.dto.response.PaymentSummary;
 import org.sofumar.portal.data.dto.response.QuarterCellDto;
 import org.sofumar.portal.data.dto.response.QuarterlyChecklistDto;
-import org.sofumar.portal.framework.data.response.GlobalResponse;
 import org.sofumar.portal.framework.data.response.PaginationMeta;
-import org.sofumar.portal.framework.util.ResponseUtils;
+import org.sofumar.portal.framework.data.response.SinglePagedResult;
 import org.sofumar.portal.service.helper.QuarterlyFeeChecklistService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -44,7 +42,7 @@ public class QuarterlyFeeChecklistServiceImpl implements QuarterlyFeeChecklistSe
     private final Payment payment;
 
     @Override
-    public ResponseEntity<GlobalResponse<QuarterlyChecklistDto>> getQuarterlyChecklist(ChecklistSearchRequestDto request) {
+    public SinglePagedResult<QuarterlyChecklistDto> getQuarterlyChecklist(ChecklistSearchRequestDto request) {
         int year = (request.getYear() != null) ? request.getYear() : LocalDate.now().getYear();
         logger.info("Generating quarterly fee checklist for year: {}", year);
 
@@ -139,7 +137,7 @@ public class QuarterlyFeeChecklistServiceImpl implements QuarterlyFeeChecklistSe
                     .build());
         }
 
-        QuarterlyChecklistDto checklist = QuarterlyChecklistDto.builder()
+        QuarterlyChecklistDto checklistDto = QuarterlyChecklistDto.builder()
                 .year(year)
                 .currentQuarter(assessableQuarter)
                 .quarterlyFeeAmount(QUARTERLY_FEE_AMOUNT)
@@ -148,6 +146,6 @@ public class QuarterlyFeeChecklistServiceImpl implements QuarterlyFeeChecklistSe
 
         PaginationMeta meta = PaginationMeta.of(memberPage.getNumber(), memberPage.getSize(),
                 memberPage.getTotalElements(), memberPage.getTotalPages());
-        return ResponseUtils.okWithDataPageable(checklist, meta);
+        return SinglePagedResult.of(checklistDto, meta);
     }
 }

@@ -5,8 +5,7 @@ import org.sofumar.portal.data.dto.PaymentDto;
 import org.sofumar.portal.data.dto.request.PaymentSearchRequestDto;
 import org.sofumar.portal.core.vo.PaymentVO;
 import org.sofumar.portal.framework.bl.BusinessLogic;
-import org.sofumar.portal.framework.data.response.GlobalResponse;
-import org.springframework.http.ResponseEntity;
+import org.sofumar.portal.framework.data.response.PagedResult;
 import org.springframework.lang.NonNull;
 
 import java.math.BigDecimal;
@@ -17,17 +16,17 @@ import org.sofumar.portal.data.dto.response.PaymentSummary;
 import org.springframework.data.jpa.domain.Specification;
 
 public interface Payment extends BusinessLogic<PaymentVO> {
-    ResponseEntity<GlobalResponse<Integer>> addPayment(PaymentDto requestDto);
+    Integer addPayment(PaymentDto requestDto);
 
-    ResponseEntity<GlobalResponse<Void>> updatePayment(PaymentDto requestDto);
+    void updatePayment(PaymentDto requestDto);
 
-    ResponseEntity<GlobalResponse<Void>> deletePayment(@NonNull Integer paymentID);
+    void deletePayment(@NonNull Integer paymentID);
 
-    ResponseEntity<GlobalResponse<PaymentDto>> getPayment(@NonNull Integer paymentID);
+    PaymentDto getPayment(@NonNull Integer paymentID);
 
-    ResponseEntity<GlobalResponse<List<PaymentDto>>> searchPayments(PaymentSearchRequestDto request);
+    PagedResult<PaymentDto> searchPayments(PaymentSearchRequestDto request);
 
-    ResponseEntity<GlobalResponse<List<LatestPaymentDto>>> getLatestPayments(int limit);
+    List<LatestPaymentDto> getLatestPayments(int limit);
 
     BigDecimal sumAmountByDateReceivedBefore(LocalDate date);
 

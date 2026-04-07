@@ -7,18 +7,17 @@ import org.sofumar.portal.data.dto.SystemSettingsDto;
 import org.sofumar.portal.data.dto.request.SystemSettingsSearchRequestDto;
 import org.sofumar.portal.core.vo.SystemSettingsVO;
 import org.sofumar.portal.framework.bl.BusinessLogic;
-import org.sofumar.portal.framework.data.response.GlobalResponse;
-import org.springframework.http.ResponseEntity;
+import org.sofumar.portal.framework.data.response.PagedResult;
 
 public interface SystemSetting extends BusinessLogic<SystemSettingsVO> {
 
-    ResponseEntity<GlobalResponse<Void>> updateSystemSetting(SystemSettingsDto dto);
+    void updateSystemSetting(SystemSettingsDto dto);
 
-    ResponseEntity<GlobalResponse<SystemSettingsDto>> getSystemSetting(Integer id);
+    SystemSettingsDto getSystemSetting(Integer id);
 
-    ResponseEntity<GlobalResponse<List<SystemSettingsDto>>> searchSystemSettings(SystemSettingsSearchRequestDto request);
+    PagedResult<SystemSettingsDto> searchSystemSettings(SystemSettingsSearchRequestDto request);
 
-    ResponseEntity<GlobalResponse<List<SystemSettingsDto>>> getSettingsByKey(String key);
+    List<SystemSettingsDto> getSettingsByKey(String key);
 
     Optional<SystemSettingsVO> findBySettingKey(String key);
 

@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sofumar.portal.constants.FieldConstants;
 import org.sofumar.portal.framework.exception.AuthenticationException;
+import org.sofumar.portal.framework.exception.ValidationException;
 import org.sofumar.portal.message.ValidationMessages;
 import org.sofumar.portal.constants.Role;
 import org.sofumar.portal.data.dto.response.UserResponseDto;
@@ -19,10 +20,8 @@ import org.sofumar.portal.data.dto.UserDto;
 import org.sofumar.portal.data.transformer.UserResponseDtoTransformer;
 import org.sofumar.portal.data.transformer.UserVOTransformer;
 import org.sofumar.portal.core.vo.UserVO;
-import org.sofumar.portal.framework.data.response.GlobalResponse;
 import org.sofumar.portal.framework.exception.RecordNotFoundException;
 import org.sofumar.portal.framework.service.TokenBlacklistService;
-import org.sofumar.portal.framework.util.ResponseUtils;
 import org.sofumar.portal.core.repo.UserRepository;
 import org.sofumar.portal.core.repo.jpaspec.UserSpecifications;
 import org.sofumar.portal.core.businesslogic.User;
@@ -33,13 +32,11 @@ import org.springframework.lang.NonNull;
 import org.sofumar.portal.framework.service.RefreshTokenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.sofumar.portal.message.ValidationMessages.RECORD_NOT_FOUND;
-import static org.sofumar.portal.message.ValidationMessages.RECORD_UPDATED;
 
 @Service
 public non-sealed class UserImpl extends UserAbstractBL implements User {
@@ -106,7 +103,7 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
 
     @Override
     @Transactional
-    public ResponseEntity<GlobalResponse<Void>> register(UserDto requestDto) {
+    public void register(UserDto requestDto) {
         UserVO userVO = voTransformer.transform(requestDto);
         // Use provided role if valid, otherwise default to MEMBER
         Role assignedRole = Role.MEMBER;
@@ -122,7 +119,6 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
         userVO.setActive(true);
         validator.validatePassword(userVO);
         add(userVO);
-        return ResponseUtils.ok("User registered successfully with role: " + assignedRole.name());
     }
 
     @Override
@@ -140,7 +136,7 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
     }
 
     @Override
-    public ResponseEntity<GlobalResponse<TokenDto>> refreshToken(String token) {
+    public TokenDto refreshToken(String token) {
         try {
             String newRefreshToken = refreshTokenService.rotateRefreshToken(token);
             String username = refreshTokenService.validateRefreshToken(newRefreshToken)
@@ -163,7 +159,7 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
             
             String newAccessToken = jwtService.generateAccessToken(userDetails);
             
-            return ResponseUtils.okWithData(new TokenDto(newAccessToken, newRefreshToken));
+            return new TokenDto(newAccessToken, newRefreshToken);
         } catch (IllegalArgumentException | RecordNotFoundException e) {
             throw new AuthenticationException();
         }
@@ -171,33 +167,31 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
 
     @Override
     @Transactional(readOnly = true)
-    public ResponseEntity<GlobalResponse<UserProfileDto>> getProfile(String username) {
+    public UserProfileDto getProfile(String username) {
         UserVO userVO = getRepo().findOne(UserSpecifications.hasUsername(username))
                 .orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
         
-        UserProfileDto dto = UserProfileDto.builder()
+        return UserProfileDto.builder()
                 .username(userVO.getUsername())
                 .role(userVO.getRole().name())
                 .firstName(userVO.getFirstName())
                 .lastName(userVO.getLastName())
                 .email(userVO.getEmail())
                 .build();
-                
-        return ResponseUtils.okWithData(dto);
     }
 
     @Override
     @Transactional
-    public ResponseEntity<GlobalResponse<Void>> updatePassword(String username, String token, PasswordUpdateRequestDto requestDto) {
+    public void updatePassword(String username, String token, PasswordUpdateRequestDto requestDto) {
         UserVO userVO = getRepo().findOne(UserSpecifications.hasUsername(username))
                 .orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
 
         if (!encoder.matches(requestDto.getOldPassword(), userVO.getPassword())) {
-            return ResponseUtils.badRequest("Incorrect current password.");
+            throw new ValidationException("Incorrect old password.");
         }
 
         if (!requestDto.getNewPassword().equals(requestDto.getConfirmPassword())) {
-            return ResponseUtils.badRequest("New password and confirmation do not match.");
+            throw new ValidationException("New password and confirmation do not match.");
         }
 
         userVO.setPassword(requestDto.getNewPassword());
@@ -209,20 +203,18 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
         if (token != null) {
              blacklistService.revokeToken(token, (long) expMin * 60);
         }
-
-        return ResponseUtils.ok("Password updated successfully! Please log in again.");
     }
 
     @Override
     @Transactional(readOnly = true)
-    public ResponseEntity<GlobalResponse<List<UserResponseDto>>> getAllUsers() {
+    public List<UserResponseDto> getAllUsers() {
         List<UserVO> result = getRepo().findAll();
-        return ResponseUtils.okWithData(dtoTransformer.transformList(result));
+        return dtoTransformer.transformList(result);
     }
 
     @Override
     @Transactional
-    public ResponseEntity<GlobalResponse<Void>> updateUserRole(@NonNull Integer userId, String newRole) {
+    public void updateUserRole(@NonNull Integer userId, String newRole) {
         UserVO userVO = getRepo().findById(userId).orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
         
         try {
@@ -231,17 +223,15 @@ public non-sealed class UserImpl extends UserAbstractBL implements User {
             userVO.addFieldMessage(FieldConstants.ROLE, ValidationMessages.INVALID_ROLE);
         }
         update(userVO);
-        return ResponseUtils.ok(RECORD_UPDATED.addMessageArgs("User role").getMessageString());
     }
 
     @Override
     @Transactional
-    public ResponseEntity<GlobalResponse<Void>> toggleUserStatus(@NonNull Integer userId, boolean active) {
+    public void toggleUserStatus(@NonNull Integer userId, boolean active) {
         UserVO userVO = getRepo().findById(userId).orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
         
         userVO.setActive(active);
         update(userVO);
-        return ResponseUtils.ok(RECORD_UPDATED.addMessageArgs("User status").getMessageString());
     }
 
     private long countActiveAdmins() {

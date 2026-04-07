@@ -16,7 +16,7 @@ class JwtServiceSpec extends Specification {
 
     def setup() {
         // HS512 requires at least 64 bytes (512 bits)
-        def secretString = "super-secret-key-that-is-long-enough-for-hs512-algorithm-64-chars!"
+        String secretString = "super-secret-key-that-is-long-enough-for-hs512-algorithm-64-chars!"
         ReflectionTestUtils.setField(jwtService, "secret", Base64.getEncoder().encodeToString(secretString.getBytes()))
         ReflectionTestUtils.setField(jwtService, "expMin", 60)
         ReflectionTestUtils.setField(jwtService, "issuer", "test-issuer")

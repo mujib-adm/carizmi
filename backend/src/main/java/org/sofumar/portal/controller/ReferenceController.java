@@ -7,6 +7,8 @@ import org.sofumar.portal.data.dto.response.ReferenceDescDto;
 import org.sofumar.portal.data.dto.ReferenceDto;
 import org.sofumar.portal.data.dto.request.ReferenceSearchRequestDto;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
+import org.sofumar.portal.framework.data.response.PagedResult;
+import org.sofumar.portal.framework.util.ResponseUtils;
 import org.sofumar.portal.core.businesslogic.Reference;
 import org.sofumar.portal.security.annotation.IsAuthenticated;
 import org.springframework.http.ResponseEntity;
@@ -31,7 +33,7 @@ public class ReferenceController {
     @Operation(summary = "Get reference by ID")
     @IsAuthenticated
     public ResponseEntity<GlobalResponse<ReferenceDto>> getReference(@PathVariable Integer referenceID) {
-        return reference.getReference(referenceID);
+        return ResponseUtils.okWithData(reference.getReference(referenceID));
     }
 
     @PostMapping("/search")
@@ -39,7 +41,8 @@ public class ReferenceController {
     @IsAuthenticated
     public ResponseEntity<GlobalResponse<List<ReferenceDto>>> searchReferences(
             @RequestBody ReferenceSearchRequestDto request) {
-        return reference.searchReferences(request);
+        PagedResult<ReferenceDto> result = reference.searchReferences(request);
+        return ResponseUtils.okWithDataPageable(result.items(), result.meta());
     }
 
     @GetMapping("/list/{referenceName}")
@@ -47,6 +50,6 @@ public class ReferenceController {
     @IsAuthenticated
     public ResponseEntity<GlobalResponse<List<ReferenceDescDto>>> getReferencesByName(
             @PathVariable String referenceName) {
-        return reference.getReferencesByName(referenceName);
+        return ResponseUtils.okWithData(reference.getReferencesByName(referenceName));
     }
 }

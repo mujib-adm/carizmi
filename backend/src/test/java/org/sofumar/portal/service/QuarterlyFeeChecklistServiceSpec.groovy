@@ -10,14 +10,13 @@ import org.sofumar.portal.data.dto.request.ChecklistSearchRequestDto
 import org.sofumar.portal.data.dto.response.MemberQuarterlyRowDto
 import org.sofumar.portal.data.dto.response.PaymentSummary
 import org.sofumar.portal.data.dto.response.QuarterlyChecklistDto
-import org.sofumar.portal.framework.data.response.GlobalResponse
+import org.sofumar.portal.framework.data.response.SinglePagedResult
 import org.sofumar.portal.service.helper.impl.QuarterlyFeeChecklistServiceImpl
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
-import org.springframework.http.ResponseEntity
 import spock.lang.Specification
 import spock.lang.Subject
 
@@ -90,7 +89,7 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         Pageable capturedPageable
 
         when: "The target method executed"
-        ResponseEntity<GlobalResponse<QuarterlyChecklistDto>> response = service.getQuarterlyChecklist(searchRequest(year))
+        SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(searchRequest(year))
 
         then: "The expected calls are made"
         1 * member.findActiveMembers(_ as Pageable) >> { Pageable p -> capturedPageable = p; expectedPage }
@@ -98,7 +97,7 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         0 * _
 
         and: "The expected result"
-        QuarterlyChecklistDto result = response.getBody().getResponseData()
+        QuarterlyChecklistDto result = checklistResult.data()
         result.rows.size() == 1
         MemberQuarterlyRowDto row = result.rows[0]
         row.memberID == 1
@@ -136,7 +135,7 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         Pageable capturedPageable
 
         when: "The target method executed"
-        ResponseEntity<GlobalResponse<QuarterlyChecklistDto>> response = service.getQuarterlyChecklist(searchRequest(year))
+        SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(searchRequest(year))
 
         then: "The expected calls are made"
         1 * member.findActiveMembers(_ as Pageable) >> { Pageable p -> capturedPageable = p; expectedPage }
@@ -144,7 +143,7 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         0 * _
 
         and: "The expected result"
-        QuarterlyChecklistDto result = response.getBody().getResponseData()
+        QuarterlyChecklistDto result = checklistResult.data()
         MemberQuarterlyRowDto row = result.rows[0]
         row.quarters[0].status == QuarterCellStatus.NOT_APPLICABLE
         row.quarters[1].status == QuarterCellStatus.PAID
@@ -170,7 +169,7 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         List<PaymentSummary> summaries = [createSummary(2, year, 1, new BigDecimal("60.00"))]
 
         when: "The target method executed"
-        ResponseEntity<GlobalResponse<QuarterlyChecklistDto>> response = service.getQuarterlyChecklist(searchRequest(year))
+        SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(searchRequest(year))
 
         then: "The expected calls are made"
         1 * member.findActiveMembers(_ as Pageable) >> expectedPage
@@ -178,7 +177,7 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         0 * _
 
         and: "The expected result"
-        QuarterlyChecklistDto result = response.getBody().getResponseData()
+        QuarterlyChecklistDto result = checklistResult.data()
         MemberQuarterlyRowDto row = result.rows[0]
         row.quarters[0].status == QuarterCellStatus.PAID
         row.quarters[1].status == QuarterCellStatus.UNPAID
@@ -198,7 +197,7 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         Page<MemberVO> expectedPage = createPage([memberVO1])
 
         when: "The target method executed"
-        ResponseEntity<GlobalResponse<QuarterlyChecklistDto>> response = service.getQuarterlyChecklist(searchRequest(year))
+        SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(searchRequest(year))
 
         then: "The expected calls are made"
         1 * member.findActiveMembers(_ as Pageable) >> expectedPage
@@ -206,7 +205,7 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         0 * _
 
         and: "The expected result"
-        QuarterlyChecklistDto result = response.getBody().getResponseData()
+        QuarterlyChecklistDto result = checklistResult.data()
         MemberQuarterlyRowDto row = result.rows[0]
         (currentQuarter..<4).each { idx ->
             assert row.quarters[idx].status == QuarterCellStatus.FUTURE
@@ -222,7 +221,7 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         Page<MemberVO> expectedPage = createPage([memberVO1])
 
         when: "The target method executed"
-        ResponseEntity<GlobalResponse<QuarterlyChecklistDto>> response = service.getQuarterlyChecklist(searchRequest(futureYear))
+        SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(searchRequest(futureYear))
 
         then: "The expected calls are made"
         1 * member.findActiveMembers(_ as Pageable) >> expectedPage
@@ -230,7 +229,7 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         0 * _
 
         and: "The expected result"
-        QuarterlyChecklistDto result = response.getBody().getResponseData()
+        QuarterlyChecklistDto result = checklistResult.data()
         MemberQuarterlyRowDto row = result.rows[0]
         row.quarters.every { it.status == QuarterCellStatus.FUTURE }
         row.totalPaid == BigDecimal.ZERO
@@ -244,14 +243,14 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         Page<MemberVO> emptyPage = createPage([])
 
         when: "The target method executed"
-        ResponseEntity<GlobalResponse<QuarterlyChecklistDto>> response = service.getQuarterlyChecklist(searchRequest(year))
+        SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(searchRequest(year))
 
         then: "The expected calls are made"
         1 * member.findActiveMembers(_ as Pageable) >> emptyPage
         0 * _
 
         and: "The expected result"
-        QuarterlyChecklistDto result = response.getBody().getResponseData()
+        QuarterlyChecklistDto result = checklistResult.data()
         result.rows.isEmpty()
         result.year == year
         result.quarterlyFeeAmount == new BigDecimal("60.00")
@@ -267,7 +266,7 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         Page<MemberVO> expectedPage = createPage([memberVO1])
 
         when: "The target method executed"
-        ResponseEntity<GlobalResponse<QuarterlyChecklistDto>> response = service.getQuarterlyChecklist(searchRequest(year))
+        SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(searchRequest(year))
 
         then: "The expected calls are made"
         1 * member.findActiveMembers(_ as Pageable) >> expectedPage
@@ -275,7 +274,7 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         0 * _
 
         and: "The expected result"
-        QuarterlyChecklistDto result = response.getBody().getResponseData()
+        QuarterlyChecklistDto result = checklistResult.data()
         MemberQuarterlyRowDto row = result.rows[0]
         (0..<currentQuarter).each { idx ->
             assert row.quarters[idx].status == QuarterCellStatus.UNPAID
@@ -297,7 +296,7 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         }
 
         when: "The target method executed"
-        ResponseEntity<GlobalResponse<QuarterlyChecklistDto>> response = service.getQuarterlyChecklist(searchRequest(pastYear))
+        SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(searchRequest(pastYear))
 
         then: "The expected calls are made"
         1 * member.findActiveMembers(_ as Pageable) >> expectedPage
@@ -305,7 +304,7 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         0 * _
 
         and: "The expected result"
-        QuarterlyChecklistDto result = response.getBody().getResponseData()
+        QuarterlyChecklistDto result = checklistResult.data()
         MemberQuarterlyRowDto row = result.rows[0]
         row.quarters.every { it.status == QuarterCellStatus.PAID }
         row.totalPaid == new BigDecimal("240.00")
@@ -326,7 +325,7 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         Page<MemberVO> expectedPage = createPage([memberVO3, memberVO1, memberVO2])
 
         when: "The target method executed"
-        ResponseEntity<GlobalResponse<QuarterlyChecklistDto>> response = service.getQuarterlyChecklist(searchRequest(year))
+        SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(searchRequest(year))
 
         then: "The expected calls are made"
         1 * member.findActiveMembers(_ as Pageable) >> expectedPage
@@ -334,7 +333,7 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         0 * _
 
         and: "The expected result"
-        QuarterlyChecklistDto result = response.getBody().getResponseData()
+        QuarterlyChecklistDto result = checklistResult.data()
         result.rows[0].memberName == "First1 Last1"
         result.rows[1].memberName == "First2 Last2"
         result.rows[2].memberName == "First3 Last3"
@@ -355,8 +354,7 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         Pageable capturedPageable
 
         when: "The target method executed"
-        ResponseEntity<GlobalResponse<QuarterlyChecklistDto>> response = service.getQuarterlyChecklist(searchRequest(year, 0, 2))
-        GlobalResponse<QuarterlyChecklistDto> body = response.getBody()
+        SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(searchRequest(year, 0, 2))
 
         then: "The expected calls are made"
         1 * member.findActiveMembers(_ as Pageable) >> { Pageable p -> capturedPageable = p; page0 }
@@ -364,13 +362,14 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         0 * _
 
         and: "The expected result"
-        body.responseData.rows.size() == 2
-        body.responseData.rows[0].memberName == "First1 Last1"
-        body.responseData.rows[1].memberName == "First2 Last2"
-        body.meta.page == 0
-        body.meta.pageSize == 2
-        body.meta.totalRecords == 3
-        body.meta.totalPages == 2
+        QuarterlyChecklistDto result = checklistResult.data()
+        result.rows.size() == 2
+        result.rows[0].memberName == "First1 Last1"
+        result.rows[1].memberName == "First2 Last2"
+        checklistResult.meta().page == 0
+        checklistResult.meta().pageSize == 2
+        checklistResult.meta().totalRecords == 3
+        checklistResult.meta().totalPages == 2
 
         capturedPageable != null
         capturedPageable.pageNumber == 0
@@ -392,8 +391,7 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         Pageable capturedPageable
 
         when: "The target method executed"
-        ResponseEntity<GlobalResponse<QuarterlyChecklistDto>> response = service.getQuarterlyChecklist(searchRequest(year, 1, 2))
-        GlobalResponse<QuarterlyChecklistDto> body = response.getBody()
+        SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(searchRequest(year, 1, 2))
 
         then: "The expected calls are made"
         1 * member.findActiveMembers(_ as Pageable) >> { Pageable p -> capturedPageable = p; page1 }
@@ -401,12 +399,13 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         0 * _
 
         and: "The expected result"
-        body.responseData.rows.size() == 1
-        body.responseData.rows[0].memberName == "First3 Last3"
-        body.meta.page == 1
-        body.meta.pageSize == 2
-        body.meta.totalRecords == 3
-        body.meta.totalPages == 2
+        QuarterlyChecklistDto result = checklistResult.data()
+        result.rows.size() == 1
+        result.rows[0].memberName == "First3 Last3"
+        checklistResult.meta().page == 1
+        checklistResult.meta().pageSize == 2
+        checklistResult.meta().totalRecords == 3
+        checklistResult.meta().totalPages == 2
 
         capturedPageable != null
         capturedPageable.pageNumber == 1

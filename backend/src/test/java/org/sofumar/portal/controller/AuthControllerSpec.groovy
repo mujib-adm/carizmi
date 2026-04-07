@@ -8,6 +8,8 @@ import org.sofumar.portal.data.dto.request.PasswordUpdateRequestDto
 import org.sofumar.portal.data.dto.response.UserProfileDto
 import org.sofumar.portal.data.dto.response.TokenDto
 import org.sofumar.portal.framework.data.response.GlobalResponse
+import org.sofumar.portal.framework.exception.AuthenticationException
+import org.sofumar.portal.framework.exception.ValidationException
 import org.sofumar.portal.testbase.BaseSpecification
 import org.sofumar.portal.security.CookieService
 import org.springframework.http.HttpStatus
@@ -27,30 +29,24 @@ class AuthControllerSpec extends BaseSpecification {
     HttpServletRequest request = Mock()
     HttpServletResponse response = Mock()
 
-    def "test - register: Should delegate to user service"() {
+    def "test - register: Should delegate to user service and wrap result"() {
         given: "A registration request"
-        String username = "Test"
-        UserDto requestDto = new UserDto(username: username)
-        ResponseEntity<GlobalResponse<Void>> expectedResponse = new ResponseEntity<>(HttpStatus.OK)
+        UserDto requestDto = new UserDto(username: "Test")
 
         when: "The target method executed"
         ResponseEntity<GlobalResponse<Void>> result = authController.register(requestDto)
 
         then: "The expected calls are made"
-        1 * user.register(requestDto) >> expectedResponse
+        1 * user.register(requestDto)
         0 * _
 
         and: "The expected result"
-        result == expectedResponse
         result.statusCode == HttpStatus.OK
         noExceptionThrown()
     }
 
     @Unroll
     def "test - logout: Should read tokens from cookies, logout, and clear cookies [access: #accessToken, refresh: #refreshToken]"() {
-        given: "Cookie values"
-        String expectedMessage = "Successfully logged out"
-
         when: "The target method executed"
         ResponseEntity<GlobalResponse<Void>> result = authController.logout(request, response)
 
@@ -63,7 +59,7 @@ class AuthControllerSpec extends BaseSpecification {
 
         and: "The expected result"
         result.statusCode == HttpStatus.OK
-        result.body.globalMessages[0].message == expectedMessage
+        result.body.globalMessages[0].message == "Successfully logged out"
         noExceptionThrown()
 
         where:
@@ -74,154 +70,114 @@ class AuthControllerSpec extends BaseSpecification {
         null        | null
     }
 
-    @Unroll
-    def "test - refreshToken: Should return bad request when no refresh token [token: #token, expectedStatus: #expectedStatus]"() {
-        given: "A refresh request"
-        ResponseEntity<GlobalResponse<TokenDto>> serviceResponse = new ResponseEntity<>(HttpStatus.OK)
-
+    def "test - refreshToken: Should return bad request when no refresh token"() {
         when: "The target method executed"
-        ResponseEntity<GlobalResponse<TokenDto>> result = authController.refreshToken(request, response)
+        ResponseEntity<GlobalResponse<Void>> result = authController.refreshToken(request, response)
 
         then: "The expected calls are made"
-        1 * cookieService.getRefreshToken(request) >> Optional.ofNullable(token)
-        if (token) {
-            1 * user.refreshToken(token) >> serviceResponse
-        }
+        1 * cookieService.getRefreshToken(request) >> Optional.empty()
         0 * _
 
         and: "The expected result"
-        result.statusCode == expectedStatus
+        result.statusCode == HttpStatus.BAD_REQUEST
         noExceptionThrown()
-
-        where:
-        token     | expectedStatus
-        "refresh" | HttpStatus.OK
-        null      | HttpStatus.BAD_REQUEST
     }
 
-    def "test - refreshToken: Should set new cookies when refresh succeeds with token data"() {
-        given: "A successful refresh response containing tokens"
+    def "test - refreshToken: Should set new cookies when refresh succeeds"() {
+        given: "A successful refresh"
         String refreshToken = "old-refresh"
-        GlobalResponse<TokenDto> body = new GlobalResponse<>()
-        body.setResponseData(new TokenDto("new-access", "new-refresh"))
-        ResponseEntity<GlobalResponse<TokenDto>> serviceResponse = ResponseEntity.ok(body)
+        TokenDto tokenDto = new TokenDto("new-access", "new-refresh")
 
         when: "The target method executed"
-        ResponseEntity<GlobalResponse<TokenDto>> result = authController.refreshToken(request, response)
+        ResponseEntity<GlobalResponse<Void>> result = authController.refreshToken(request, response)
 
         then: "The expected calls are made"
         1 * cookieService.getRefreshToken(request) >> Optional.of(refreshToken)
-        1 * user.refreshToken(refreshToken) >> serviceResponse
+        1 * user.refreshToken(refreshToken) >> tokenDto
         1 * cookieService.addAccessTokenCookie(response, "new-access")
         1 * cookieService.addRefreshTokenCookie(response, "new-refresh")
         0 * _
 
-        and: "Tokens are removed from response body (set to null)"
+        and: "Tokens are NOT in response body (they're in cookies)"
         result.statusCode == HttpStatus.OK
         result.body.responseData == null
         noExceptionThrown()
     }
 
-    def "test - refreshToken: Should not set cookies when refresh response has no token data"() {
-        given: "A successful refresh response without token data"
-        String refreshToken = "old-refresh"
-        GlobalResponse<TokenDto> body = new GlobalResponse<>()
-        body.setResponseData(null)
-        ResponseEntity<GlobalResponse<TokenDto>> serviceResponse = ResponseEntity.ok(body)
-
-        when: "The target method executed"
-        ResponseEntity<GlobalResponse<TokenDto>> result = authController.refreshToken(request, response)
-
-        then: "The expected calls are made"
-        1 * cookieService.getRefreshToken(request) >> Optional.of(refreshToken)
-        1 * user.refreshToken(refreshToken) >> serviceResponse
-        0 * _
-
-        and: "The expected result"
-        result.statusCode == HttpStatus.OK
-        noExceptionThrown()
-    }
-
-    def "test - refreshToken: Should not set cookies when refresh fails"() {
-        given: "A failed refresh response"
+    def "test - refreshToken: Should propagate AuthenticationException when refresh fails"() {
+        given: "An expired refresh token"
         String refreshToken = "expired-refresh"
-        ResponseEntity<GlobalResponse<TokenDto>> serviceResponse = new ResponseEntity<>(HttpStatus.UNAUTHORIZED)
 
         when: "The target method executed"
-        ResponseEntity<GlobalResponse<TokenDto>> result = authController.refreshToken(request, response)
+        authController.refreshToken(request, response)
 
         then: "The expected calls are made"
         1 * cookieService.getRefreshToken(request) >> Optional.of(refreshToken)
-        1 * user.refreshToken(refreshToken) >> serviceResponse
+        1 * user.refreshToken(refreshToken) >> { throw new AuthenticationException() }
         0 * _
 
-        and: "The expected result"
-        result.statusCode == HttpStatus.UNAUTHORIZED
-        noExceptionThrown()
+        and: "AuthenticationException is propagated to GlobalExceptionHandler"
+        thrown(AuthenticationException)
     }
 
-    def "test - getCurrentUser: Should delegate to user service"() {
+    def "test - getCurrentUser: Should delegate to user service and wrap result"() {
         given: "A profile request"
         String username = "Test"
         UserDetails userDetails = Mock(UserDetails)
-        ResponseEntity<GlobalResponse<UserProfileDto>> serviceResponse = new ResponseEntity<>(HttpStatus.OK)
+        UserProfileDto profileDto = UserProfileDto.builder().username(username).build()
 
         when: "The target method executed"
         ResponseEntity<GlobalResponse<UserProfileDto>> result = authController.getCurrentUser(userDetails)
 
         then: "The expected calls are made"
         1 * userDetails.getUsername() >> username
-        1 * user.getProfile(username) >> serviceResponse
+        1 * user.getProfile(username) >> profileDto
         0 * _
 
         and: "The expected result"
         result.statusCode == HttpStatus.OK
-        result == serviceResponse
+        result.body.responseData.username == username
         noExceptionThrown()
     }
 
-    def "test - updatePassword: Should delegate to user service"() {
+    def "test - updatePassword: Should delegate to user service and clear cookies on success"() {
         given: "A password update request"
         String username = "Test"
         UserDetails userDetails = Mock(UserDetails)
         PasswordUpdateRequestDto requestDto = new PasswordUpdateRequestDto()
-        ResponseEntity<GlobalResponse<Void>> serviceResponse = new ResponseEntity<>(HttpStatus.OK)
         String accessTokenFromCookie = "access-token"
 
         when: "The target method executed"
         ResponseEntity<GlobalResponse<Void>> result = authController.updatePassword(userDetails, request, response, requestDto)
 
         then: "The expected calls are made"
-        1 * cookieService.getAccessToken(request) >> Optional.ofNullable(accessTokenFromCookie)
+        1 * cookieService.getAccessToken(request) >> Optional.of(accessTokenFromCookie)
         1 * userDetails.getUsername() >> username
-        1 * user.updatePassword(username, accessTokenFromCookie, requestDto) >> serviceResponse
-        1 * cookieService.clearAuthCookies(response) // cookies cleared on successful password update
+        1 * user.updatePassword(username, accessTokenFromCookie, requestDto)
+        1 * cookieService.clearAuthCookies(response)
         0 * _
 
         and: "The expected result"
         result.statusCode == HttpStatus.OK
-        result == serviceResponse
         noExceptionThrown()
     }
 
-    def "test - updatePassword: Should NOT clear cookies when password update fails"() {
+    def "test - updatePassword: Should propagate ValidationException when password update fails"() {
         given: "A password update request that fails"
         String username = "Test"
         UserDetails userDetails = Mock(UserDetails)
         PasswordUpdateRequestDto requestDto = new PasswordUpdateRequestDto()
-        ResponseEntity<GlobalResponse<Void>> failedResponse = new ResponseEntity<>(HttpStatus.BAD_REQUEST)
 
         when: "The target method executed"
-        ResponseEntity<GlobalResponse<Void>> result = authController.updatePassword(userDetails, request, response, requestDto)
+        authController.updatePassword(userDetails, request, response, requestDto)
 
         then: "The expected calls are made"
         1 * cookieService.getAccessToken(request) >> Optional.of("access-token")
         1 * userDetails.getUsername() >> username
-        1 * user.updatePassword(username, "access-token", requestDto) >> failedResponse
+        1 * user.updatePassword(username, "access-token", requestDto) >> { throw new ValidationException("Incorrect old password.") }
         0 * _
 
-        and: "The expected result"
-        result.statusCode == HttpStatus.BAD_REQUEST
-        noExceptionThrown()
+        and: "ValidationException is propagated (cookies NOT cleared)"
+        thrown(ValidationException)
     }
 }

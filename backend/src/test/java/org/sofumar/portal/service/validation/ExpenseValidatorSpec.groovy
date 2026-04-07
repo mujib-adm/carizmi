@@ -78,7 +78,7 @@ class ExpenseValidatorSpec extends BaseSpecification {
 
         then: "The expected calls are made"
         if (field != fieldName || value) {
-            def arg = (field == fieldName) ? value : defaultCategory
+            String arg = (field == fieldName) ? value : defaultCategory
             1 * referenceValidator.validate(vo, fieldName, referenceName, arg)
         }
         0 * _

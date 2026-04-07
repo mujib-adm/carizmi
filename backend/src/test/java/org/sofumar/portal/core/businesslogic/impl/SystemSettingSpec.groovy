@@ -7,7 +7,7 @@ import org.sofumar.portal.data.dto.request.SortOrder
 import org.sofumar.portal.data.dto.request.SystemSettingsSearchRequestDto
 import org.sofumar.portal.data.transformer.SystemSettingsDtoTransformer
 import org.sofumar.portal.core.vo.SystemSettingsVO
-import org.sofumar.portal.framework.data.response.GlobalResponse
+import org.sofumar.portal.framework.data.response.PagedResult
 import org.sofumar.portal.framework.exception.DuplicateRecordException
 import org.sofumar.portal.framework.exception.RecordNotFoundException
 import org.sofumar.portal.framework.util.MySQLConstraintResolver
@@ -19,7 +19,6 @@ import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.jpa.domain.Specification as JpaSpecification
-import org.springframework.http.ResponseEntity
 import org.springframework.test.util.ReflectionTestUtils
 import spock.lang.Subject
 import spock.lang.Unroll
@@ -46,10 +45,9 @@ class SystemSettingSpec extends BaseSpecification {
         String key = "K"
         SystemSettingsDto dto = new SystemSettingsDto(systemSettingsID: id, settingValue: value)
         SystemSettingsVO vo = new SystemSettingsVO(systemSettingsID: id, settingName: name, settingKey: key)
-        ResponseEntity<GlobalResponse<Void>> response
 
         when: "The target method executed"
-        response = systemSetting.updateSystemSetting(dto)
+        systemSetting.updateSystemSetting(dto)
 
         then: "The expected calls are made"
         1 * settingsRepo.findById(1) >> Optional.of(vo)
@@ -58,7 +56,6 @@ class SystemSettingSpec extends BaseSpecification {
         0 * _
 
         and: "The expected result"
-        response.statusCode.value() == 200
         vo.getSettingValue() == "V"
         noExceptionThrown()
     }
@@ -121,10 +118,9 @@ class SystemSettingSpec extends BaseSpecification {
         given: "An existing system setting"
         Integer id = 1
         SystemSettingsVO vo = new SystemSettingsVO(systemSettingsID: id)
-        ResponseEntity<GlobalResponse<SystemSettingsDto>> response
 
         when: "The target method executed"
-        response = systemSetting.getSystemSetting(id)
+        SystemSettingsDto result = systemSetting.getSystemSetting(id)
 
         then: "The expected calls are made"
         1 * settingsRepo.findById(1) >> Optional.of(vo)
@@ -132,7 +128,7 @@ class SystemSettingSpec extends BaseSpecification {
         0 * _
 
         and: "The expected result"
-        response != null
+        result != null
         noExceptionThrown()
     }
 
@@ -164,7 +160,7 @@ class SystemSettingSpec extends BaseSpecification {
         request.setSortOrder(SortOrder.desc)
 
         when: "The target method executed"
-        systemSetting.searchSystemSettings(request)
+        PagedResult<SystemSettingsDto> result = systemSetting.searchSystemSettings(request)
 
         then: "The expected calls are made"
         1 * settingsRepo.findAll(_ as JpaSpecification, _ as PageRequest) >> { JpaSpecification spec, PageRequest page ->
@@ -181,6 +177,7 @@ class SystemSettingSpec extends BaseSpecification {
         0 * _
 
         and: "The expected result"
+        result != null
         noExceptionThrown()
         capturedSpec != null
         Map<String, List> inspection = inspectSpecification(capturedSpec)

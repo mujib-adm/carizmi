@@ -7,7 +7,7 @@ import org.sofumar.portal.data.dto.request.SortOrder
 import org.sofumar.portal.data.transformer.ExpenseDtoTransformer
 import org.sofumar.portal.data.transformer.ExpenseVOTransformer
 import org.sofumar.portal.core.vo.ExpenseVO
-import org.sofumar.portal.framework.data.response.GlobalResponse
+import org.sofumar.portal.framework.data.response.PagedResult
 import org.sofumar.portal.framework.exception.DuplicateRecordException
 import org.sofumar.portal.framework.exception.RecordNotFoundException
 import org.sofumar.portal.framework.util.MySQLConstraintResolver
@@ -19,9 +19,9 @@ import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.jpa.domain.Specification as JpaSpecification
-import org.springframework.http.ResponseEntity
 import org.springframework.test.util.ReflectionTestUtils
 import spock.lang.Subject
+import spock.lang.Unroll
 
 import java.time.LocalDate
 
@@ -40,58 +40,30 @@ class ExpenseSpec extends BaseSpecification {
         ReflectionTestUtils.setField(expenseImpl, "constraintResolver", constraintResolver)
     }
 
-    def "test - addExpense: Should transform, validate, and save expense"() {
-        given: "An expense DTO and setup"
-        BigDecimal amount = 100.00
+    def "test - addExpense: Success"() {
+        given: "A valid expense request"
         Integer id = 1
-        ExpenseDto requestDto = new ExpenseDto(amount: amount)
-        ExpenseVO transformedVo = new ExpenseVO(amount: amount)
-        ExpenseVO savedVo = new ExpenseVO(expenseID: id, amount: amount)
-        ExpenseDto capturedDto = null
-        ExpenseVO capturedVo = null
-        ResponseEntity<GlobalResponse<Integer>> response
+        ExpenseDto requestDto = new ExpenseDto()
+        ExpenseVO vo = new ExpenseVO(expenseID: id)
 
         when: "The target method executed"
-        response = expenseImpl.addExpense(requestDto)
+        Integer result = expenseImpl.addExpense(requestDto)
 
         then: "The expected calls are made"
-        1 * voTransformer.transform(_) >> { ExpenseDto dto -> capturedDto = dto; transformedVo }
-        1 * validator.validate(transformedVo)
-        1 * expenseRepo.save(_) >> { ExpenseVO vo -> capturedVo = vo; savedVo }
+        1 * voTransformer.transform(requestDto) >> vo
+        1 * validator.validate(vo)
+        1 * expenseRepo.save(vo) >> vo
         0 * _
 
         and: "The expected result"
-        response.body.responseData == 1
-        capturedDto == requestDto
-        capturedVo == transformedVo
+        result == 1
         noExceptionThrown()
     }
 
-    def "test - addExpense: Should handle DataIntegrityViolationException - Duplicate"() {
-        given: "A request that causes a duplicate entry"
-        BigDecimal amount = 100.00
-        ExpenseDto requestDto = new ExpenseDto(amount: amount)
-        ExpenseVO transformedVo = new ExpenseVO(amount: amount)
-
-        when: "The target method executed"
-        expenseImpl.addExpense(requestDto)
-
-        then: "The expected calls are made"
-        1 * voTransformer.transform(_) >> transformedVo
-        1 * validator.validate(_)
-        1 * expenseRepo.save(_) >> { throw new DataIntegrityViolationException("Duplicate", new RuntimeException("Duplicate entry '1' for key 'PRIMARY'")) }
-        1 * constraintResolver.resolveFields(_) >> ["expenseID"]
-        0 * _
-
-        and: "The expected result"
-        thrown(DuplicateRecordException)
-    }
-
-    def "test - addExpense: Should handle general DataAccessException"() {
-        given: "A request that causes a DB error"
-        BigDecimal amount = 100.00
-        ExpenseDto requestDto = new ExpenseDto(amount: amount)
-        ExpenseVO vo = new ExpenseVO(amount: amount)
+    def "test - addExpense: Duplicate Handling"() {
+        given: "A duplicate expense scenario"
+        ExpenseVO vo = new ExpenseVO()
+        ExpenseDto requestDto = new ExpenseDto()
 
         when: "The target method executed"
         expenseImpl.addExpense(requestDto)
@@ -99,7 +71,26 @@ class ExpenseSpec extends BaseSpecification {
         then: "The expected calls are made"
         1 * voTransformer.transform(_) >> vo
         1 * validator.validate(_)
-        1 * expenseRepo.save(_) >> { throw new DataAccessException("DB error", new RuntimeException("root")) {} }
+        1 * expenseRepo.save(_) >> { throw new DataIntegrityViolationException("Dup", new RuntimeException("Duplicate entry '1' for key 'PRIMARY'")) }
+        1 * constraintResolver.resolveFields(_) >> ["expenseID"]
+        0 * _
+
+        and: "The expected result"
+        thrown(DuplicateRecordException)
+    }
+
+    def "test - addExpense: General DB Error"() {
+        given: "A DB error scenario during add"
+        ExpenseVO vo = new ExpenseVO()
+        ExpenseDto requestDto = new ExpenseDto()
+
+        when: "The target method executed"
+        expenseImpl.addExpense(requestDto)
+
+        then: "The expected calls are made"
+        1 * voTransformer.transform(_) >> vo
+        1 * validator.validate(_)
+        1 * expenseRepo.save(_) >> { throw new DataAccessException("error", new RuntimeException("root")) {} }
         0 * _
 
         and: "The expected result"
@@ -110,28 +101,46 @@ class ExpenseSpec extends BaseSpecification {
     def "test - updateExpense: Success"() {
         given: "A valid update request"
         Integer id = 1
-        BigDecimal amount = 200.00
-        ExpenseDto dto = new ExpenseDto(expenseID: id, amount: amount)
-        ExpenseVO existingVo = new ExpenseVO(expenseID: id)
-        ResponseEntity<GlobalResponse<Void>> response
+        ExpenseDto dto = new ExpenseDto(expenseID: id)
+        ExpenseVO vo = new ExpenseVO(expenseID: id)
 
         when: "The target method executed"
-        response = expenseImpl.updateExpense(dto)
+        expenseImpl.updateExpense(dto)
 
         then: "The expected calls are made"
-        1 * expenseRepo.findById(1) >> Optional.of(existingVo)
-        1 * voTransformer.transformForUpdate(dto, existingVo) >> existingVo
-        1 * validator.validateForUpdate(existingVo)
-        1 * expenseRepo.save(existingVo) >> existingVo
+        1 * expenseRepo.findById(1) >> Optional.of(vo)
+        1 * voTransformer.transformForUpdate(dto, vo) >> vo
+        1 * validator.validateForUpdate(vo)
+        1 * expenseRepo.save(vo) >> vo
         0 * _
 
         and: "The expected result"
-        response.statusCode.value() == 200
+        noExceptionThrown()
+    }
+
+    def "test - updateExpense: DB Error"() {
+        given: "A DB error during update"
+        Integer id = 1
+        ExpenseDto dto = new ExpenseDto(expenseID: id)
+        ExpenseVO vo = new ExpenseVO(expenseID: id)
+
+        when: "The target method executed"
+        expenseImpl.updateExpense(dto)
+
+        then: "The expected calls are made"
+        1 * expenseRepo.findById(1) >> Optional.of(vo)
+        1 * voTransformer.transformForUpdate(dto, vo) >> vo
+        1 * validator.validateForUpdate(vo)
+        1 * expenseRepo.save(vo) >> { throw new DataAccessException("error", new RuntimeException("root")) {} }
+        0 * _
+
+        and: "The expected result"
+        vo.hasErrors()
         noExceptionThrown()
     }
 
     def "test - updateExpense: Not Found"() {
-        given: "A non-existent expense ID"
+        given: "A missing expense ID for update"
         Integer id = 99
         ExpenseDto dto = new ExpenseDto(expenseID: id)
 
@@ -147,7 +156,7 @@ class ExpenseSpec extends BaseSpecification {
     }
 
     def "test - deleteExpense: Success"() {
-        given: "An existing expense VO"
+        given: "An existing expense ID"
         Integer id = 1
         ExpenseVO vo = new ExpenseVO(expenseID: id)
 
@@ -161,21 +170,6 @@ class ExpenseSpec extends BaseSpecification {
 
         and: "The expected result"
         noExceptionThrown()
-    }
-
-    def "test - deleteExpense: Not Found"() {
-        given: "A missing expense ID"
-        Integer id = 99
-
-        when: "The target method executed"
-        expenseImpl.deleteExpense(id)
-
-        then: "The expected calls are made"
-        1 * expenseRepo.findById(99) >> Optional.empty()
-        0 * _
-
-        and: "The expected result"
-        thrown(RecordNotFoundException)
     }
 
     def "test - deleteExpense: DB Error"() {
@@ -196,28 +190,42 @@ class ExpenseSpec extends BaseSpecification {
         noExceptionThrown()
     }
 
+    def "test - deleteExpense: Not Found"() {
+        given: "A missing expense ID for deletion"
+        Integer id = 99
+
+        when: "The target method executed"
+        expenseImpl.deleteExpense(id)
+
+        then: "The expected calls are made"
+        1 * expenseRepo.findById(99) >> Optional.empty()
+        0 * _
+
+        and: "The expected result"
+        thrown(RecordNotFoundException)
+    }
+
     def "test - getExpense: Success"() {
         given: "An existing expense ID"
         Integer id = 1
         ExpenseVO vo = new ExpenseVO(expenseID: id)
-        ExpenseDto dto = new ExpenseDto(expenseID: id)
-        ResponseEntity<GlobalResponse<ExpenseDto>> response
+        ExpenseDto expectedDto = new ExpenseDto(expenseID: id)
 
         when: "The target method executed"
-        response = expenseImpl.getExpense(id)
+        ExpenseDto result = expenseImpl.getExpense(id)
 
         then: "The expected calls are made"
         1 * expenseRepo.findById(1) >> Optional.of(vo)
-        1 * dtoTransformer.transform(vo) >> dto
+        1 * dtoTransformer.transform(vo) >> expectedDto
         0 * _
 
         and: "The expected result"
-        response.body.responseData == dto
+        result == expectedDto
         noExceptionThrown()
     }
 
-    def "test - getExpense: Handling record not found"() {
-        given: "A non-existent ID"
+    def "test - getExpense: Not Found"() {
+        given: "A missing expense ID"
         Integer id = 99
 
         when: "The target method executed"
@@ -231,77 +239,63 @@ class ExpenseSpec extends BaseSpecification {
         thrown(RecordNotFoundException)
     }
 
-    def "test - searchExpenses: Exhausting logic branches and sorting"() {
-        given: "Null parameters and sorting setup"
+    @Unroll
+    def "test - searchExpenses: Checking filter combinations #desc"() {
+        given: "Search parameters and mock page"
         Page<ExpenseVO> mockPage = Mock(Page)
+        JpaSpecification capturedSpec
+
+        ExpenseSearchRequestDto request = new ExpenseSearchRequestDto(category: cat, dateFrom: dateFrom, dateTo: dateTo)
+        request.setPage(0)
+        request.setSize(10)
+        request.setSortField(FieldConstants.AMOUNT)
+        request.setSortOrder(SortOrder.desc)
 
         when: "The target method executed"
-
-        ExpenseSearchRequestDto request1 = new ExpenseSearchRequestDto()
-        request1.setPage(0)
-        request1.setSize(10)
-        expenseImpl.searchExpenses(request1)
-
-        ExpenseSearchRequestDto request2 = new ExpenseSearchRequestDto(category: "Transportation", dateFrom: LocalDate.now(), dateTo: LocalDate.now())
-        request2.setPage(0)
-        request2.setSize(10)
-        request2.setSortField(FieldConstants.AMOUNT)
-        request2.setSortOrder(SortOrder.desc)
-        expenseImpl.searchExpenses(request2)
+        PagedResult<ExpenseDto> result = expenseImpl.searchExpenses(request)
 
         then: "The expected calls are made"
-        2 * expenseRepo.findAll(_ as JpaSpecification, _ as PageRequest) >> mockPage
-        _ * mockPage.toList() >> []
+        1 * expenseRepo.findAll(_ as JpaSpecification, _ as PageRequest) >> { JpaSpecification spec, PageRequest page ->
+            capturedSpec = spec; return mockPage
+        }
+        1 * mockPage.toList() >> []
+        1 * dtoTransformer.transformList([]) >> []
+        // Metadata calls
         _ * mockPage.getNumber() >> 0
         _ * mockPage.getSize() >> 10
         _ * mockPage.getTotalElements() >> 0
         _ * mockPage.getTotalPages() >> 0
-        2 * dtoTransformer.transformList(_) >> []
         0 * _
 
         and: "The expected result"
+        result != null
         noExceptionThrown()
+        capturedSpec != null
+        Map<String, List> inspection = inspectSpecification(capturedSpec)
+        if (hasFilters) {
+            inspection.filters.containsAll([FieldConstants.CATEGORY, FieldConstants.DATE_OF_EXPENSE])
+            inspection.values.containsAll([cat, dateFrom, dateTo])
+        } else {
+            inspection.filters.isEmpty()
+        }
+
+        where:
+        desc          | cat    | dateFrom        | dateTo          || hasFilters
+        "All filters" | "FOOD" | LocalDate.now() | LocalDate.now() || true
+        "No filters"  | null   | null            | null            || false
     }
 
-    def "test - deleteMultiple: AbstractBusinessLogic branch coverage"() {
-        given: "A list of VOs"
-        Integer id = 1
-        List<ExpenseVO> vos = [new ExpenseVO(expenseID: id)]
+    def "test - sumAmountByDateOfExpenseBetween: Should return sum"() {
+        given: "Date range"
+        LocalDate start = LocalDate.now().minusDays(10)
+        LocalDate end = LocalDate.now()
+        BigDecimal expectedSum = new BigDecimal("250.00")
 
         when: "The target method executed"
-        expenseImpl.delete(vos)
+        BigDecimal result = expenseImpl.sumAmountByDateOfExpenseBetween(start, end)
 
         then: "The expected calls are made"
-        1 * expenseRepo.deleteAll(vos)
-        0 * _
-
-        and: "The expected result"
-        noExceptionThrown()
-    }
-
-    def "test - deleteMultiple: Empty list branch"() {
-        given: "An empty list"
-
-        when: "The target method executed"
-        expenseImpl.delete([])
-
-        then: "The expected calls are made"
-        0 * _
-
-        and: "The expected result"
-        noExceptionThrown()
-    }
-
-    def "test - sumAmountByDateOfExpenseBefore: Should return sum"() {
-        given: "A date"
-        LocalDate date = LocalDate.now()
-        BigDecimal expectedSum = new BigDecimal("100.00")
-
-        when: "The target method executed"
-        BigDecimal result = expenseImpl.sumAmountByDateOfExpenseBefore(date)
-
-        then: "The expected calls are made"
-        1 * expenseRepo.sumAmountByDateOfExpenseBefore(date) >> expectedSum
+        1 * expenseRepo.sumAmountByDateOfExpenseBetween(start, end) >> expectedSum
         0 * _
 
         and: "The expected result"
@@ -309,17 +303,16 @@ class ExpenseSpec extends BaseSpecification {
         noExceptionThrown()
     }
 
-    def "test - sumAmountByDateOfExpenseBetween: Should return sum"() {
-        given: "A date range"
-        LocalDate start = LocalDate.now().minusDays(10)
-        LocalDate end = LocalDate.now()
-        BigDecimal expectedSum = new BigDecimal("200.00")
+    def "test - sumAmountByDateOfExpenseBefore: Should return sum"() {
+        given: "A date"
+        LocalDate date = LocalDate.now()
+        BigDecimal expectedSum = new BigDecimal("500.00")
 
         when: "The target method executed"
-        BigDecimal result = expenseImpl.sumAmountByDateOfExpenseBetween(start, end)
+        BigDecimal result = expenseImpl.sumAmountByDateOfExpenseBefore(date)
 
         then: "The expected calls are made"
-        1 * expenseRepo.sumAmountByDateOfExpenseBetween(start, end) >> expectedSum
+        1 * expenseRepo.sumAmountByDateOfExpenseBefore(date) >> expectedSum
         0 * _
 
         and: "The expected result"

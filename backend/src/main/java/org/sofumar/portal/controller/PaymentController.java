@@ -8,6 +8,8 @@ import org.sofumar.portal.data.dto.response.LatestPaymentDto;
 import org.sofumar.portal.data.dto.PaymentDto;
 import org.sofumar.portal.data.dto.request.PaymentSearchRequestDto;
 import org.sofumar.portal.framework.data.response.GlobalResponse;
+import org.sofumar.portal.framework.data.response.PagedResult;
+import org.sofumar.portal.framework.util.ResponseUtils;
 import org.sofumar.portal.core.businesslogic.Payment;
 import org.sofumar.portal.security.annotation.IsAuthenticated;
 import org.sofumar.portal.security.annotation.IsAdminOrManager;
@@ -25,6 +27,8 @@ import org.springframework.lang.NonNull;
 
 import java.util.List;
 
+import static org.sofumar.portal.message.ValidationMessages.*;
+
 @RestController
 @RequestMapping("/payments")
 @Tag(name = "Payments", description = "Payment management APIs")
@@ -37,28 +41,31 @@ public class PaymentController {
     @Operation(summary = "Add a new payment")
     @IsAdminOrManager
     public ResponseEntity<GlobalResponse<Integer>> addPayment(@Valid @RequestBody PaymentDto requestDto) {
-        return payment.addPayment(requestDto);
+        Integer id = payment.addPayment(requestDto);
+        return ResponseUtils.okWithData(id, RECORD_ADDED.addMessageArgs("Payment").getMessageString());
     }
 
     @PutMapping("/update")
     @Operation(summary = "Update an existing payment")
     @IsAdminOrManager
     public ResponseEntity<GlobalResponse<Void>> updatePayment(@Valid @RequestBody PaymentDto requestDto) {
-        return payment.updatePayment(requestDto);
+        payment.updatePayment(requestDto);
+        return ResponseUtils.ok(RECORD_UPDATED.addMessageArgs("Payment").getMessageString());
     }
 
     @DeleteMapping("/delete/{paymentID}")
     @Operation(summary = "Delete payment by ID")
     @IsAdminOrManager
     public ResponseEntity<GlobalResponse<Void>> deletePayment(@PathVariable @NonNull Integer paymentID) {
-        return payment.deletePayment(paymentID);
+        payment.deletePayment(paymentID);
+        return ResponseUtils.ok(RECORD_DELETED.addMessageArgs("Payment").getMessageString());
     }
 
     @GetMapping("/get/{paymentID}")
     @Operation(summary = "Get payment by ID")
     @IsAuthenticated
     public ResponseEntity<GlobalResponse<PaymentDto>> getPayment(@PathVariable @NonNull Integer paymentID) {
-        return payment.getPayment(paymentID);
+        return ResponseUtils.okWithData(payment.getPayment(paymentID));
     }
 
     @PostMapping("/search")
@@ -66,13 +73,14 @@ public class PaymentController {
     @IsAuthenticated
     public ResponseEntity<GlobalResponse<List<PaymentDto>>> searchPayments(
             @RequestBody PaymentSearchRequestDto request) {
-        return payment.searchPayments(request);
+        PagedResult<PaymentDto> result = payment.searchPayments(request);
+        return ResponseUtils.okWithDataPageable(result.items(), result.meta());
     }
 
     @GetMapping("/latest")
     @Operation(summary = "Get latest payments")
     @IsAuthenticated
     public ResponseEntity<GlobalResponse<List<LatestPaymentDto>>> latestPayments(@RequestParam(defaultValue = "5") int limit) {
-        return payment.getLatestPayments(limit);
+        return ResponseUtils.okWithData(payment.getLatestPayments(limit));
     }
 }

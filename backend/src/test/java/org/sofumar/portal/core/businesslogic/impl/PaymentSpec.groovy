@@ -11,7 +11,7 @@ import org.sofumar.portal.data.transformer.PaymentDtoTransformer
 import org.sofumar.portal.data.transformer.PaymentVOTransformer
 import org.sofumar.portal.core.vo.MemberVO
 import org.sofumar.portal.core.vo.PaymentVO
-import org.sofumar.portal.framework.data.response.GlobalResponse
+import org.sofumar.portal.framework.data.response.PagedResult
 import org.sofumar.portal.framework.exception.DuplicateRecordException
 import org.sofumar.portal.framework.exception.ValidationException
 import org.sofumar.portal.framework.exception.RecordNotFoundException
@@ -24,7 +24,6 @@ import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.jpa.domain.Specification as JpaSpecification
-import org.springframework.http.ResponseEntity
 import org.springframework.test.util.ReflectionTestUtils
 import spock.lang.Subject
 import spock.lang.Unroll
@@ -57,11 +56,10 @@ class PaymentSpec extends BaseSpecification {
         String feeType = ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE
         PaymentDto request = new PaymentDto(memberID: memberId, feeType: feeType, year: year, quarter: quarter)
         PaymentVO vo = new PaymentVO(paymentID: paymentId, member: new MemberVO(memberID: memberId), feeType: feeType, year: year, quarter: quarter)
-        ResponseEntity<GlobalResponse<Integer>> response
         JpaSpecification capturedSpec
 
         when: "The target method executed"
-        response = paymentImpl.addPayment(request)
+        Integer result = paymentImpl.addPayment(request)
 
         then: "The expected calls are made"
         1 * voTransformer.transform(request) >> vo
@@ -71,7 +69,7 @@ class PaymentSpec extends BaseSpecification {
         0 * _
 
         and: "The expected result"
-        response.body.responseData == 1
+        result == 1
         noExceptionThrown()
         capturedSpec != null
         Map<String, List> inspection = inspectSpecification(capturedSpec)
@@ -89,7 +87,6 @@ class PaymentSpec extends BaseSpecification {
         PaymentDto request = new PaymentDto(memberID: memberId, feeType: feeType, year: year, quarter: quarter)
         PaymentVO vo = new PaymentVO(member: new MemberVO(memberID: memberId), feeType: feeType, year: year, quarter: quarter)
         JpaSpecification capturedSpec
-        ResponseEntity<GlobalResponse<Integer>> response
 
         when: "The target method executed"
         paymentImpl.addPayment(request)
@@ -118,10 +115,9 @@ class PaymentSpec extends BaseSpecification {
         String feeType = "Other"
         PaymentDto request = new PaymentDto(memberID: memberId, feeType: feeType)
         PaymentVO vo = new PaymentVO(paymentID: paymentId)
-        ResponseEntity<GlobalResponse<Integer>> response
 
         when: "The target method executed"
-        response = paymentImpl.addPayment(request)
+        Integer result = paymentImpl.addPayment(request)
 
         then: "The expected calls are made"
         1 * voTransformer.transform(request) >> vo
@@ -130,7 +126,7 @@ class PaymentSpec extends BaseSpecification {
         0 * _
 
         and: "The expected result"
-        response.body.responseData == 1
+        result == 1
         noExceptionThrown()
     }
 
@@ -191,10 +187,9 @@ class PaymentSpec extends BaseSpecification {
                 amount: amount,
                 dateReceived: dateReceived
         )
-        ResponseEntity<GlobalResponse<List<LatestPaymentDto>>> response
 
         when: "The target method executed"
-        response = paymentImpl.getLatestPayments(5)
+        List<LatestPaymentDto> result = paymentImpl.getLatestPayments(5)
 
         then: "The expected calls are made"
         1 * paymentRepo.findAll(_ as PageRequest) >> mockPage
@@ -202,8 +197,8 @@ class PaymentSpec extends BaseSpecification {
         0 * _
 
         and: "The expected result"
-        response.body.responseData.size() == 1
-        with(response.body.responseData[0]) {
+        result.size() == 1
+        with(result[0]) {
             it.paymentID == paymentID
             it.memberID == memberID
             it.memberName == "${firstName} ${lastName}"
@@ -217,10 +212,9 @@ class PaymentSpec extends BaseSpecification {
     def "test - getLatestPayments: Handling empty results"() {
         given: "An empty payment repository"
         Page<PaymentVO> mockPage = Mock(Page)
-        ResponseEntity<GlobalResponse<List<LatestPaymentDto>>> response
 
         when: "The target method executed"
-        response = paymentImpl.getLatestPayments(5)
+        List<LatestPaymentDto> result = paymentImpl.getLatestPayments(5)
 
         then: "The expected calls are made"
         1 * paymentRepo.findAll(_ as PageRequest) >> mockPage
@@ -228,7 +222,7 @@ class PaymentSpec extends BaseSpecification {
         0 * _
 
         and: "The expected result"
-        response.body.responseData.isEmpty()
+        result.isEmpty()
         noExceptionThrown()
     }
 
@@ -236,10 +230,9 @@ class PaymentSpec extends BaseSpecification {
         given: "An existing payment update request"
         Integer paymentId = 1
         PaymentVO vo = new PaymentVO()
-        ResponseEntity<GlobalResponse<Void>> response
 
         when: "The target method executed"
-        response = paymentImpl.updatePayment(new PaymentDto(paymentID: paymentId))
+        paymentImpl.updatePayment(new PaymentDto(paymentID: paymentId))
 
         then: "The expected calls are made"
         1 * paymentRepo.findById(1) >> Optional.of(vo)
@@ -249,7 +242,6 @@ class PaymentSpec extends BaseSpecification {
         0 * _
 
         and: "The expected result"
-        response.statusCode.value() == 200
         noExceptionThrown()
     }
 
@@ -293,10 +285,9 @@ class PaymentSpec extends BaseSpecification {
         given: "An existing payment VO"
         Integer paymentId = 1
         PaymentVO vo = new PaymentVO()
-        ResponseEntity<GlobalResponse<Void>> response
 
         when: "The target method executed"
-        response = paymentImpl.deletePayment(paymentId)
+        paymentImpl.deletePayment(paymentId)
 
         then: "The expected calls are made"
         1 * paymentRepo.findById(1) >> Optional.of(vo)
@@ -304,7 +295,6 @@ class PaymentSpec extends BaseSpecification {
         0 * _
 
         and: "The expected result"
-        response.statusCode.value() == 200
         noExceptionThrown()
     }
 
@@ -346,10 +336,9 @@ class PaymentSpec extends BaseSpecification {
         Integer paymentId = 1
         PaymentVO vo = new PaymentVO(paymentID: paymentId)
         PaymentDto dto = new PaymentDto(paymentID: paymentId)
-        ResponseEntity<GlobalResponse<PaymentDto>> response
 
         when: "The target method executed"
-        response = paymentImpl.getPayment(paymentId)
+        PaymentDto result = paymentImpl.getPayment(paymentId)
 
         then: "The expected calls are made"
         1 * paymentRepo.findById(1) >> Optional.of(vo)
@@ -357,7 +346,7 @@ class PaymentSpec extends BaseSpecification {
         0 * _
 
         and: "The expected result"
-        response.body.responseData == dto
+        result == dto
         noExceptionThrown()
     }
 
@@ -391,7 +380,7 @@ class PaymentSpec extends BaseSpecification {
         request.setSortOrder(SortOrder.desc)
 
         when: "The target method executed"
-        paymentImpl.searchPayments(request)
+        PagedResult<PaymentDto> result = paymentImpl.searchPayments(request)
 
         then: "The expected calls are made"
         1 * paymentRepo.findAll(_ as JpaSpecification, _ as PageRequest) >> { JpaSpecification spec, PageRequest page -> capturedSpec = spec; mockPage }
@@ -407,6 +396,7 @@ class PaymentSpec extends BaseSpecification {
         0 * _
 
         and: "The expected result"
+        result != null
         noExceptionThrown()
         capturedSpec != null
         Map<String, List> inspection = inspectSpecification(capturedSpec)
