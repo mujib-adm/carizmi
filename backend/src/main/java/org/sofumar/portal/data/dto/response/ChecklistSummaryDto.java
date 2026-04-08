@@ -12,10 +12,8 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class QuarterlyChecklistDto {
-    private int year;
-    private int currentQuarter;
-    private BigDecimal quarterlyFeeAmount;
-    private List<MemberQuarterlyRowDto> rows;
-    private ChecklistSummaryDto summary;
+public class ChecklistSummaryDto {
+    private BigDecimal totalPaid;
+    private BigDecimal totalBalance;
+    private List<QuarterSummaryDto> quarterSummaries;
 }

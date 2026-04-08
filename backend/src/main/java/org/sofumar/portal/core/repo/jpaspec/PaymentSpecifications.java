@@ -42,4 +42,14 @@ public class PaymentSpecifications {
             return cb.lessThanOrEqualTo(root.get(FieldConstants.DATE_RECEIVED), to);
         };
     }
+
+    @NonNull
+    public static Specification<PaymentVO> notPaymentId(Integer paymentID) {
+        return (root, query, cb) -> {
+            if (paymentID == null) {
+                return cb.conjunction();
+            }
+            return cb.notEqual(root.get(FieldConstants.PAYMENT_ID), paymentID);
+        };
+    }
 }

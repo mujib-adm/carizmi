@@ -70,6 +70,12 @@ public class GlobalExceptionHandler {
         return ResponseUtils.notFound(ex.getMessage());
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<GlobalResponse<Void>> handleIllegalState(IllegalStateException ex) {
+        logger.error("System configuration error: ", ex);
+        return ResponseUtils.withStatus(HttpStatus.SERVICE_UNAVAILABLE, MessageType.ERROR, "System configuration error. Please contact support.");
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<GlobalResponse<Void>> handleGeneric(Exception ex) {
         logger.error("Unexpected error occurred: ", ex);

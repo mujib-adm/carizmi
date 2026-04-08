@@ -9,6 +9,7 @@ import org.sofumar.portal.core.vo.MemberVO
 import org.sofumar.portal.core.businesslogic.Expense
 import org.sofumar.portal.core.businesslogic.Member
 import org.sofumar.portal.core.businesslogic.Payment
+import org.sofumar.portal.core.businesslogic.SystemSetting
 import org.sofumar.portal.data.dto.response.PaymentSummary
 import org.sofumar.portal.service.helper.BaselineService
 import org.sofumar.portal.testbase.BaseSpecification
@@ -23,9 +24,14 @@ class DashboardServiceSpec extends BaseSpecification {
     Payment payment = Mock()
     Expense expense = Mock()
     BaselineService baselineService = Mock()
+    SystemSetting systemSetting = Mock()
 
     @Subject
-    DashboardServiceImpl dashboardService = new DashboardServiceImpl(member, payment, expense, baselineService)
+    DashboardServiceImpl dashboardService = new DashboardServiceImpl(member, payment, expense, baselineService, systemSetting)
+
+    def setup() {
+        systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
+    }
 
     def "test - getMetrics: Should handle various time contexts and data states"() {
         given: "A mocked date in Q2 and specific data states"
@@ -63,7 +69,7 @@ class DashboardServiceSpec extends BaseSpecification {
         _ * ps1.getMemberID() >> 1
         _ * ps1.getQuarter() >> 1
         _ * ps1.getTotalPaid() >> paidAmount
-
+        1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
         0 * _
 
         and: "The expected result"
@@ -99,6 +105,7 @@ class DashboardServiceSpec extends BaseSpecification {
         2 * payment.sumAmountByYearAndQuarter(year, _) >> collectionAmount
         1 * payment.findPaymentSummaries(_, _) >> []
         1 * member.findAllActiveMembers() >> []
+        1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
         0 * _
 
         and: "The expected result"

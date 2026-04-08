@@ -30,12 +30,15 @@
 
 /* Summary row */
 .summaryRow {
-  background-color: rgba(30, 86, 49, 0.05) !important;
+  background-color: rgba(30, 86, 49, 0.06) !important;
   font-weight: 700;
 }
 
 .summaryRow td {
   font-weight: 700 !important;
+  font-size: 1rem !important;
+  border-top: 1px solid rgba(30, 86, 49, 0.18) !important;
+  padding: 6px 8px !important;
 }
 
 /* Balance styling */
@@ -55,4 +58,39 @@
   font-size: 0.85rem;
   color: var(--textMuted);
   margin-top: 4px;
+}
+
+/* Quarter summary counts in totals row */
+.quarterSummary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.summaryPaid,
+.summaryUnpaid {
+  display: inline-flex;
+  align-items: center;
+  min-width: 76px;
+  justify-content: space-between;
+  line-height: 1.2;
+}
+
+.summaryIcon {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.summaryPaid {
+  color: #08c83f;
+  border-bottom: 1px solid rgba(5, 5, 5, 0.615) !important;
+}
+
+.summaryUnpaid {
+  color: #eb0e1c;
+}
+
+/* Dark mode */
+:global([data-theme="dark"]) .summaryPaid {
+  border-bottom-color: rgba(255, 255, 255, 0.3) !important;
 }

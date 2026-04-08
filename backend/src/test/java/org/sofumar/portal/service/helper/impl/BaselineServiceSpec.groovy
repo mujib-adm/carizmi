@@ -22,7 +22,7 @@ class BaselineServiceSpec extends BaseSpecification {
     BaselineServiceImpl baselineService = new BaselineServiceImpl(systemSetting, payment, expense)
 
     int currentYear = LocalDate.now().getYear()
-    int specialYear = 2026 // Keeping this literal as it tests a specific hardcoded branch in logic
+    int launchYear = 2026 // Keeping this literal as it tests a specific hardcoded branch in logic
 
     def "test - getBaselineForYear: Should return existing snapshot if present"() {
         given: "A year and an existing baseline snapshot"
@@ -45,8 +45,8 @@ class BaselineServiceSpec extends BaseSpecification {
 
     def "test - getBaselineForYear: Should return and save hardcoded value for 2026 if snapshot missing"() {
         given: "Year 2026 (special) and no existing snapshot"
-        int year = specialYear
-        BigDecimal expectedBaseline = new BigDecimal("59863.68")
+        int year = launchYear
+        BigDecimal expectedBaseline = BigDecimal.ZERO
 
         SystemSettingsVO savedVO
 
@@ -62,16 +62,16 @@ class BaselineServiceSpec extends BaseSpecification {
         result == expectedBaseline
         savedVO != null
         savedVO.settingValue == expectedBaseline.toString()
-        savedVO.settingKey == BaselineConstants.getYearlyBaselineKey(specialYear)
-        savedVO.effectiveDate == LocalDate.of(specialYear, 1, 1)
+        savedVO.settingKey == BaselineConstants.getYearlyBaselineKey(launchYear)
+        savedVO.effectiveDate == LocalDate.of(launchYear, 1, 1)
         noExceptionThrown()
     }
 
     def "test - getBaselineForYear: Should calculate dynamically, return, and save for other years if snapshot missing"() {
         given: "A year other than 2026 with no snapshot"
         int year = currentYear + 1 // Ensure clean future year
-        // Avoid collision if currentYear + 1 is specialYear
-        if (year == specialYear) year = year + 1
+        // Avoid collision if currentYear + 1 is launchYear
+        if (year == launchYear) year = year + 1
 
         LocalDate expectedDate = LocalDate.of(year, 1, 1)
         BigDecimal payments = new BigDecimal("5000.00")
@@ -102,7 +102,7 @@ class BaselineServiceSpec extends BaseSpecification {
     def "test - getBaselineForYear: Should include seed amount in dynamic calculation"() {
         given: "A year and a seed amount configured"
         int year = currentYear - 1
-        if (year == specialYear) year = year - 1
+        if (year == launchYear) year = year - 1
 
         LocalDate expectedDate = LocalDate.of(year, 1, 1)
         BigDecimal seedAmount = new BigDecimal("10000.00")
@@ -134,7 +134,7 @@ class BaselineServiceSpec extends BaseSpecification {
     def "test - getBaselineForYear: Should handle null returns from repositories during calculation"() {
         given: "A year requiring calculation"
         int year = currentYear - 2
-        if (year == specialYear) year = year - 1
+        if (year == launchYear) year = year - 1
 
         LocalDate expectedDate = LocalDate.of(year, 1, 1)
         BigDecimal expectedBaseline = BigDecimal.ZERO

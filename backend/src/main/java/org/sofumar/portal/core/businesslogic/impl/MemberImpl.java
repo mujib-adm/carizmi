@@ -7,12 +7,14 @@ import org.sofumar.portal.constants.FieldConstants;
 import org.sofumar.portal.constants.ReferenceConstants;
 import org.sofumar.portal.core.businesslogic.Member;
 import org.sofumar.portal.core.businesslogic.Payment;
+import org.sofumar.portal.core.businesslogic.SystemSetting;
 import org.sofumar.portal.core.repo.MemberRepository;
 import org.sofumar.portal.core.repo.jpaspec.MemberSpecifications;
 import org.sofumar.portal.core.vo.MemberVO;
 import org.sofumar.portal.data.dto.MemberDto;
 import org.sofumar.portal.data.dto.request.MemberSearchRequestDto;
 import org.sofumar.portal.data.dto.response.MemberLookupDto;
+import org.sofumar.portal.data.dto.response.MemberJoinDateProjection;
 import org.sofumar.portal.data.dto.response.MemberSummaryDto;
 import org.sofumar.portal.data.dto.response.PaymentSummary;
 import org.sofumar.portal.data.transformer.MemberDtoTransformer;
@@ -21,6 +23,7 @@ import org.sofumar.portal.framework.data.response.PagedResult;
 import org.sofumar.portal.framework.data.response.PaginationMeta;
 import org.sofumar.portal.framework.exception.RecordNotFoundException;
 import org.sofumar.portal.service.validation.MemberValidator;
+import org.sofumar.portal.util.QuarterUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -46,17 +49,19 @@ import static org.sofumar.portal.message.ValidationMessages.RECORD_NOT_FOUND;
 public non-sealed class MemberImpl extends MemberAbstractBL implements Member {
     private static final Logger logger = LoggerFactory.getLogger(MemberImpl.class);
 
-    private static final BigDecimal quarterlyFeeAmt = new BigDecimal("60");
-
     private final Payment payment;
+    private final SystemSetting systemSetting;
     private final MemberVOTransformer voTransformer;
     private final MemberDtoTransformer dtoTransformer;
     private final MemberValidator validator;
 
     @Autowired
-    public MemberImpl(final MemberRepository memberRepo, final Payment payment, final MemberVOTransformer voTransformer, MemberDtoTransformer dtoTransformer, final MemberValidator validator) {
+    public MemberImpl(final MemberRepository memberRepo, final Payment payment, final SystemSetting systemSetting,
+                      final MemberVOTransformer voTransformer, MemberDtoTransformer dtoTransformer,
+                      final MemberValidator validator) {
         super(memberRepo);
         this.payment = payment;
+        this.systemSetting = systemSetting;
         this.voTransformer = voTransformer;
         this.dtoTransformer = dtoTransformer;
         this.validator = validator;
@@ -166,7 +171,9 @@ public non-sealed class MemberImpl extends MemberAbstractBL implements Member {
 
         LocalDate now = LocalDate.now();
         int currentYear = now.getYear();
-        int currentQuarter = (now.getMonthValue() - 1) / 3 + 1;
+        int currentQuarter = QuarterUtils.quarterOf(now);
+
+        BigDecimal quarterlyFeeAmt = systemSetting.getQuarterlyFeeAmount();
 
         // 1. Total Paid
         BigDecimal totalPaid = payment.sumAmountByMemberID(memberID);
@@ -188,12 +195,11 @@ public non-sealed class MemberImpl extends MemberAbstractBL implements Member {
         }
 
         BigDecimal overdue = BigDecimal.ZERO;
-        LocalDate joinDate = member.getJoinDate();
-        if (joinDate == null) joinDate = LocalDate.now();
+        LocalDate joinDate = QuarterUtils.resolveJoinDate(member.getJoinDate());
 
         // Iterate through all years and quarters since joinDate up to the quarter BEFORE the current one
         int joinYear = joinDate.getYear();
-        int joinQuarter = (joinDate.getMonthValue() - 1) / 3 + 1;
+        int joinQuarter = QuarterUtils.quarterOf(joinDate);
 
         for (int y = joinYear; y <= currentYear; y++) {
             int startQ = (y == joinYear) ? joinQuarter : 1;
@@ -232,5 +238,11 @@ public non-sealed class MemberImpl extends MemberAbstractBL implements Member {
     @Transactional(readOnly = true)
     public Page<MemberVO> findActiveMembers(@NonNull Pageable pageable) {
         return getRepo().findAll(MemberSpecifications.hasStatus(ReferenceConstants.MEMBER_STATUS.ACTIVE), pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MemberJoinDateProjection> findActiveMemberJoinDates() {
+        return getRepo().findJoinDatesByStatus(ReferenceConstants.MEMBER_STATUS.ACTIVE);
     }
 }

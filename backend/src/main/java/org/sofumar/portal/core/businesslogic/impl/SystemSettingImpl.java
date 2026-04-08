@@ -3,6 +3,7 @@ package org.sofumar.portal.core.businesslogic.impl;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.sofumar.portal.constants.SystemSettingConstants;
 import org.sofumar.portal.data.dto.SystemSettingsDto;
 import org.sofumar.portal.data.dto.request.SystemSettingsSearchRequestDto;
 import org.sofumar.portal.data.transformer.SystemSettingsDtoTransformer;
@@ -20,6 +21,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -113,5 +115,20 @@ public non-sealed class SystemSettingImpl extends SystemSettingAbstractBL implem
         Specification<SystemSettingsVO> spec = SystemSettingsSpecifications.withSettingName(settingName)
                 .and(SystemSettingsSpecifications.withSettingKey(key));
         return getRepo().findOne(spec);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BigDecimal getQuarterlyFeeAmount() {
+        BigDecimal feeAmount = new BigDecimal(
+                findBySettingKey(SystemSettingConstants.FEE.MEMBERSHIP_FEE)
+                        .orElseThrow(() -> new IllegalStateException("Required system setting not found: " + SystemSettingConstants.FEE.MEMBERSHIP_FEE))
+                        .getSettingValue()
+        );
+
+        if (feeAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalStateException("Invalid MEMBERSHIP_FEE value: " + feeAmount + ". Must be greater than 0.");
+        }
+        return feeAmount;
     }
 }

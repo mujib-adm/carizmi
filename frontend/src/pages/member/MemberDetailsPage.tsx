@@ -102,7 +102,7 @@ export default function MemberDetailsPage() {
                   {member.firstName} {member.lastName}
                 </Title>
                 <Text type="secondary">
-                  {member.email} | {member.phone}
+                  {member.phone} {member.email ? `| ${member.email}` : ''}
                 </Text>
                 <div style={{ marginTop: 8 }}>
                   <Badge

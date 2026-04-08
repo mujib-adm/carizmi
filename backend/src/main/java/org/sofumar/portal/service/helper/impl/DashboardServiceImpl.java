@@ -8,12 +8,14 @@ import org.sofumar.portal.constants.ReferenceConstants;
 import org.sofumar.portal.core.businesslogic.Expense;
 import org.sofumar.portal.core.businesslogic.Member;
 import org.sofumar.portal.core.businesslogic.Payment;
+import org.sofumar.portal.core.businesslogic.SystemSetting;
 import org.sofumar.portal.core.vo.MemberVO;
 import org.sofumar.portal.data.dto.response.DashboardMetricsDto;
 import org.sofumar.portal.data.dto.response.PaymentSummary;
 import org.sofumar.portal.data.dto.response.QuarterlyCollectionDto;
 import org.sofumar.portal.service.helper.BaselineService;
 import org.sofumar.portal.service.helper.DashboardService;
+import org.sofumar.portal.util.QuarterUtils;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -30,20 +32,21 @@ import java.util.Map;
 public class DashboardServiceImpl implements DashboardService {
     private static final Logger logger = LoggerFactory.getLogger(DashboardServiceImpl.class);
 
-    private static final BigDecimal quarterlyFeeAmt = new BigDecimal("60");
-
     private final Member member;
     private final Payment payment;
     private final Expense expense;
     private final BaselineService baselineService;
+    private final SystemSetting systemSetting;
 
     @Override
     public DashboardMetricsDto getMetrics() {
         logger.info("Fetching dashboard metrics");
 
+        BigDecimal quarterlyFeeAmt = systemSetting.getQuarterlyFeeAmount();
+
         LocalDate now = LocalDate.now();
         int currentYear = now.getYear();
-        int currentQuarter = (now.getMonthValue() - 1) / 3 + 1;
+        int currentQuarter = QuarterUtils.quarterOf(now);
         LocalDate startOfYear = LocalDate.of(currentYear, 1, 1);
 
         // 1. Total Active Members
@@ -64,7 +67,7 @@ public class DashboardServiceImpl implements DashboardService {
 
         // 3. Dues for Current Quarter
         // Expected: Active Members * quarterlyFeeAmt
-        BigDecimal expectedDues = new BigDecimal(totalActiveMembers).multiply(quarterlyFeeAmt);
+        BigDecimal expectedDues = BigDecimal.valueOf(totalActiveMembers).multiply(quarterlyFeeAmt);
         // Collected in current quarter
         BigDecimal collectedCurrentQ = payment.sumAmountByYearAndQuarter(currentYear, currentQuarter);
         if (collectedCurrentQ == null)
@@ -92,16 +95,14 @@ public class DashboardServiceImpl implements DashboardService {
         List<MemberVO> activeMembers = member.findAllActiveMembers();
 
         for (MemberVO m : activeMembers) {
-            LocalDate joinDate = m.getJoinDate();
-            if (joinDate == null)
-                joinDate = LocalDate.now();
+            LocalDate joinDate = QuarterUtils.resolveJoinDate(m.getJoinDate());
 
             // We only care about overdues in the current year
             // Start assessment from Q1 of current year, or the member's join quarter (if
             // joined this year)
             int startQ = 1;
             if (joinDate.getYear() == currentYear) {
-                startQ = (joinDate.getMonthValue() - 1) / 3 + 1;
+                startQ = QuarterUtils.quarterOf(joinDate);
             } else if (joinDate.getYear() > currentYear) {
                 continue; // Joined in the future? Skip.
             }
@@ -122,7 +123,7 @@ public class DashboardServiceImpl implements DashboardService {
         List<QuarterlyCollectionDto> collections = new ArrayList<>();
 
         for (int q = 1; q <= 4; q++) {
-            collections.add(computeQuarterData(currentYear, q, currentQuarter, totalActiveMembers));
+            collections.add(computeQuarterData(currentYear, q, currentQuarter, totalActiveMembers, quarterlyFeeAmt));
         }
 
         return DashboardMetricsDto.builder()
@@ -135,7 +136,7 @@ public class DashboardServiceImpl implements DashboardService {
                 .build();
     }
 
-    private QuarterlyCollectionDto computeQuarterData(int year, int quarter, int currentQuarter, long totalActiveMembers) {
+    private QuarterlyCollectionDto computeQuarterData(int year, int quarter, int currentQuarter, long totalActiveMembers, BigDecimal quarterlyFeeAmt) {
         BigDecimal collected = BigDecimal.ZERO;
         QuarterStatus status;
 
@@ -153,7 +154,7 @@ public class DashboardServiceImpl implements DashboardService {
             collected = BigDecimal.ZERO;
 
         // Denom: Active * quarterlyFeeAmt
-        BigDecimal denom = new BigDecimal(totalActiveMembers).multiply(quarterlyFeeAmt);
+        BigDecimal denom = BigDecimal.valueOf(totalActiveMembers).multiply(quarterlyFeeAmt);
         double pct = 0;
         if (denom.compareTo(BigDecimal.ZERO) > 0) {
             pct = collected.divide(denom, 4, RoundingMode.HALF_UP).doubleValue();

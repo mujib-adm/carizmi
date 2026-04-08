@@ -5,6 +5,7 @@ import org.mockito.Mockito
 import org.sofumar.portal.constants.FieldConstants
 import org.sofumar.portal.constants.ReferenceConstants
 import org.sofumar.portal.core.businesslogic.Payment
+import org.sofumar.portal.core.businesslogic.SystemSetting
 import org.sofumar.portal.core.repo.MemberRepository
 import org.sofumar.portal.core.vo.MemberVO
 import org.sofumar.portal.data.dto.MemberDto
@@ -37,16 +38,18 @@ class MemberSpec extends BaseSpecification {
 
     MemberRepository memberRepo = Mock()
     Payment payment = Mock()
+    SystemSetting systemSetting = Mock()
     MemberVOTransformer voTransformer = Mock()
     MemberDtoTransformer dtoTransformer = Mock()
     MemberValidator validator = Mock()
     MySQLConstraintResolver constraintResolver = Mock()
 
     @Subject
-    MemberImpl memberImpl = new MemberImpl(memberRepo, payment, voTransformer, dtoTransformer, validator)
+    MemberImpl memberImpl = new MemberImpl(memberRepo, payment, systemSetting, voTransformer, dtoTransformer, validator)
 
     void setup() {
         ReflectionTestUtils.setField(memberImpl, "constraintResolver", constraintResolver)
+        systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
     }
 
     def "test - addMember: Should transform, validate, and save member"() {
@@ -361,6 +364,7 @@ class MemberSpec extends BaseSpecification {
             _ * psQ1.getYear() >> currentYear
             _ * psQ1.getQuarter() >> 1
             _ * psQ1.getTotalPaid() >> paidPast
+            1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
         }
         0 * _
 

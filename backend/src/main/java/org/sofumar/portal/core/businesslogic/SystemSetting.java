@@ -1,5 +1,6 @@
 package org.sofumar.portal.core.businesslogic;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,4 +23,6 @@ public interface SystemSetting extends BusinessLogic<SystemSettingsVO> {
     Optional<SystemSettingsVO> findBySettingKey(String key);
 
     Optional<SystemSettingsVO> findByNameAndKey(String settingName, String key);
+
+    BigDecimal getQuarterlyFeeAmount();
 }

@@ -20,8 +20,7 @@ import java.util.Optional;
 public class BaselineServiceImpl implements BaselineService {
     private static final Logger logger = LoggerFactory.getLogger(BaselineServiceImpl.class);
 
-    // Baseline revenue amount hardcoded for app launch year
-    private static final BigDecimal YEARLY_BASELINE_2026 = new BigDecimal("59863.68");
+    private static final int LAUNCH_YEAR = 2026;
 
     private final SystemSetting systemSetting;
     private final Payment payment;
@@ -51,8 +50,8 @@ public class BaselineServiceImpl implements BaselineService {
         // 2. Fallback: Dynamic Calculation
         logger.warn("Baseline snapshot for {} not found. Calculating dynamically.", year);
         BigDecimal baseline;
-        if (year == 2026) {
-            baseline = YEARLY_BASELINE_2026;
+        if (year == LAUNCH_YEAR) {
+            baseline = BigDecimal.ZERO;
         } else {
             baseline = calculateRevenueAsOf(LocalDate.of(year, 1, 1));
         }

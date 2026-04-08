@@ -262,4 +262,54 @@ class SystemSettingSpec extends BaseSpecification {
         inspection.values.containsAll([name.toLowerCase(), key.toLowerCase()])
         noExceptionThrown()
     }
+
+    def "test - getQuarterlyFeeAmount: Should return valid fee amount"() {
+        given: "A valid MEMBERSHIP_FEE setting exists"
+        SystemSettingsVO vo = new SystemSettingsVO(settingValue: "60")
+
+        when: "The target method executed"
+        BigDecimal result = systemSetting.getQuarterlyFeeAmount()
+
+        then: "The expected calls are made"
+        1 * settingsRepo.findOne(_ as JpaSpecification) >> Optional.of(vo)
+        0 * _
+
+        and: "The expected result"
+        result == new BigDecimal("60")
+        noExceptionThrown()
+    }
+
+    def "test - getQuarterlyFeeAmount: Should throw IllegalStateException when setting not found"() {
+        when: "The target method executed"
+        systemSetting.getQuarterlyFeeAmount()
+
+        then: "The expected calls are made"
+        1 * settingsRepo.findOne(_ as JpaSpecification) >> Optional.empty()
+        0 * _
+
+        and: "The expected result"
+        IllegalStateException ex = thrown(IllegalStateException)
+        ex.message.contains("Required system setting not found")
+    }
+
+    def "test - getQuarterlyFeeAmount: Should throw IllegalStateException when value is zero or negative"() {
+        given: "A MEMBERSHIP_FEE setting with invalid value"
+        SystemSettingsVO vo = new SystemSettingsVO(settingValue: value)
+
+        when: "The target method executed"
+        systemSetting.getQuarterlyFeeAmount()
+
+        then: "The expected calls are made"
+        1 * settingsRepo.findOne(_ as JpaSpecification) >> Optional.of(vo)
+        0 * _
+
+        and: "The expected result"
+        IllegalStateException ex = thrown(IllegalStateException)
+        ex.message.contains("Invalid MEMBERSHIP_FEE value")
+
+        where:
+        value | _
+        "0"   | _
+        "-5"  | _
+    }
 }

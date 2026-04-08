@@ -1,7 +1,7 @@
 import { FileSearchOutlined } from '@ant-design/icons';
 import { Card, Table, Typography } from 'antd';
 import { ColumnsType } from 'antd/es/table';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { checklistApi } from '../../api/generated/checklist/checklist';
 import {
   ChecklistSearchRequestDto,
@@ -65,13 +65,7 @@ export default function QuarterlyChecklistPage() {
     fetchChecklist({ page: 0, size: meta?.pageSize ?? 10 });
   };
 
-  // Summary calculations
-  const summary = useMemo(() => {
-    if (!data?.rows?.length) return null;
-    const totalPaid = data.rows.reduce((sum, r) => sum + (r.totalPaid ?? 0), 0);
-    const totalBalance = data.rows.reduce((sum, r) => sum + (r.balance ?? 0), 0);
-    return { totalPaid, totalBalance };
-  }, [data]);
+  const summary = data?.summary;
 
   const columns: ColumnsType<MemberQuarterlyRowDto> = [
     {
@@ -162,21 +156,34 @@ export default function QuarterlyChecklistPage() {
               <Table.Summary fixed>
                 <Table.Summary.Row className={styles.summaryRow}>
                   <Table.Summary.Cell index={0} colSpan={2}>
-                    <strong>Total ({meta?.totalRecords ?? data?.rows?.length ?? 0} members)</strong>
+                    Total ({meta?.totalRecords ?? data?.rows?.length ?? 0} members)
                   </Table.Summary.Cell>
-                  {[1, 2, 3, 4].map((q) => (
-                    <Table.Summary.Cell key={q} index={q + 1} align="center">
-                      —
+                  {summary.quarterSummaries?.map((qs, idx) => (
+                    <Table.Summary.Cell key={idx} index={idx + 2} align="center">
+                      {qs.future ? (
+                        '—'
+                      ) : (
+                        <span className={styles.quarterSummary}>
+                          <span className={styles.summaryPaid}>
+                            <span className={styles.summaryIcon}>✅</span>
+                            <span>{qs.paidCount}</span>
+                          </span>
+                          <span className={styles.summaryUnpaid}>
+                            <span className={styles.summaryIcon}>❌</span>
+                            <span>{qs.unpaidCount}</span>
+                          </span>
+                        </span>
+                      )}
                     </Table.Summary.Cell>
                   ))}
-                  <Table.Summary.Cell index={7} align="right">
-                    <strong>${summary.totalPaid.toFixed(2)}</strong>
+                  <Table.Summary.Cell index={6} align="right">
+                    ${(summary.totalPaid ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </Table.Summary.Cell>
-                  <Table.Summary.Cell index={8} align="right">
+                  <Table.Summary.Cell index={7} align="right">
                     <span
-                      className={summary.totalBalance > 0 ? styles.balanceDue : styles.balanceZero}
+                      className={(summary.totalBalance ?? 0) > 0 ? styles.balanceDue : styles.balanceZero}
                     >
-                      <strong>${summary.totalBalance.toFixed(2)}</strong>
+                      ${(summary.totalBalance ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   </Table.Summary.Cell>
                 </Table.Summary.Row>

@@ -3,6 +3,7 @@ package org.sofumar.portal.core.businesslogic;
 import java.util.List;
 
 import org.sofumar.portal.data.dto.MemberDto;
+import org.sofumar.portal.data.dto.response.MemberJoinDateProjection;
 import org.sofumar.portal.data.dto.response.MemberLookupDto;
 import org.sofumar.portal.data.dto.response.MemberSummaryDto;
 import org.sofumar.portal.core.vo.MemberVO;
@@ -34,5 +35,7 @@ public interface Member extends BusinessLogic<MemberVO> {
     List<MemberVO> findAllActiveMembers();
 
     Page<MemberVO> findActiveMembers(@NonNull Pageable pageable);
+
+    List<MemberJoinDateProjection> findActiveMemberJoinDates();
 
 }

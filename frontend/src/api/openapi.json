@@ -6,7 +6,7 @@
     "version" : "1.0.0"
   },
   "servers" : [ {
-    "url" : "http://localhost:50437",
+    "url" : "http://localhost:61954",
     "description" : "Generated server url"
   } ],
   "security" : [ {
@@ -779,7 +779,7 @@
     "/members/{memberID}/summary" : {
       "get" : {
         "tags" : [ "Members" ],
-        "summary" : "Get member summary (total paid, outstanding, overdue)",
+        "summary" : "Get a membership fee summary (total paid, outstanding, overdue)",
         "operationId" : "getMemberSummary",
         "parameters" : [ {
           "name" : "memberID",
@@ -807,7 +807,7 @@
     "/members/lookup" : {
       "get" : {
         "tags" : [ "Members" ],
-        "summary" : "Lookup members - fuzzy search by first name, last name or ID",
+        "summary" : "Lookup members - fuzzy search by first name or last name or ID",
         "operationId" : "lookupMembers",
         "parameters" : [ {
           "name" : "query",
@@ -1768,6 +1768,23 @@
           }
         }
       },
+      "ChecklistSummaryDto" : {
+        "type" : "object",
+        "properties" : {
+          "totalPaid" : {
+            "type" : "number"
+          },
+          "totalBalance" : {
+            "type" : "number"
+          },
+          "quarterSummaries" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/QuarterSummaryDto"
+            }
+          }
+        }
+      },
       "GlobalResponseQuarterlyChecklistDto" : {
         "type" : "object",
         "description" : "Unified API response envelope",
@@ -1851,6 +1868,26 @@
         "description" : "Payment status of a member for a specific quarter",
         "enum" : [ "PAID", "UNPAID", "NOT_APPLICABLE", "FUTURE" ]
       },
+      "QuarterSummaryDto" : {
+        "type" : "object",
+        "properties" : {
+          "quarter" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "paidCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "unpaidCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "future" : {
+            "type" : "boolean"
+          }
+        }
+      },
       "QuarterlyChecklistDto" : {
         "type" : "object",
         "properties" : {
@@ -1870,6 +1907,9 @@
             "items" : {
               "$ref" : "#/components/schemas/MemberQuarterlyRowDto"
             }
+          },
+          "summary" : {
+            "$ref" : "#/components/schemas/ChecklistSummaryDto"
           }
         }
       },

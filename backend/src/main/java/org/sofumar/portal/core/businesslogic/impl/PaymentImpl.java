@@ -64,8 +64,8 @@ public non-sealed class PaymentImpl extends PaymentAbstractBL implements Payment
             validator.validateForUpdate(vo);
         } else {
             validator.validate(vo);
-            performStatefulValidation(vo);
         }
+        performStatefulValidation(vo);
     }
 
     @Override
@@ -202,21 +202,22 @@ public non-sealed class PaymentImpl extends PaymentAbstractBL implements Payment
     }
 
     private void performStatefulValidation(PaymentVO vo) {
-        // Duplicate Check logic for new payments
+        // Duplicate Check logic for payments (add & update)
         if (ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE.equals(vo.getFeeType())) {
-            if (checkExists(vo.getMember().getMemberID(), vo.getFeeType(), vo.getYear(), vo.getQuarter())) {
+            if (checkExists(vo.getPaymentID(), vo.getMember().getMemberID(), vo.getFeeType(), vo.getYear(), vo.getQuarter())) {
                 vo.addFieldMessage(FieldConstants.QUARTER, ValidationMessages.ERR_PAYMENT_ALREADY_EXISTS.addMessageArgs(
                         String.valueOf(vo.getYear()), vo.getQuarter()));
             }
         }
     }
 
-    private boolean checkExists(Integer memberID, String feeType, Integer year, Integer quarter) {
+    private boolean checkExists(Integer paymentID, Integer memberID, String feeType, Integer year, Integer quarter) {
         Specification<PaymentVO> spec = Specification.allOf(
                 PaymentSpecifications.hasMemberID(memberID),
                 PaymentSpecifications.hasFeeType(feeType),
                 PaymentSpecifications.hasYear(year),
-                PaymentSpecifications.hasQuarter(quarter));
+                PaymentSpecifications.hasQuarter(quarter),
+                PaymentSpecifications.notPaymentId(paymentID));
         return getRepo().exists(spec);
     }
 

@@ -297,9 +297,11 @@ export default function Dashboard() {
             <div className={styles.chartContainer} style={{ position: 'relative' }}>
               <div className={styles.recentHeader}>
                 <div className="chart-title">Recent Payments</div>
-                <Link to="/payments" state={{ fromDashboard: true }} className={styles.viewAllLink}>
-                  View All →
-                </Link>
+                {payments.length > 0 && (
+                  <Link to="/payments" state={{ fromDashboard: true }} className={styles.viewAllLink}>
+                    View All →
+                  </Link>
+                )}
               </div>
               <Table
                 scroll={{ x: 'max-content' }}

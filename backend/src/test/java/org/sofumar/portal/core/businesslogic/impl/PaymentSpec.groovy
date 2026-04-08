@@ -229,7 +229,7 @@ class PaymentSpec extends BaseSpecification {
     def "test - updatePayment: Success"() {
         given: "An existing payment update request"
         Integer paymentId = 1
-        PaymentVO vo = new PaymentVO()
+        PaymentVO vo = new PaymentVO(feeType: "Other")
 
         when: "The target method executed"
         paymentImpl.updatePayment(new PaymentDto(paymentID: paymentId))
@@ -249,7 +249,7 @@ class PaymentSpec extends BaseSpecification {
         given: "A DB error during update"
         Integer id = 1
         PaymentDto dto = new PaymentDto(paymentID: id)
-        PaymentVO vo = new PaymentVO(paymentID: id)
+        PaymentVO vo = new PaymentVO(paymentID: id, feeType: "Other")
 
         when: "The target method executed"
         paymentImpl.updatePayment(dto)
@@ -279,6 +279,39 @@ class PaymentSpec extends BaseSpecification {
 
         and: "The expected result"
         thrown(RecordNotFoundException)
+    }
+
+    def "test - updatePayment: Duplicate Membership Fee"() {
+        given: "An update that would create a duplicate membership fee"
+        Integer paymentId = 2
+        Integer memberId = 1
+        int year = LocalDate.now().year
+        int quarter = 1
+        String feeType = ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE
+        PaymentDto request = new PaymentDto(paymentID: paymentId, memberID: memberId, feeType: feeType, year: year, quarter: quarter)
+        PaymentVO existingVO = new PaymentVO(paymentID: paymentId, member: new MemberVO(memberID: memberId), feeType: feeType, year: year, quarter: 2)
+        PaymentVO updatedVO = new PaymentVO(paymentID: paymentId, member: new MemberVO(memberID: memberId), feeType: feeType, year: year, quarter: quarter)
+        JpaSpecification capturedSpec
+
+        when: "The target method executed"
+        paymentImpl.updatePayment(request)
+
+        then: "The expected calls are made"
+        1 * paymentRepo.findById(paymentId) >> Optional.of(existingVO)
+        1 * voTransformer.transformForUpdate(request, existingVO) >> updatedVO
+        1 * validator.validateForUpdate(updatedVO)
+        1 * paymentRepo.exists(_ as JpaSpecification) >> { JpaSpecification spec -> capturedSpec = spec; true }
+        0 * _
+
+        and: "VO has validation errors and exception is thrown"
+        updatedVO.hasErrors()
+        thrown(ValidationException)
+        capturedSpec != null
+
+        and: "The specification includes self-exclusion"
+        Map<String, List> inspection = inspectSpecification(capturedSpec)
+        inspection.filters.containsAll([TableConstants.MEMBER_TABLE, FieldConstants.MEMBER_ID, FieldConstants.FEE_TYPE, FieldConstants.YEAR, FieldConstants.QUARTER, FieldConstants.PAYMENT_ID])
+        inspection.values.containsAll([memberId, feeType, year, quarter, paymentId])
     }
 
     def "test - deletePayment: Success"() {

@@ -32,6 +32,9 @@ class BaseSpecification extends Specification {
         // Capture values from equal() calls - matched against both 'path' (direct) and 'expression' (lower)
         cb.equal(path, _) >> { expr, val -> values << val; null }
         cb.equal(expression, _) >> { expr, val -> values << val; null }
+
+        // Capture values from notEqual() calls (e.g. self-exclusion specs like notPaymentId)
+        cb.notEqual(path, _) >> { expr, val -> values << val; null }
         
         // Capture values from like() calls
         cb.like(path, _) >> { expr, val -> values << val; null }
