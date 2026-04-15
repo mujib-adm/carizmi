@@ -1,0 +1,94 @@
+services:
+  db:
+    image: mysql:8.0
+    platform: linux/arm64/v8 # Explicitly target Arm for Oracle Cloud
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+    environment:
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASS}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASS}
+    command: --host-cache-size=0 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - db_data:/var/lib/mysql
+      - /usr/share/zoneinfo:/usr/share/zoneinfo:ro
+
+  redis:
+    image: redis:7.4-alpine
+    platform: linux/arm64/v8
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    volumes:
+      - ./infra/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+
+  backend:
+    image: ghcr.io/mujib-adm/carizmi-backend:main
+    platform: linux/arm64/v8
+    pull_policy: always
+    build: !reset null
+    ports:
+      - "127.0.0.1:8080:8080" # Bind to localhost only (no public exposure)
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      ADMIN_DEFAULT_FIRSTNAME: ${ADMIN_DEFAULT_FIRSTNAME}
+      ADMIN_DEFAULT_LASTNAME: ${ADMIN_DEFAULT_LASTNAME}
+      ADMIN_DEFAULT_EMAIL: ${ADMIN_DEFAULT_EMAIL}
+      ADMIN_DEFAULT_USERNAME: ${ADMIN_DEFAULT_USERNAME}
+    secrets:
+      - source: admin_password
+        target: admin.default.password
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 4G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+
+  frontend:
+    image: ghcr.io/mujib-adm/carizmi-frontend:main
+    platform: linux/arm64/v8
+    pull_policy: always
+    build: !reset null
+    ports:
+      - "80:8080" # Map public port 80 to container 8080
+    environment:
+      VITE_API_URL: ${VITE_API_URL}
+      APP_ORG_NAME: ${APP_ORG_NAME}
+      APP_HEADER_TITLE: ${APP_HEADER_TITLE}
+      APP_HEADER_SUBTITLE: ${APP_HEADER_SUBTITLE}
+      APP_LOGO_ALT: ${APP_LOGO_ALT}
+      APP_COPYRIGHT: ${APP_COPYRIGHT}
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+
+volumes:
+  db_data:
+
+secrets:
+  admin_password:
+    file: ./secrets/admin_password.txt

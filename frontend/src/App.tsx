@@ -6,10 +6,11 @@ import { ReferenceProvider } from './contexts/ReferenceContext';
 import { SystemSettingsProvider } from './contexts/SystemSettingsContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import AppHeader from './components/layout/AppHeader';
+import { getBranding } from './config/branding';
 import Router from './Router';
 
 const { Content, Footer } = Layout;
-const year = new Date().getFullYear();
+const branding = getBranding();
 
 export default function App() {
   return (
@@ -26,7 +27,7 @@ export default function App() {
                       <Router />
                     </Content>
                     <Footer className="copyright">
-                      <p>© {year} Sof'umar Community of Minnesota.</p>
+                      <p>{branding.copyright}</p>
                     </Footer>
                   </Layout>
                 </NotificationProvider>
