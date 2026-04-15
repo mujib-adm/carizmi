@@ -182,13 +182,13 @@ jobs:
 
       # Build framework first — backend depends on it and it's not published to Maven Central
       - name: Build Framework Module
-        run: ./mvnw -B install -pl framework -DskipTests -q
+        run: mvn -B install -pl framework -DskipTests -q
 
       - name: OWASP Dependency-Check (Backend)
         working-directory: ./backend
         continue-on-error: true   # NVD API failures are transient — don't block pipeline
         run: >
-          ../mvnw -B org.owasp:dependency-check-maven:12.2.1:check
+          mvn -B org.owasp:dependency-check-maven:12.2.1:check
           -DfailBuildOnCVSS=9
           -DnvdApiKey=${{ secrets.NVD_API_KEY }}
 
