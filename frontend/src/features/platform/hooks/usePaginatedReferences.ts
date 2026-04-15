@@ -18,8 +18,6 @@ export function usePaginatedReferences(initialRequest: ReferenceSearchRequestDto
         const resp = await referenceDataApi.searchReferences(mergedRequest);
         setReferences(resp.responseData ?? []);
         setMeta(resp.meta ?? null);
-      } catch (error) {
-        throw error;
       } finally {
         setLoading(false);
       }

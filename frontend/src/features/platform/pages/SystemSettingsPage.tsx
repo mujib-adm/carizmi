@@ -45,12 +45,8 @@ export default function SystemSettingsPage() {
   };
 
   const handleSave = async (values: SystemSettingsDto) => {
-    try {
-      await systemSettingsApi.updateSystemSetting(values);
-      fetchSettings(filters);
-    } catch (e) {
-      throw e; // Modal will handle reporting this
-    }
+    await systemSettingsApi.updateSystemSetting(values);
+    fetchSettings(filters);
   };
 
   // Helper to format codes like BASELINE_REVENUE -> Baseline Revenue

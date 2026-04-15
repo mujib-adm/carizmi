@@ -53,29 +53,25 @@ export default function UsersPage() {
   };
 
   const handleUpdateUser = async (updatedValues: any) => {
-    try {
-      if (!selectedUser?.userID) return;
-      // Check and update Role if changed
-      let resp;
-      if (updatedValues.role !== selectedUser?.role) {
-        resp = await userManagementApi.updateRole(selectedUser.userID, {
-          role: updatedValues.role,
-        });
-      }
-      // Check and update Status if changed
-      if (updatedValues.active !== selectedUser?.active) {
-        const statusReq: UserStatusUpdateRequestDto = { active: updatedValues.active };
-        resp = await userManagementApi.toggleStatus(selectedUser.userID, statusReq);
-      }
-      if (resp?.globalMessages?.[0]?.type === MessageType.SUCCESS) {
-        notify.success({ message: 'Success', description: resp.globalMessages[0].message });
-      }
-      setModalOpen(false);
-      setSelectedUser(null);
-      fetchUsers();
-    } catch (error: any) {
-      throw error;
+    if (!selectedUser?.userID) return;
+    // Check and update Role if changed
+    let resp;
+    if (updatedValues.role !== selectedUser?.role) {
+      resp = await userManagementApi.updateRole(selectedUser.userID, {
+        role: updatedValues.role,
+      });
     }
+    // Check and update Status if changed
+    if (updatedValues.active !== selectedUser?.active) {
+      const statusReq: UserStatusUpdateRequestDto = { active: updatedValues.active };
+      resp = await userManagementApi.toggleStatus(selectedUser.userID, statusReq);
+    }
+    if (resp?.globalMessages?.[0]?.type === MessageType.SUCCESS) {
+      notify.success({ message: 'Success', description: resp.globalMessages[0].message });
+    }
+    setModalOpen(false);
+    setSelectedUser(null);
+    fetchUsers();
   };
 
   const columns = [

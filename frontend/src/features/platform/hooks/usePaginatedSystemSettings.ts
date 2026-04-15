@@ -22,8 +22,6 @@ export function usePaginatedSystemSettings(initialRequest: SystemSettingsSearchR
         const resp = await systemSettingsApi.searchSystemSettings(mergedRequest);
         setSettings(resp.responseData ?? []);
         setMeta(resp.meta ?? null);
-      } catch (error) {
-        throw error;
       } finally {
         setLoading(false);
       }

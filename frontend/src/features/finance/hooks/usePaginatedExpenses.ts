@@ -18,8 +18,6 @@ export function usePaginatedExpenses(initialRequest: ExpenseSearchRequestDto = {
         const resp = await expensesApi.searchExpenses(mergedRequest);
         setExpenses(resp.responseData ?? []);
         setMeta(resp.meta ?? null);
-      } catch (e: any) {
-        throw e;
       } finally {
         setLoading(false);
       }

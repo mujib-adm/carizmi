@@ -115,7 +115,7 @@ export default function Dashboard() {
     });
 
     // 3. Dues/Overdues/Future Slice
-    let unpaidVal = Math.max(0, potentialPerQ - (q.collectedAmount || 0));
+    const unpaidVal = Math.max(0, potentialPerQ - (q.collectedAmount || 0));
     let unpaidColor = getUnpaidColor(isDark, 'dues');
     let unpaidName = `${q.quarterLabel} Dues`;
 

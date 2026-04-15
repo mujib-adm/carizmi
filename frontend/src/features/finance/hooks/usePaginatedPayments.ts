@@ -18,8 +18,6 @@ export function usePaginatedPayments(initialRequest: PaymentSearchRequestDto = {
         const resp = await paymentsApi.searchPayments(mergedRequest);
         setPayments(resp.responseData ?? []);
         setMeta(resp.meta ?? null);
-      } catch (e: any) {
-        throw e;
       } finally {
         setLoading(false);
       }

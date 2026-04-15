@@ -4,7 +4,7 @@ import { authenticationApi } from '../api/generated/authentication/authenticatio
 import { AuthContext } from '../hooks/useAuth';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!!localStorage.getItem('role'));
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('role'));
   const [role, setRole] = useState(localStorage.getItem('role') || 'User');
   const [firstName, setFirstName] = useState(localStorage.getItem('firstName') || '');
@@ -45,30 +45,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const storedRole = localStorage.getItem('role');
     const storedFirstName = localStorage.getItem('firstName');
 
-    if (storedRole) {
-      // Validate session with backend (cookie is sent automatically)
-      authenticationApi
-        .getCurrentUser()
-        .then((res) => {
-          const data = res;
-          setIsAuthenticated(true);
-          setRole(storedRole);
-          if (data.responseData) {
-            const fName = data.responseData.firstName || storedFirstName || '';
-            setFirstName(fName);
-            localStorage.setItem('firstName', fName);
-          }
-        })
-        .catch(() => {
-          localStorage.removeItem('role');
-          localStorage.removeItem('firstName');
-          setIsAuthenticated(false);
-          setRole('User');
-        })
-        .finally(() => setIsLoading(false));
-    } else {
-      setIsLoading(false);
-    }
+    if (!storedRole) return;
+
+    // Validate session with backend (cookie is sent automatically)
+    authenticationApi
+      .getCurrentUser()
+      .then((res) => {
+        const data = res;
+        setIsAuthenticated(true);
+        setRole(storedRole);
+        if (data.responseData) {
+          const fName = data.responseData.firstName || storedFirstName || '';
+          setFirstName(fName);
+          localStorage.setItem('firstName', fName);
+        }
+      })
+      .catch(() => {
+        localStorage.removeItem('role');
+        localStorage.removeItem('firstName');
+        setIsAuthenticated(false);
+        setRole('User');
+      })
+      .finally(() => setIsLoading(false));
   }, []);
 
   return (

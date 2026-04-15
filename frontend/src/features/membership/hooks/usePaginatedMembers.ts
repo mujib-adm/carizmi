@@ -18,8 +18,6 @@ export function usePaginatedMembers(initialRequest: MemberSearchRequestDto = {})
         const resp = await membersApi.searchMembers(mergedRequest);
         setMembers(resp.responseData ?? []);
         setMeta(resp.meta ?? null);
-      } catch (e: any) {
-        throw e;
       } finally {
         setLoading(false);
       }
