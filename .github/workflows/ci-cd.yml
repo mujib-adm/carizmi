@@ -186,10 +186,11 @@ jobs:
 
       - name: OWASP Dependency-Check (Backend)
         working-directory: ./backend
-        continue-on-error: true   # NVD API failures are transient — don't block pipeline
+        continue-on-error: true   # NVD API has a known timestamp parsing bug (v12.2.1) — don't block pipeline
         run: >
           mvn -B org.owasp:dependency-check-maven:12.2.1:check
           -DfailBuildOnCVSS=9
+          -DfailOnError=false
           -DnvdApiKey=${{ secrets.NVD_API_KEY }}
 
       - name: Upload OWASP Report
