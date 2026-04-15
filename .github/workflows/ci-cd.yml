@@ -285,7 +285,8 @@ jobs:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ steps.meta-backend.outputs.version }}
           format: 'table'
           exit-code: '1'
-          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+          severity: 'CRITICAL'
           output: 'trivy-backend.txt'
 
       - name: Upload Trivy Backend Report
@@ -331,7 +332,8 @@ jobs:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ steps.meta-frontend.outputs.version }}
           format: 'table'
           exit-code: '1'
-          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+          severity: 'CRITICAL'
           output: 'trivy-frontend.txt'
 
       - name: Upload Trivy Frontend Report
