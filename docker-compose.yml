@@ -2,7 +2,7 @@ services:
   db:
     platform: linux/amd64
     image: mysql:8.0
-    container_name: sofumar-db
+    container_name: carizmi-db
     environment:
       MYSQL_DATABASE: ${DB_NAME}
       MYSQL_USER: ${DB_USER}
@@ -23,7 +23,7 @@ services:
 
   redis:
     image: 'redis:7.4-alpine'
-    container_name: sofumar-redis
+    container_name: carizmi-redis
     ports:
       - "127.0.0.1:6379:6379" # Localhost only for security
     restart: always
@@ -39,7 +39,7 @@ services:
 
   backend:
     platform: linux/amd64
-    container_name: sofumar-backend
+    container_name: carizmi-backend
     env_file: .env
     build:
       context: .
@@ -67,7 +67,7 @@ services:
 
   frontend:
     platform: linux/amd64
-    container_name: sofumar-frontend
+    container_name: carizmi-frontend
     env_file: .env
     build:
       context: .
@@ -77,6 +77,13 @@ services:
     restart: always
     depends_on:
       - backend
+    environment:
+      VITE_API_URL: ${VITE_API_URL}
+      APP_ORG_NAME: ${APP_ORG_NAME}
+      APP_HEADER_TITLE: ${APP_HEADER_TITLE}
+      APP_HEADER_SUBTITLE: ${APP_HEADER_SUBTITLE}
+      APP_LOGO_ALT: ${APP_LOGO_ALT}
+      APP_COPYRIGHT: ${APP_COPYRIGHT}
     ports:
       - "8081:8080"
 

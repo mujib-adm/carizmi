@@ -1,0 +1,479 @@
+# ==============================================================================
+# CI/CD Pipeline — Carizmi Community Platform
+# ==============================================================================
+# Triggered on:
+#   - Pull Requests targeting 'main' (CI only — build, test, lint, scan)
+#   - Push to 'main' (CI + CD — build, test, lint, scan, Docker build & push)
+#   - Manual dispatch (for debugging)
+# ==============================================================================
+
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+# Cancel in-progress runs for the same PR/branch (saves CI minutes)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  JAVA_VERSION: '21'
+  NODE_VERSION: '24'
+
+jobs:
+  # ============================================================================
+  # CI: Backend — Build, Test, Contract Validation
+  # ============================================================================
+  backend-verify:
+    name: "Backend: Build & Test"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      TESTCONTAINERS_RYUK_DISABLED: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: 'maven'
+
+      # Single Maven invocation: compile framework → compile backend →
+      # run unit tests (Surefire) → run integration tests (Failsafe) →
+      # generate OpenAPI contract (exec-maven-plugin in verify phase)
+      - name: Build & Test (Framework + Backend)
+        run: mvn -B verify -pl framework,backend
+
+      - name: Check for API Contract Drift
+        run: |
+          if ! git diff --exit-code frontend/src/api/openapi.json; then
+            echo "::error::API Contract Drift Detected!"
+            echo "::error::The committed 'openapi.json' does not match the backend."
+            echo "::error::Run 'mvn install' locally and commit the updated file."
+            exit 1
+          fi
+
+      - name: Verify Baseline Schema Integrity
+        run: |
+          git fetch origin main:main 2>/dev/null || true
+          if git diff --name-only main...HEAD 2>/dev/null | grep -q "V1__DB_Schema_Baseline.sql"; then
+            echo "::error::Baseline schema (V1__DB_Schema_Baseline.sql) must NOT be modified."
+            echo "::error::Revert changes and create a new migration file instead."
+            exit 1
+          fi
+          echo "✅ Baseline schema integrity verified."
+
+      # Upload test reports as artifacts for debugging
+      - name: Upload Backend Test Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-reports
+          path: |
+            backend/target/surefire-reports/
+            backend/target/failsafe-reports/
+          retention-days: 14
+
+      # Publish test summary in the GitHub Actions UI
+      - name: Publish Test Summary
+        if: always()
+        uses: test-summary/action@v2
+        with:
+          paths: |
+            backend/target/surefire-reports/TEST-*.xml
+            backend/target/failsafe-reports/TEST-*.xml
+
+  # ============================================================================
+  # CI: Frontend — Lint, Type Check, Test, Build
+  # ============================================================================
+  frontend-verify:
+    name: "Frontend: Lint, Test & Build"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Generate API Client
+        working-directory: ./frontend
+        run: npm run generate:api
+
+      - name: Lint (ESLint)
+        working-directory: ./frontend
+        run: npm run lint
+
+      - name: Type Check (TypeScript)
+        working-directory: ./frontend
+        run: npm run type-check
+
+      - name: Run Tests (Vitest)
+        working-directory: ./frontend
+        run: npx vitest run --reporter=default --reporter=junit --outputFile=test-results/junit.xml
+
+      - name: Build
+        working-directory: ./frontend
+        run: npm run build
+        env:
+          VITE_API_URL: "http://localhost:8080/api"
+
+      # Upload test reports
+      - name: Upload Frontend Test Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-test-reports
+          path: frontend/test-results/
+          retention-days: 14
+
+      - name: Publish Test Summary
+        if: always() && hashFiles('frontend/test-results/junit.xml') != ''
+        uses: test-summary/action@v2
+        with:
+          paths: frontend/test-results/junit.xml
+
+  # ============================================================================
+  # CI: Security Scanning (OWASP + npm audit)
+  # ============================================================================
+  security-scan:
+    name: "Security: Dependency Scan"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Backend: OWASP Dependency-Check
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: 'maven'
+
+      # Build framework first — backend depends on it and it's not published to Maven Central
+      - name: Build Framework Module
+        run: mvn -B install -pl framework -DskipTests -q
+
+      - name: OWASP Dependency-Check (Backend)
+        working-directory: ./backend
+        continue-on-error: true   # NVD API has a known timestamp parsing bug (v12.2.1) — don't block pipeline
+        run: >
+          mvn -B org.owasp:dependency-check-maven:12.2.1:check
+          -DfailBuildOnCVSS=9
+          -DfailOnError=false
+          -DnvdApiKey=${{ secrets.NVD_API_KEY }}
+
+      - name: Upload OWASP Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: owasp-dependency-report
+          path: backend/target/dependency-check-report.html
+          retention-days: 14
+
+      # Frontend: npm audit
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Dependencies (for audit)
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: npm audit (Frontend)
+        working-directory: ./frontend
+        run: npm audit --audit-level=critical
+
+  # ============================================================================
+  # CD: Docker Build, Scan & Push (only on push to main)
+  # ============================================================================
+  #
+  # Tagging Strategy:
+  #   - `main`        → Rolling tag, latest from main branch
+  #   - `<sha>`       → Immutable tag tied to exact commit
+  #   - `v1.2.3`      → Exact semver (on git tag push only)
+  #   - `1.2`         → Major.minor convenience tag (on git tag push only)
+  #
+  # ============================================================================
+  docker-build-push:
+    name: "Docker: Build & Push"
+    needs: [ backend-verify, frontend-verify, security-scan ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # ---- Backend Image ----
+
+      - name: Extract Backend Metadata
+        id: meta-backend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix=
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Build & Push Backend Image
+        id: build-backend
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: backend/Dockerfile
+          push: true
+          tags: ${{ steps.meta-backend.outputs.tags }}
+          labels: ${{ steps.meta-backend.outputs.labels }}
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+          provenance: true
+          sbom: true
+
+      - name: Trivy Scan Backend Image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ steps.meta-backend.outputs.version }}
+          format: 'table'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+          output: 'trivy-backend.txt'
+
+      - name: Upload Trivy Backend Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-backend-report
+          path: trivy-backend.txt
+          retention-days: 30
+
+      # ---- Frontend Image ----
+
+      - name: Extract Frontend Metadata
+        id: meta-frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix=
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Build & Push Frontend Image
+        id: build-frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: frontend/Dockerfile
+          push: true
+          build-args: |
+            VITE_API_URL=${{ secrets.VITE_API_URL || 'https://api.carizmi.io/api' }}
+          tags: ${{ steps.meta-frontend.outputs.tags }}
+          labels: ${{ steps.meta-frontend.outputs.labels }}
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
+          provenance: true
+          sbom: true
+
+      - name: Trivy Scan Frontend Image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ steps.meta-frontend.outputs.version }}
+          format: 'table'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+          output: 'trivy-frontend.txt'
+
+      - name: Upload Trivy Frontend Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-frontend-report
+          path: trivy-frontend.txt
+          retention-days: 30
+
+      # ---- Build Summary ----
+      - name: Post Build Summary
+        if: success()
+        run: |
+          echo "## 🐳 Docker Images Published" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Image | Tag | Digest |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Backend** | \`${{ steps.meta-backend.outputs.version }}\` | \`${{ steps.build-backend.outputs.digest }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Frontend** | \`${{ steps.meta-frontend.outputs.version }}\` | \`${{ steps.build-frontend.outputs.digest }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================================================
+  # CD: Deploy to Production (Uncomment this job when the production server is ready)
+  # ============================================================================
+  #
+  # This job deploys the application to the production server via SSH.
+  # It uses a GitHub Environment ("production") which enables:
+  #   - Manual approval gate (configurable in repo Settings → Environments)
+  #   - Environment-specific secrets (DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY)
+  #   - Deployment history tracking in the GitHub UI
+  #
+  # Prerequisites:
+  #   1. Create "production" environment in GitHub repo settings
+  #   2. Add required secrets: DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY, GHCR_DEPLOY_TOKEN
+  #   3. (Recommended) Enable "Required reviewers" protection rule
+  #   4. Uncomment this job when the production server is ready
+  #
+  # ============================================================================
+  # deploy:
+  #   name: "Deploy to Production"
+  #   needs: [ docker-build-push ]
+  #   runs-on: ubuntu-latest
+  #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  #   concurrency:
+  #     group: deploy-production
+  #     cancel-in-progress: false
+  #   environment:
+  #     name: production
+  #     url: https://yourdomain.com
+  #   timeout-minutes: 10
+  #   permissions:
+  #     contents: read
+  #
+  #   steps:
+  #     - name: Deploy via SSH
+  #       uses: appleboy/ssh-action@v1
+  #       with:
+  #         host: ${{ secrets.DEPLOY_HOST }}
+  #         username: ${{ secrets.DEPLOY_USER }}
+  #         key: ${{ secrets.DEPLOY_SSH_KEY }}
+  #         script: |
+  #           set -euo pipefail
+  #
+  #           COMPOSE="docker compose -f docker-compose.yml -f docker-compose.prod.yml"
+  #           BACKEND_IMAGE="ghcr.io/${{ github.repository }}-backend"
+  #           FRONTEND_IMAGE="ghcr.io/${{ github.repository }}-frontend"
+  #
+  #           cd /opt/carizmi
+  #
+  #           # Authenticate with GHCR (required for private repos)
+  #           echo "${{ secrets.GHCR_DEPLOY_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+  #
+  #           # Save current image digests for rollback
+  #           PREV_BACKEND=$(docker inspect --format='{{index .RepoDigests 0}}' "${BACKEND_IMAGE}:main" 2>/dev/null || echo "")
+  #           PREV_FRONTEND=$(docker inspect --format='{{index .RepoDigests 0}}' "${FRONTEND_IMAGE}:main" 2>/dev/null || echo "")
+  #           echo "📋 Previous backend:  ${PREV_BACKEND:-none}"
+  #           echo "📋 Previous frontend: ${PREV_FRONTEND:-none}"
+  #
+  #           # Pull latest images
+  #           echo "📦 Pulling latest images..."
+  #           ${COMPOSE} pull backend frontend
+  #
+  #           # Deploy (restart only app containers — not DB/Redis)
+  #           echo "🚀 Deploying..."
+  #           ${COMPOSE} up -d --no-deps backend frontend
+  #
+  #           # Health check: Backend (Spring Actuator)
+  #           echo "🏥 Verifying backend health..."
+  #           HEALTHY=false
+  #           for i in $(seq 1 30); do
+  #             if docker exec carizmi-backend curl -sf http://localhost:8080/api/actuator/health > /dev/null 2>&1; then
+  #               echo "✅ Backend healthy (attempt $i/30)"
+  #               HEALTHY=true
+  #               break
+  #             fi
+  #             echo "⏳ Attempt $i/30 — waiting 10s..."
+  #             sleep 10
+  #           done
+  #
+  #           # Health check: Frontend (Nginx responds)
+  #           if [ "$HEALTHY" = true ]; then
+  #             if ! docker exec carizmi-frontend curl -sf http://localhost:8080/ > /dev/null 2>&1; then
+  #               echo "❌ Frontend health check failed"
+  #               HEALTHY=false
+  #             else
+  #               echo "✅ Frontend healthy"
+  #             fi
+  #           fi
+  #
+  #           # Rollback on failure
+  #           if [ "$HEALTHY" = false ]; then
+  #             echo "❌ Health check failed — rolling back..."
+  #             if [ -n "$PREV_BACKEND" ] && [ -n "$PREV_FRONTEND" ]; then
+  #               docker pull "$PREV_BACKEND"
+  #               docker tag "$PREV_BACKEND" "${BACKEND_IMAGE}:main"
+  #               docker pull "$PREV_FRONTEND"
+  #               docker tag "$PREV_FRONTEND" "${FRONTEND_IMAGE}:main"
+  #               ${COMPOSE} up -d --no-deps backend frontend
+  #               echo "🔄 Rollback complete — previous version restored"
+  #             else
+  #               echo "⚠️ No previous version to roll back to (first deployment)"
+  #             fi
+  #             exit 1
+  #           fi
+  #
+  #           # Cleanup
+  #           docker image prune -f
+  #           echo "✅ Deployment complete"
+  #
+  #     - name: Post Deployment Summary
+  #       if: always()
+  #       run: |
+  #         STATUS="${{ job.status }}"
+  #         if [ "$STATUS" = "success" ]; then
+  #           echo "## 🚀 Deployment Successful" >> $GITHUB_STEP_SUMMARY
+  #         else
+  #           echo "## ❌ Deployment Failed" >> $GITHUB_STEP_SUMMARY
+  #         fi
+  #         echo "" >> $GITHUB_STEP_SUMMARY
+  #         echo "- **Environment:** production" >> $GITHUB_STEP_SUMMARY
+  #         echo "- **Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+  #         echo "- **Status:** ${STATUS}" >> $GITHUB_STEP_SUMMARY
+  #         echo "- **Timestamp:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY

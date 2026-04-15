@@ -1,24 +1,24 @@
 import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import Login from './pages/auth/Login';
-import Logout from './pages/auth/Logout';
+import Login from './features/identity/pages/Login';
+import Logout from './features/identity/pages/Logout';
 import AppLayout from './components/layout/AppLayout';
 import { useAuth } from './hooks/useAuth';
 import { RoleConstants } from './constants/RoleConstants';
 import GradientSpinner from './components/GradientSpinner';
 
 // Lazy-loaded pages – reduces initial bundle size
-const ProfilePage = lazy(() => import('./pages/auth/ProfilePage'));
-const Dashboard = lazy(() => import('./pages/dashboard/Dashboard'));
-const ExpensePage = lazy(() => import('./pages/expense/ExpensePage'));
-const MemberDetailsPage = lazy(() => import('./pages/member/MemberDetailsPage'));
-const MemberPage = lazy(() => import('./pages/member/MemberPage'));
-const PaymentPage = lazy(() => import('./pages/payment/PaymentPage'));
-const QuarterlyChecklistPage = lazy(() => import('./pages/checklist/QuarterlyChecklistPage'));
-const ReferencePage = lazy(() => import('./pages/reference/ReferencePage'));
-const SystemSettingsPage = lazy(() => import('./pages/settings/SystemSettingsPage'));
-const UsersPage = lazy(() => import('./pages/admin/UsersPage'));
-const Register = lazy(() => import('./pages/auth/Register'));
+const ProfilePage = lazy(() => import('./features/identity/pages/ProfilePage'));
+const Dashboard = lazy(() => import('./features/platform/pages/Dashboard'));
+const ExpensePage = lazy(() => import('./features/finance/pages/ExpensePage'));
+const MemberDetailsPage = lazy(() => import('./features/membership/pages/MemberDetailsPage'));
+const MemberPage = lazy(() => import('./features/membership/pages/MemberPage'));
+const PaymentPage = lazy(() => import('./features/finance/pages/PaymentPage'));
+const QuarterlyChecklistPage = lazy(() => import('./features/finance/pages/QuarterlyChecklistPage'));
+const ReferencePage = lazy(() => import('./features/platform/pages/ReferencePage'));
+const SystemSettingsPage = lazy(() => import('./features/platform/pages/SystemSettingsPage'));
+const UsersPage = lazy(() => import('./features/identity/pages/UsersPage'));
+const Register = lazy(() => import('./features/identity/pages/Register'));
 
 const PageSpinner = () => (
   <div className="page-spinner">

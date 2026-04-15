@@ -1,0 +1,62 @@
+# ==============================================================================
+# CODEOWNERS — Carizmi Community Platform
+# ==============================================================================
+#
+# This file defines code ownership rules. When a PR modifies files matching
+# a pattern below, the listed owner(s) are AUTOMATICALLY requested as reviewers.
+#
+# Combined with the Branch Protection rule "Require review from Code Owners",
+# PRs CANNOT be merged without approval from the designated owner.
+#
+# Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Global: Default owner for ALL files (catch-all)
+# Any file not matched by a more specific rule below requires this owner's review
+# ------------------------------------------------------------------------------
+*                                               @mujib-adm
+
+# ------------------------------------------------------------------------------
+# CI/CD & Infrastructure (CRITICAL — controls what runs in production)
+# ------------------------------------------------------------------------------
+.github/                                        @mujib-adm
+docker-compose*.yml                             @mujib-adm
+backend/Dockerfile                              @mujib-adm
+frontend/Dockerfile                             @mujib-adm
+frontend/nginx.conf                             @mujib-adm
+frontend/docker-entrypoint.sh                   @mujib-adm
+infra/                                          @mujib-adm
+
+# ------------------------------------------------------------------------------
+# Database Migrations (CRITICAL — irreversible schema changes)
+# ------------------------------------------------------------------------------
+backend/src/main/resources/db/migration/        @mujib-adm
+
+# ------------------------------------------------------------------------------
+# Security & Authentication
+# ------------------------------------------------------------------------------
+backend/src/main/java/io/carizmi/infrastructure/    @mujib-adm
+.env                                            @mujib-adm
+secrets/                                        @mujib-adm
+
+# ------------------------------------------------------------------------------
+# Framework Module (shared abstractions — changes affect all domains)
+# ------------------------------------------------------------------------------
+framework/                                      @mujib-adm
+
+# ------------------------------------------------------------------------------
+# Build Configuration (dependency changes, plugin changes)
+# ------------------------------------------------------------------------------
+pom.xml                                         @mujib-adm
+backend/pom.xml                                 @mujib-adm
+framework/pom.xml                               @mujib-adm
+frontend/package.json                           @mujib-adm
+frontend/package-lock.json                      @mujib-adm
+
+# ------------------------------------------------------------------------------
+# API Contract (changes here affect frontend/backend compatibility)
+# ------------------------------------------------------------------------------
+frontend/src/api/openapi.json                   @mujib-adm
+frontend/orval.config.ts                        @mujib-adm

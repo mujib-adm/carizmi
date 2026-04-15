@@ -1,0 +1,93 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+  shutdown: graceful
+
+spring:
+  config:
+    activate:
+      on-profile: prod
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+  mvc:
+    async:
+      request-timeout: 30s
+      
+  datasource:
+    # In production, these MUST be provided by environment variables
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASS}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 30000
+      pool-name: ${APP_NAME:Carizmi}ProdPool
+      
+  jpa:
+    open-in-view: false # Critical performance best practice
+    show-sql: false # NEVER show SQL in production (security & performance)
+    properties:
+      hibernate:
+        format_sql: false
+        generate_statistics: false
+        jdbc:
+          batch_size: 25
+          order_inserts: true
+          order_updates: true
+        
+  # Flyway in production: Validate & Migrate
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    validate-on-migrate: true
+    
+  # Redis configuration for caching/session if needed
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000ms
+      repositories:
+        enabled: false
+
+logging:
+  level:
+    root: INFO
+    org.springframework: INFO
+    org.hibernate: WARN
+    io.carizmi: INFO
+    com.zaxxer.hikari: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,metrics,prometheus" # Expose metrics for monitoring
+  endpoint:
+    health:
+      show-details: when_authorized # Don't show full DB details to public
+    shutdown:
+      enabled: false # Security: disable shutdown endpoint
+
+app:
+  cookie:
+    secure: true
+  rate-limit:
+    enabled: true
+    capacity: 50 # Increased to 50 requests
+    refill-tokens: 50
+    refill-duration: 60s # per minute
+  cors:
+    # STRICT CORS for production. 
+    # Must be set via env var APP_CORS_ALLOWED_ORIGINS matching the frontend domain
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:} 
+
+# Disable Swagger/OpenAPI in production — never expose API surface publicly
+springdoc:
+  swagger-ui:
+    enabled: false
+  api-docs:
+    enabled: false

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- Include Spring Boot defaults for all profiles -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <!-- Dev / default profile: standard Spring Boot console output -->
+    <springProfile name="!prod">
+        <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <!-- Production profile: JSON structured logging via Logstash encoder -->
+    <springProfile name="prod">
+        <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                <includeCallerData>false</includeCallerData>
+                <shortenedLoggerNameLength>36</shortenedLoggerNameLength>
+                <timestampPattern>yyyy-MM-dd'T'HH:mm:ss.SSS'Z'</timestampPattern>
+            </encoder>
+        </appender>
+        <root level="INFO">
+            <appender-ref ref="JSON_CONSOLE"/>
+        </root>
+        <logger name="org.springframework" level="INFO"/>
+        <logger name="org.hibernate" level="WARN"/>
+        <logger name="io.carizmi" level="INFO"/>
+        <logger name="com.zaxxer.hikari" level="INFO"/>
+    </springProfile>
+
+</configuration>

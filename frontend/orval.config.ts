@@ -1,7 +1,7 @@
 import { defineConfig } from 'orval';
 
 export default defineConfig({
-  portal: {
+  platform: {
     input: {
       target: './src/api/openapi.json',
     },

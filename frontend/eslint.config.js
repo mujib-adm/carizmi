@@ -4,7 +4,14 @@ import reactHooks from 'eslint-plugin-react-hooks';
 
 export default [
   {
-    ignores: ['dist', 'node_modules'],
+    ignores: [
+      'dist',
+      'node_modules',
+      'public/*.js',           // Browser globals (config.js, theme-init.js) — no TS project scope
+      'clean-orval.mjs',       // Node.js utility script — uses console, not in TS project
+      'orval.config.ts',       // Orval config — not included in tsconfig project
+      'src/api/generated/**',  // Auto-generated API code — not manually maintained
+    ],
   },
 
   // Base JS recommended rules

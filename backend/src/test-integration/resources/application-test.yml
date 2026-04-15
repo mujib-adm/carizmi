@@ -23,7 +23,7 @@ admin:
 testcontainers:
   mysql:
     image: mysql:8.0
-    db-name: sofumar
+    db-name: carizmi
     username: test
     password: test
   redis:

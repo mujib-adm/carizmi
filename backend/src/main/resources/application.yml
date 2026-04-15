@@ -19,7 +19,7 @@ spring:
       minimum-idle: 3
       maximum-pool-size: 5
       idle-timeout: 30000
-      pool-name: SofumarDevPool
+      pool-name: ${APP_NAME:Carizmi}Pool
   data:
     redis:
       host: ${REDIS_HOST:redis}
@@ -37,8 +37,8 @@ spring:
     show-sql: false
     properties:
       hibernate:
-        default_catalog: sofumar
-        default_schema: sofumar
+        default_catalog: ${DB_NAME:carizmi}
+        default_schema: ${DB_NAME:carizmi}
 #        hbm2ddl:
 #          auto: none
         format_sql: true
@@ -52,7 +52,7 @@ spring:
     enabled: false
 
 jwt:
-  issuer: sofumar.portal
+  issuer: ${app.branding.jwt-issuer:carizmi.io}
   secret: ${JWT_SECRET}
   expirationMinutes: 5
   refreshTokenExpirationMinutes: 15
@@ -68,6 +68,10 @@ migration:
     dir: backend/src/main/resources
 
 app:
+  name: ${APP_NAME:Carizmi}
+  branding:
+    api-title: ${APP_BRANDING_API_TITLE:Carizmi API}
+    jwt-issuer: ${APP_BRANDING_JWT_ISSUER:carizmi.io}
   cors:
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:}
   cookie:
@@ -85,4 +89,4 @@ springdoc:
     enabled: true
   default-produces-media-type: application/json
   default-consumes-media-type: application/json
-  wrapper-classes: org.sofumar.portal.framework.data.response.GlobalResponse
+  wrapper-classes: io.carizmi.framework.data.response.GlobalResponse

@@ -111,7 +111,7 @@
   width: var(--toggle-size) !important;
   height: var(--toggle-size) !important;
   border-radius: 20% !important;
-  border: 2px solid var(--toggle-border) !important;
+  border: 0.5px solid var(--toggle-border) !important;
   background: var(--toggle-bg) !important;
   color: var(--toggle-icon) !important;
   font-size: var(--toggle-font-size) !important;
@@ -131,6 +131,13 @@
   transition: transform 0.1s ease;
 }
 
+/* Auto-theme icon — SVG sized to fill the toggle button like Ant icons do */
+.themeIconImg {
+  width: 85%;
+  height: 85%;
+  object-fit: contain;
+}
+
 /* Flip animation on toggle */
 .themeToggleFlip {
   animation: toggleFlip 0.5s ease-in-out;
@@ -146,4 +153,10 @@
   100% {
     transform: perspective(400px) rotateY(0deg) scale(1);
   }
+}
+
+/* ── Dark Mode ── */
+
+:global([data-theme='dark']) .themeIconImg {
+  filter: invert(1) brightness(2);
 }
