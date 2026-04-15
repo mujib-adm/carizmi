@@ -11,6 +11,8 @@ import org.springframework.web.client.RestTemplate;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Automates the extraction of the OpenAPI specification locally during the Maven build lifecycle.
@@ -40,6 +42,21 @@ public class OpenApiLocalGenerator {
 
             ObjectMapper mapper = new ObjectMapper();
             Object jsonObject = mapper.readValue(openApiJson, Object.class);
+
+            // Normalize the server URL to avoid contract drift caused by random ephemeral ports.
+            // Spring Boot starts on port 0 (random), so the generated URL is different every run.
+            if (jsonObject instanceof Map<?, ?> root) {
+                Object servers = root.get("servers");
+                if (servers instanceof List<?> serverList && !serverList.isEmpty()) {
+                    Object firstServer = serverList.getFirst();
+                    if (firstServer instanceof Map<?, ?> serverMap) {
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> mutableServer = (Map<String, Object>) serverMap;
+                        mutableServer.put("url", "http://localhost:8080");
+                    }
+                }
+            }
+
             String formattedJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(jsonObject);
 
             Path outputPath = Paths.get("../frontend/src/api/openapi.json");
