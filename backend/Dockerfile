@@ -1,4 +1,4 @@
-FROM maven:3.9-eclipse-temurin-25 AS build
+FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /app
 
 # Copy dependency definitions first for layer caching
@@ -17,15 +17,15 @@ RUN mvn -q -e -DskipTests dependency:go-offline
 COPY backend/src ./src
 RUN mvn -q -DskipTests package
 
-FROM eclipse-temurin:25-jre
+FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
-# Install curl for healthcheck
-RUN apt-get update && apt-get install -y --no-install-recommends curl \
-    && rm -rf /var/lib/apt/lists/*
+# Install curl for healthcheck + apply all available security patches
+RUN apk add --no-cache curl \
+    && apk upgrade --no-cache
 
-# Create a non-root user
-RUN groupadd -r appuser && useradd -r -g appuser appuser
+# Create a non-root user (Alpine syntax)
+RUN addgroup -S appuser && adduser -S appuser -G appuser
 
 COPY --from=build /app/backend/target/app.jar app.jar
 

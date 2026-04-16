@@ -283,10 +283,11 @@ jobs:
         uses: aquasecurity/trivy-action@v0.35.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ steps.meta-backend.outputs.version }}
+          scanners: 'vuln'
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
-          severity: 'CRITICAL'
+          severity: 'CRITICAL,HIGH'
           output: 'trivy-backend.txt'
 
       - name: Upload Trivy Backend Report
@@ -330,10 +331,11 @@ jobs:
         uses: aquasecurity/trivy-action@v0.35.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ steps.meta-frontend.outputs.version }}
+          scanners: 'vuln'
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
-          severity: 'CRITICAL'
+          severity: 'CRITICAL,HIGH'
           output: 'trivy-frontend.txt'
 
       - name: Upload Trivy Frontend Report
