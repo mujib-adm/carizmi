@@ -164,7 +164,7 @@ jobs:
   security-scan:
     name: "Security: Dependency Scan"
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     permissions:
       contents: read
 
@@ -180,6 +180,17 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
+      # Cache the NVD database — initial sync downloads 345K records (~20 min).
+      # With cache, subsequent runs only download deltas (~30 seconds).
+      - name: Cache NVD Database
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/owasp/dependency-check-data
+          key: nvd-db-${{ hashFiles('backend/pom.xml') }}-${{ github.run_number }}
+          restore-keys: |
+            nvd-db-${{ hashFiles('backend/pom.xml') }}-
+            nvd-db-
+
       # Build framework first — backend depends on it and it's not published to Maven Central
       - name: Build Framework Module
         run: mvn -B install -pl framework -DskipTests -q
@@ -192,6 +203,7 @@ jobs:
           -DfailBuildOnCVSS=9
           -DfailOnError=false
           -DnvdApiKey=${{ secrets.NVD_API_KEY }}
+          -DdataDirectory=$HOME/.m2/repository/org/owasp/dependency-check-data
 
       - name: Upload OWASP Report
         if: always()
