@@ -164,7 +164,7 @@ jobs:
   security-scan:
     name: "Security: Dependency Scan"
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     permissions:
       contents: read
 
@@ -185,20 +185,25 @@ jobs:
         run: mvn -B install -pl framework -DskipTests -q
 
       - name: OWASP Dependency-Check (Backend)
-        working-directory: ./backend
-        continue-on-error: true   # NVD API has a known timestamp parsing bug (v12.2.1) — don't block pipeline
-        run: >
-          mvn -B org.owasp:dependency-check-maven:12.2.1:check
-          -DfailBuildOnCVSS=9
-          -DfailOnError=false
-          -DnvdApiKey=${{ secrets.NVD_API_KEY }}
+        uses: dependency-check/Dependency-Check_Action@main
+        env:
+          JAVA_HOME: /opt/jdk
+        with:
+          project: 'carizmi-backend'
+          path: './backend'
+          format: 'HTML'
+          args: >
+            --failOnCVSS 9
+            --nvdApiKey ${{ secrets.NVD_API_KEY }}
+            --enableExperimental
+        continue-on-error: true   # Advisory — don't block pipeline on scan failures
 
       - name: Upload OWASP Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: owasp-dependency-report
-          path: backend/target/dependency-check-report.html
+          path: reports/
           retention-days: 14
 
       # Frontend: npm audit
@@ -283,10 +288,11 @@ jobs:
         uses: aquasecurity/trivy-action@v0.35.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ steps.meta-backend.outputs.version }}
+          scanners: 'vuln'
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
-          severity: 'CRITICAL'
+          severity: 'CRITICAL,HIGH'
           output: 'trivy-backend.txt'
 
       - name: Upload Trivy Backend Report
@@ -330,10 +336,11 @@ jobs:
         uses: aquasecurity/trivy-action@v0.35.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ steps.meta-frontend.outputs.version }}
+          scanners: 'vuln'
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
-          severity: 'CRITICAL'
+          severity: 'CRITICAL,HIGH'
           output: 'trivy-frontend.txt'
 
       - name: Upload Trivy Frontend Report

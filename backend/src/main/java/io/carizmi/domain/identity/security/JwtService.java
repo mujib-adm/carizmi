@@ -2,7 +2,6 @@ package io.carizmi.domain.identity.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
@@ -36,22 +35,22 @@ public class JwtService {
                 .collect(Collectors.toList());
 
         return Jwts.builder()
-                .setId(java.util.UUID.randomUUID().toString())
-                .setSubject(userDetails.getUsername())
+                .id(java.util.UUID.randomUUID().toString())
+                .subject(userDetails.getUsername())
                 .claim("roles", roles)
-                .setIssuer(issuer)
-                .setIssuedAt(Date.from(Instant.now()))
-                .setExpiration(Date.from(Instant.now().plus(expMin, ChronoUnit.MINUTES)))
-                .signWith(Keys.hmacShaKeyFor(Base64.getDecoder().decode(secret)), SignatureAlgorithm.HS512)
+                .issuer(issuer)
+                .issuedAt(Date.from(Instant.now()))
+                .expiration(Date.from(Instant.now().plus(expMin, ChronoUnit.MINUTES)))
+                .signWith(Keys.hmacShaKeyFor(Base64.getDecoder().decode(secret)), Jwts.SIG.HS512)
                 .compact();
     }
 
     public Claims getClaims(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(Keys.hmacShaKeyFor(Base64.getDecoder().decode(secret)))
+        return Jwts.parser()
+                .verifyWith(Keys.hmacShaKeyFor(Base64.getDecoder().decode(secret)))
                 .build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
     public long getRemainingExpirationSeconds(String token) {
