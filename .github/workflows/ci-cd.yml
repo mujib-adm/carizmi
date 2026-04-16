@@ -180,37 +180,30 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      # Cache the NVD database — initial sync downloads 345K records (~20 min).
-      # With cache, subsequent runs only download deltas (~30 seconds).
-      - name: Cache NVD Database
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2/repository/org/owasp/dependency-check-data
-          key: nvd-db-${{ hashFiles('backend/pom.xml') }}-${{ github.run_number }}
-          restore-keys: |
-            nvd-db-${{ hashFiles('backend/pom.xml') }}-
-            nvd-db-
-
       # Build framework first — backend depends on it and it's not published to Maven Central
       - name: Build Framework Module
         run: mvn -B install -pl framework -DskipTests -q
 
       - name: OWASP Dependency-Check (Backend)
-        working-directory: ./backend
-        continue-on-error: true   # NVD API has a known timestamp parsing bug (v12.2.1) — don't block pipeline
-        run: >
-          mvn -B org.owasp:dependency-check-maven:12.2.1:check
-          -DfailBuildOnCVSS=9
-          -DfailOnError=false
-          -DnvdApiKey=${{ secrets.NVD_API_KEY }}
-          -DdataDirectory=$HOME/.m2/repository/org/owasp/dependency-check-data
+        uses: dependency-check/Dependency-Check_Action@main
+        env:
+          JAVA_HOME: /opt/jdk
+        with:
+          project: 'carizmi-backend'
+          path: './backend'
+          format: 'HTML'
+          args: >
+            --failOnCVSS 9
+            --nvdApiKey ${{ secrets.NVD_API_KEY }}
+            --enableExperimental
+        continue-on-error: true   # Advisory — don't block pipeline on scan failures
 
       - name: Upload OWASP Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: owasp-dependency-report
-          path: backend/target/dependency-check-report.html
+          path: reports/
           retention-days: 14
 
       # Frontend: npm audit
