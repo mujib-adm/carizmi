@@ -18,7 +18,10 @@ COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 # Switch to root to perform system-level tasks (setting permissions)
 # This is necessary because the base image is unprivileged by default
 USER root
-RUN apk add --no-cache gettext # Ensure envsubst is available
+
+# Ensure envsubst is available; upgrade patches OS-level CVEs
+RUN apk upgrade --no-cache && \
+    apk add --no-cache gettext
 
 COPY frontend/docker-entrypoint.sh /usr/local/bin/
 # Normalize line endings (remove \r) and set execution permissions
