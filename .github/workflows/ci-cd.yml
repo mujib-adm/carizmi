@@ -365,124 +365,89 @@ jobs:
           echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
 
   # ============================================================================
-  # CD: Deploy to Production (Uncomment this job when the production server is ready)
+  # CD: Deploy to Google Cloud Run (Production)
   # ============================================================================
-  #
-  # This job deploys the application to the production server via SSH.
-  # It uses a GitHub Environment ("production") which enables:
-  #   - Manual approval gate (configurable in repo Settings → Environments)
-  #   - Environment-specific secrets (DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY)
-  #   - Deployment history tracking in the GitHub UI
-  #
-  # Prerequisites:
-  #   1. Create "production" environment in GitHub repo settings
-  #   2. Add required secrets: DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY, GHCR_DEPLOY_TOKEN
-  #   3. (Recommended) Enable "Required reviewers" protection rule
-  #   4. Uncomment this job when the production server is ready
-  #
-  # ============================================================================
-  # deploy:
-  #   name: "Deploy to Production"
-  #   needs: [ docker-build-push ]
-  #   runs-on: ubuntu-latest
-  #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-  #   concurrency:
-  #     group: deploy-production
-  #     cancel-in-progress: false
-  #   environment:
-  #     name: production
-  #     url: https://yourdomain.com
-  #   timeout-minutes: 10
-  #   permissions:
-  #     contents: read
-  #
-  #   steps:
-  #     - name: Deploy via SSH
-  #       uses: appleboy/ssh-action@v1
-  #       with:
-  #         host: ${{ secrets.DEPLOY_HOST }}
-  #         username: ${{ secrets.DEPLOY_USER }}
-  #         key: ${{ secrets.DEPLOY_SSH_KEY }}
-  #         script: |
-  #           set -euo pipefail
-  #
-  #           COMPOSE="docker compose -f docker-compose.yml -f docker-compose.prod.yml"
-  #           BACKEND_IMAGE="ghcr.io/${{ github.repository }}-backend"
-  #           FRONTEND_IMAGE="ghcr.io/${{ github.repository }}-frontend"
-  #
-  #           cd /opt/carizmi
-  #
-  #           # Authenticate with GHCR (required for private repos)
-  #           echo "${{ secrets.GHCR_DEPLOY_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-  #
-  #           # Save current image digests for rollback
-  #           PREV_BACKEND=$(docker inspect --format='{{index .RepoDigests 0}}' "${BACKEND_IMAGE}:main" 2>/dev/null || echo "")
-  #           PREV_FRONTEND=$(docker inspect --format='{{index .RepoDigests 0}}' "${FRONTEND_IMAGE}:main" 2>/dev/null || echo "")
-  #           echo "📋 Previous backend:  ${PREV_BACKEND:-none}"
-  #           echo "📋 Previous frontend: ${PREV_FRONTEND:-none}"
-  #
-  #           # Pull latest images
-  #           echo "📦 Pulling latest images..."
-  #           ${COMPOSE} pull backend frontend
-  #
-  #           # Deploy (restart only app containers — not DB/Redis)
-  #           echo "🚀 Deploying..."
-  #           ${COMPOSE} up -d --no-deps backend frontend
-  #
-  #           # Health check: Backend (Spring Actuator)
-  #           echo "🏥 Verifying backend health..."
-  #           HEALTHY=false
-  #           for i in $(seq 1 30); do
-  #             if docker exec carizmi-backend curl -sf http://localhost:8080/api/actuator/health > /dev/null 2>&1; then
-  #               echo "✅ Backend healthy (attempt $i/30)"
-  #               HEALTHY=true
-  #               break
-  #             fi
-  #             echo "⏳ Attempt $i/30 — waiting 10s..."
-  #             sleep 10
-  #           done
-  #
-  #           # Health check: Frontend (Nginx responds)
-  #           if [ "$HEALTHY" = true ]; then
-  #             if ! docker exec carizmi-frontend curl -sf http://localhost:8080/ > /dev/null 2>&1; then
-  #               echo "❌ Frontend health check failed"
-  #               HEALTHY=false
-  #             else
-  #               echo "✅ Frontend healthy"
-  #             fi
-  #           fi
-  #
-  #           # Rollback on failure
-  #           if [ "$HEALTHY" = false ]; then
-  #             echo "❌ Health check failed — rolling back..."
-  #             if [ -n "$PREV_BACKEND" ] && [ -n "$PREV_FRONTEND" ]; then
-  #               docker pull "$PREV_BACKEND"
-  #               docker tag "$PREV_BACKEND" "${BACKEND_IMAGE}:main"
-  #               docker pull "$PREV_FRONTEND"
-  #               docker tag "$PREV_FRONTEND" "${FRONTEND_IMAGE}:main"
-  #               ${COMPOSE} up -d --no-deps backend frontend
-  #               echo "🔄 Rollback complete — previous version restored"
-  #             else
-  #               echo "⚠️ No previous version to roll back to (first deployment)"
-  #             fi
-  #             exit 1
-  #           fi
-  #
-  #           # Cleanup
-  #           docker image prune -f
-  #           echo "✅ Deployment complete"
-  #
-  #     - name: Post Deployment Summary
-  #       if: always()
-  #       run: |
-  #         STATUS="${{ job.status }}"
-  #         if [ "$STATUS" = "success" ]; then
-  #           echo "## 🚀 Deployment Successful" >> $GITHUB_STEP_SUMMARY
-  #         else
-  #           echo "## ❌ Deployment Failed" >> $GITHUB_STEP_SUMMARY
-  #         fi
-  #         echo "" >> $GITHUB_STEP_SUMMARY
-  #         echo "- **Environment:** production" >> $GITHUB_STEP_SUMMARY
-  #         echo "- **Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
-  #         echo "- **Status:** ${STATUS}" >> $GITHUB_STEP_SUMMARY
-  #         echo "- **Timestamp:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+  deploy:
+    name: "Deploy to Cloud Run"
+    needs: [ docker-build-push ]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    environment:
+      name: production
+    timeout-minutes: 15
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Deploy Backend to Cloud Run
+        id: deploy-backend
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: carizmi-backend
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:main
+          region: us-central1
+          env_vars: |
+            SPRING_PROFILES_ACTIVE=prod
+            DB_URL=jdbc:mysql://172.20.53.3:3306/carizmi?useSSL=false&allowPublicKeyRetrieval=true
+            DB_USER=carizmi_app
+          secrets: |
+            DB_PASS=DB_PASSWORD:latest
+          flags: >
+            --network=default
+            --subnet=default
+            --vpc-egress=private-ranges-only
+            --allow-unauthenticated
+            --execution-environment=gen2
+            --cpu=1
+            --memory=1024Mi
+
+      - name: Deploy Frontend to Cloud Run
+        id: deploy-frontend
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: carizmi-frontend
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:main
+          region: us-central1
+          env_vars: |
+            HOST=0.0.0.0
+            PORT=8080
+            VITE_API_URL=${{ steps.deploy-backend.outputs.url }}/api
+          flags: >
+            --allow-unauthenticated
+            --execution-environment=gen1
+            --cpu=1
+            --memory=512Mi
+            --port=8080
+
+      - name: Update Backend CORS Origins
+        run: |
+          gcloud run services update carizmi-backend \
+            --region=us-central1 \
+            --update-env-vars=APP_CORS_ALLOWED_ORIGINS="${{ steps.deploy-frontend.outputs.url }},https://www.sofumarcommunityofmn.org,https://sofumarcommunityofmn.org"
+
+      - name: Post Deployment Summary
+        if: always()
+        run: |
+          STATUS="${{ job.status }}"
+          if [ "$STATUS" = "success" ]; then
+            echo "## 🚀 Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ❌ Deployment Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Frontend URL:** ${{ steps.deploy-frontend.outputs.url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Backend URL:** ${{ steps.deploy-backend.outputs.url }}" >> $GITHUB_STEP_SUMMARY
