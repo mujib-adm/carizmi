@@ -22,10 +22,10 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
   JAVA_VERSION: '21'
   NODE_VERSION: '24'
+  GAR_LOCATION: us-central1
+  GAR_REPO: carizmi-repo
 
 jobs:
   # ============================================================================
@@ -241,6 +241,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: read
+      id-token: write
       packages: write
 
     steps:
@@ -250,12 +251,21 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to Container Registry
-        uses: docker/login-action@v3
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker to use Google Artifact Registry
+        run: gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev --quiet
+
+      - name: Set Image Prefix
+        run: echo "IMAGE_PREFIX=${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ steps.auth.outputs.project_id }}/${{ env.GAR_REPO }}/carizmi" >> $GITHUB_ENV
 
       # ---- Backend Image ----
 
@@ -263,7 +273,7 @@ jobs:
         id: meta-backend
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend
+          images: ${{ env.IMAGE_PREFIX }}-backend
           tags: |
             type=ref,event=branch
             type=sha,prefix=
@@ -287,7 +297,7 @@ jobs:
       - name: Trivy Scan Backend Image
         uses: aquasecurity/trivy-action@v0.35.0
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ steps.meta-backend.outputs.version }}
+          image-ref: ${{ env.IMAGE_PREFIX }}-backend:${{ steps.meta-backend.outputs.version }}
           scanners: 'vuln'
           format: 'table'
           exit-code: '1'
@@ -309,7 +319,7 @@ jobs:
         id: meta-frontend
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend
+          images: ${{ env.IMAGE_PREFIX }}-frontend
           tags: |
             type=ref,event=branch
             type=sha,prefix=
@@ -335,7 +345,7 @@ jobs:
       - name: Trivy Scan Frontend Image
         uses: aquasecurity/trivy-action@v0.35.0
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ steps.meta-frontend.outputs.version }}
+          image-ref: ${{ env.IMAGE_PREFIX }}-frontend:${{ steps.meta-frontend.outputs.version }}
           scanners: 'vuln'
           format: 'table'
           exit-code: '1'
@@ -398,7 +408,7 @@ jobs:
         uses: google-github-actions/deploy-cloudrun@v2
         with:
           service: carizmi-backend
-          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:main
+          image: ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ steps.auth.outputs.project_id }}/${{ env.GAR_REPO }}/carizmi-backend:main
           region: us-central1
           env_vars: |
             SPRING_PROFILES_ACTIVE=prod
@@ -420,7 +430,7 @@ jobs:
         uses: google-github-actions/deploy-cloudrun@v2
         with:
           service: carizmi-frontend
-          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:main
+          image: ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ steps.auth.outputs.project_id }}/${{ env.GAR_REPO }}/carizmi-frontend:main
           region: us-central1
           env_vars: |
             HOST=0.0.0.0
