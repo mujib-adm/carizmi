@@ -414,6 +414,7 @@ jobs:
             SPRING_PROFILES_ACTIVE=prod
             DB_URL=jdbc:mysql://172.20.53.3:3306/carizmi?useSSL=false&allowPublicKeyRetrieval=true
             DB_USER=carizmi_app
+            REDIS_HOST=10.47.119.3
           secrets: |
             DB_PASS=DB_PASSWORD:latest
           flags: >
