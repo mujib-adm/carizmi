@@ -458,7 +458,7 @@ jobs:
         run: |
           gcloud run services update carizmi-backend \
             --region=us-central1 \
-            --update-env-vars=APP_CORS_ALLOWED_ORIGINS="${{ steps.deploy-frontend.outputs.url }},${{ vars.PROD_CUSTOM_DOMAINS }}"
+            --update-env-vars="^||^APP_CORS_ALLOWED_ORIGINS=${{ steps.deploy-frontend.outputs.url }},${{ vars.PROD_CUSTOM_DOMAINS }}"
 
       - name: Post Deployment Summary
         if: always()
