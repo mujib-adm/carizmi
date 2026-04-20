@@ -8,6 +8,9 @@ spring:
   config:
     activate:
       on-profile: prod
+  docker:
+    compose:
+      enabled: false
   lifecycle:
     timeout-per-shutdown-phase: 30s
   mvc:
@@ -41,6 +44,7 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
+    baseline-version: 0
     validate-on-migrate: true
     
   # Redis configuration for caching/session if needed
@@ -74,6 +78,7 @@ management:
 app:
   cookie:
     secure: true
+    same-site: None
   rate-limit:
     enabled: true
     capacity: 50 # Increased to 50 requests

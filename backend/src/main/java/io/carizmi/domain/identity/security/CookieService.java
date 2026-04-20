@@ -22,6 +22,9 @@ public class CookieService {
     @Value("${app.cookie.secure:false}")
     private boolean secure;
 
+    @Value("${app.cookie.same-site:Strict}")
+    private String sameSite;
+
     @Value("${jwt.expirationMinutes:5}")
     private int accessTokenExpirationMinutes;
 
@@ -63,7 +66,7 @@ public class CookieService {
         cookie.setPath(StringUtils.isNotBlank(contextPath) ? contextPath : "/");
         cookie.setMaxAge(maxAge);
         // SameSite is set via response header since Cookie API doesn't support it directly
-        cookie.setAttribute("SameSite", "Strict");
+        cookie.setAttribute("SameSite", sameSite);
         return cookie;
     }
 

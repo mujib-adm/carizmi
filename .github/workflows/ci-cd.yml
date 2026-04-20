@@ -334,7 +334,7 @@ jobs:
           file: frontend/Dockerfile
           push: true
           build-args: |
-            VITE_API_URL=${{ secrets.VITE_API_URL || 'https://api.carizmi.io/api' }}
+            VITE_API_URL=https://placeholder.build-time-only.invalid/api
           tags: ${{ steps.meta-frontend.outputs.tags }}
           labels: ${{ steps.meta-frontend.outputs.labels }}
           cache-from: type=gha,scope=frontend
@@ -412,11 +412,18 @@ jobs:
           region: us-central1
           env_vars: |
             SPRING_PROFILES_ACTIVE=prod
-            DB_URL=jdbc:mysql://172.20.53.3:3306/carizmi?useSSL=false&allowPublicKeyRetrieval=true
-            DB_USER=carizmi_app
-            REDIS_HOST=10.47.119.3
+            DB_URL=${{ vars.PROD_DB_URL }}
+            DB_USER=${{ vars.PROD_DB_USER }}
+            REDIS_HOST=${{ vars.PROD_REDIS_HOST }}
+            ADMIN_DEFAULT_FIRSTNAME=${{ vars.ADMIN_DEFAULT_FIRSTNAME }}
+            ADMIN_DEFAULT_LASTNAME=${{ vars.ADMIN_DEFAULT_LASTNAME }}
+            ADMIN_DEFAULT_EMAIL=${{ vars.ADMIN_DEFAULT_EMAIL }}
+            ADMIN_DEFAULT_USERNAME=${{ vars.ADMIN_DEFAULT_USERNAME }}
+            JAVA_OPTS=${{ vars.PROD_JAVA_OPTS }}
           secrets: |
             DB_PASS=DB_PASSWORD:latest
+            JWT_SECRET=JWT_SECRET:latest
+            ADMIN_DEFAULT_PASSWORD=ADMIN_DEFAULT_PASSWORD:latest
           flags: >
             --network=default
             --subnet=default
@@ -424,7 +431,7 @@ jobs:
             --allow-unauthenticated
             --execution-environment=gen2
             --cpu=1
-            --memory=1024Mi
+            --memory=1536Mi
 
       - name: Deploy Frontend to Cloud Run
         id: deploy-frontend
@@ -437,6 +444,11 @@ jobs:
             HOST=0.0.0.0
             PORT=8080
             VITE_API_URL=${{ steps.deploy-backend.outputs.url }}/api
+            APP_ORG_NAME=${{ vars.APP_ORG_NAME }}
+            APP_HEADER_TITLE=${{ vars.APP_HEADER_TITLE }}
+            APP_HEADER_SUBTITLE=${{ vars.APP_HEADER_SUBTITLE }}
+            APP_LOGO_ALT=${{ vars.APP_LOGO_ALT }}
+            APP_COPYRIGHT=${{ vars.APP_COPYRIGHT }}
           flags: >
             --allow-unauthenticated
             --execution-environment=gen1
@@ -448,7 +460,7 @@ jobs:
         run: |
           gcloud run services update carizmi-backend \
             --region=us-central1 \
-            --update-env-vars=APP_CORS_ALLOWED_ORIGINS="${{ steps.deploy-frontend.outputs.url }},https://www.sofumarcommunityofmn.org,https://sofumarcommunityofmn.org"
+            --update-env-vars=APP_CORS_ALLOWED_ORIGINS="${{ steps.deploy-frontend.outputs.url }},${{ vars.PROD_CUSTOM_DOMAINS }}"
 
       - name: Post Deployment Summary
         if: always()

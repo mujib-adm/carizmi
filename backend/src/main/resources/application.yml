@@ -76,6 +76,7 @@ app:
   cookie:
     # Set to true in production when TLS is enabled
     secure: false
+    same-site: Strict
   security:
     max-login-attempts: 5
     lockout-duration-minutes: 15
