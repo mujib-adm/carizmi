@@ -78,7 +78,7 @@ management:
 app:
   cookie:
     secure: true
-    same-site: None
+    same-site: Lax
   rate-limit:
     enabled: true
     capacity: 50 # Increased to 50 requests
