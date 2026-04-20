@@ -441,8 +441,6 @@ jobs:
           image: ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ steps.auth.outputs.project_id }}/${{ env.GAR_REPO }}/carizmi-frontend:main
           region: us-central1
           env_vars: |
-            HOST=0.0.0.0
-            PORT=8080
             VITE_API_URL=${{ steps.deploy-backend.outputs.url }}/api
             APP_ORG_NAME=${{ vars.APP_ORG_NAME }}
             APP_HEADER_TITLE=${{ vars.APP_HEADER_TITLE }}
