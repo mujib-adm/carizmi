@@ -441,7 +441,7 @@ jobs:
           image: ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ steps.auth.outputs.project_id }}/${{ env.GAR_REPO }}/carizmi-frontend:main
           region: us-central1
           env_vars: |
-            VITE_API_URL=${{ steps.deploy-backend.outputs.url }}/api
+            VITE_API_URL=${{ vars.PROD_API_URL }}
             APP_ORG_NAME=${{ vars.APP_ORG_NAME }}
             APP_HEADER_TITLE=${{ vars.APP_HEADER_TITLE }}
             APP_HEADER_SUBTITLE=${{ vars.APP_HEADER_SUBTITLE }}
@@ -458,7 +458,7 @@ jobs:
         run: |
           gcloud run services update carizmi-backend \
             --region=us-central1 \
-            --update-env-vars="^||^APP_CORS_ALLOWED_ORIGINS=${{ steps.deploy-frontend.outputs.url }},${{ vars.PROD_CUSTOM_DOMAINS }}"
+            --update-env-vars="^||^APP_CORS_ALLOWED_ORIGINS=${{ vars.PROD_CUSTOM_DOMAINS }}"
 
       - name: Post Deployment Summary
         if: always()
