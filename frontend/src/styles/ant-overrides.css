@@ -202,6 +202,31 @@
   font-weight: 600;
 }
 
+/* ── Responsive Table (mobile) ── */
+
+@media (max-width: 576px) {
+  .glass-card .ant-table-thead > tr > th,
+  .glass-card .ant-table-tbody > tr > td {
+    padding: 8px 6px !important;
+    font-size: 0.8rem !important;
+    white-space: nowrap;
+  }
+
+  .glass-card .ant-table-pagination {
+    padding: 8px !important;
+    margin: 8px 0 !important;
+  }
+
+  /* Compact pagination on mobile */
+  .glass-card .ant-pagination-item,
+  .glass-card .ant-pagination-prev,
+  .glass-card .ant-pagination-next {
+    min-width: 28px !important;
+    height: 28px !important;
+    line-height: 28px !important;
+  }
+}
+
 /* ── Form Validation Error States ─────────────────────────
    Ant Design v5 applies error classes directly on components:
    - Input/TextArea: parent .ant-form-item-has-error

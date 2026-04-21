@@ -165,7 +165,7 @@ export default function MemberDetailsPage() {
               Recent Payment History
             </div>
             <Table
-              scroll={{ x: 'max-content' }}
+              scroll={{ x: true }}
               dataSource={payments}
               columns={columns}
               rowKey="paymentID"

@@ -1,5 +1,5 @@
 import { DeleteOutlined, EditOutlined, EyeOutlined, TeamOutlined } from '@ant-design/icons';
-import { Button, Card, Modal, Space, Table, Typography } from 'antd';
+import { Button, Card, Grid, Modal, Space, Table, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -22,6 +22,7 @@ import { usePaginatedMembers } from '../hooks/usePaginatedMembers';
 import { useAuthorization } from '../../../hooks/useAuthorization';
 
 const { Title } = Typography;
+const { useBreakpoint } = Grid;
 
 export default function MemberPage() {
   const navigate = useNavigate();
@@ -37,6 +38,8 @@ export default function MemberPage() {
   const [selectedRecord, setSelectedRecord] = useState<MemberDto | null>(null);
 
   const { canWrite } = useAuthorization();
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
 
   const { getReference, toDisplay } = useReference();
   const statusOptions = useMemo(
@@ -130,16 +133,16 @@ export default function MemberPage() {
   };
 
   const columns: ColumnsType<MemberDto> = [
-    { title: 'Member ID', dataIndex: 'memberID', key: 'memberID', sorter: true, width: 140 },
+    { title: 'Member ID', dataIndex: 'memberID', key: 'memberID', sorter: true, width: 110 },
     { title: 'First Name', dataIndex: 'firstName', key: 'firstName', sorter: true },
     { title: 'Last Name', dataIndex: 'lastName', key: 'lastName', sorter: true },
-    { title: 'Phone', dataIndex: 'phone', key: 'phone', width: 120 },
-    { title: 'Email', dataIndex: 'email', key: 'email', width: 150 },
+    { title: 'Phone', dataIndex: 'phone', key: 'phone' },
+    { title: 'Email', dataIndex: 'email', key: 'email', responsive: ['md'] },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      width: 120,
+      responsive: ['md'],
       render: (code: string) => toDisplay(ReferenceConstants.MEMBER_STATUS.NAME, code),
     },
     ...(canWrite
@@ -189,7 +192,7 @@ export default function MemberPage() {
 
       <Card className="glass-card" style={{ padding: 0 }}>
         <Table<MemberDto>
-          scroll={{ x: 'max-content' }}
+          scroll={{ x: true }}
           size="small"
           rowKey="memberID"
           columns={columns}
@@ -199,7 +202,8 @@ export default function MemberPage() {
             current: (meta?.page ?? 0) + 1,
             pageSize: meta?.pageSize ?? 10,
             total: meta?.totalRecords ?? 0,
-            showSizeChanger: true,
+            showSizeChanger: !isMobile,
+            simple: isMobile,
           }}
           onChange={(pagination, _filters, sorter) => {
             const sortField = Array.isArray(sorter) ? sorter[0].field : sorter.field;

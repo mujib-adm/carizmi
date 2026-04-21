@@ -1,5 +1,5 @@
 import { EditOutlined, SettingOutlined } from '@ant-design/icons';
-import { Button, Card, Space, Table, Typography } from 'antd';
+import { Button, Card, Grid, Space, Table, Typography } from 'antd';
 import { useEffect, useState } from 'react';
 import { systemSettingsApi } from '../../../api/generated/system-settings/system-settings';
 import { MessageBanner } from '../../../components/MessageBanner';
@@ -14,6 +14,7 @@ import { usePaginatedSystemSettings } from '../hooks/usePaginatedSystemSettings'
 import { useAuthorization } from '../../../hooks/useAuthorization';
 
 const { Title } = Typography;
+const { useBreakpoint } = Grid;
 
 export default function SystemSettingsPage() {
   const { settings, meta, loading, fetchSettings } = usePaginatedSystemSettings();
@@ -21,6 +22,8 @@ export default function SystemSettingsPage() {
   const { globalMessages, handleError, resetMessages } = useApiMessages<any>();
 
   const { canWrite } = useAuthorization();
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
 
   const [modalVisible, setModalVisible] = useState(false);
   const [editingRecord, setEditingRecord] = useState<SystemSettingsDto | null>(null);
@@ -119,7 +122,7 @@ export default function SystemSettingsPage() {
 
       <Card className="glass-card" style={{ padding: 0 }}>
         <Table<SystemSettingsDto>
-          scroll={{ x: 'max-content' }}
+          scroll={{ x: true }}
           dataSource={settings}
           columns={columns}
           rowKey="systemSettingsID"
@@ -129,7 +132,8 @@ export default function SystemSettingsPage() {
             current: (meta?.page ?? 0) + 1,
             pageSize: meta?.pageSize ?? 10,
             total: meta?.totalRecords ?? 0,
-            showSizeChanger: true,
+            showSizeChanger: !isMobile,
+            simple: isMobile,
           }}
           onChange={(pagination, _filters, sorter) => {
             const sortField = Array.isArray(sorter) ? sorter[0].field : sorter.field;

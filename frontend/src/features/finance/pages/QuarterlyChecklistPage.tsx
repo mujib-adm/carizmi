@@ -1,5 +1,5 @@
 import { FileSearchOutlined } from '@ant-design/icons';
-import { Card, Table, Typography } from 'antd';
+import { Card, Grid, Table, Typography } from 'antd';
 import { ColumnsType } from 'antd/es/table';
 import { useState } from 'react';
 import { checklistApi } from '../../../api/generated/checklist/checklist';
@@ -18,6 +18,7 @@ import { useApiMessages } from '../../../hooks/useApiMessages';
 import styles from '../../../styles/pages/QuarterlyChecklist.module.css';
 
 const { Title } = Typography;
+const { useBreakpoint } = Grid;
 
 function renderQuarterCell(cell: QuarterCellDto | undefined) {
   if (!cell) return null;
@@ -44,6 +45,8 @@ export default function QuarterlyChecklistPage() {
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
   const [loading, setLoading] = useState(false);
   const { globalMessages, handleError, resetMessages } = useApiMessages<any>();
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
 
   const fetchChecklist = async (request: ChecklistSearchRequestDto = {}) => {
     setLoading(true);
@@ -132,7 +135,7 @@ export default function QuarterlyChecklistPage() {
 
       <Card className="glass-card" style={{ padding: 0 }}>
         <Table<MemberQuarterlyRowDto>
-          scroll={{ x: 'max-content' }}
+          scroll={{ x: true }}
           size="small"
           rowKey="memberID"
           dataSource={data?.rows ?? []}
@@ -142,7 +145,8 @@ export default function QuarterlyChecklistPage() {
             current: (meta?.page ?? 0) + 1,
             pageSize: meta?.pageSize ?? 10,
             total: meta?.totalRecords ?? 0,
-            showSizeChanger: true,
+            showSizeChanger: !isMobile,
+            simple: isMobile,
           }}
           onChange={(pagination) => {
             resetMessages();

@@ -1,5 +1,5 @@
 import { DatabaseOutlined } from '@ant-design/icons';
-import { Card, Table, Tag, Typography } from 'antd';
+import { Card, Grid, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useEffect, useState } from 'react';
 import { MessageBanner } from '../../../components/MessageBanner';
@@ -10,10 +10,13 @@ import { useApiMessages } from '../../../hooks/useApiMessages';
 import { usePaginatedReferences } from '../hooks/usePaginatedReferences';
 
 const { Title } = Typography;
+const { useBreakpoint } = Grid;
 
 export default function ReferencePage() {
   const { references, meta, loading, fetchReferences } = usePaginatedReferences();
   const { globalMessages, handleError, resetMessages } = useApiMessages<any>();
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
 
   // search filters
   const [filters, setFilters] = useState<ReferenceSearchRequestDto>({});
@@ -64,7 +67,7 @@ export default function ReferencePage() {
 
       <Card className="glass-card" style={{ padding: 0 }}>
         <Table<ReferenceDto>
-          scroll={{ x: 'max-content' }}
+          scroll={{ x: true }}
           size="small"
           rowKey="referenceID"
           dataSource={references}
@@ -74,7 +77,8 @@ export default function ReferencePage() {
             current: (meta?.page ?? 0) + 1,
             pageSize: meta?.pageSize ?? 10,
             total: meta?.totalRecords ?? 0,
-            showSizeChanger: true,
+            showSizeChanger: !isMobile,
+            simple: isMobile,
           }}
           onChange={(pagination, _filters, sorter) => {
             const sortField = Array.isArray(sorter) ? sorter[0].field : sorter.field;
