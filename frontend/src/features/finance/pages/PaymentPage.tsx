@@ -1,5 +1,5 @@
 import { DeleteOutlined, DollarOutlined, EditOutlined } from '@ant-design/icons';
-import { Button, Card, Modal, Space, Table, Typography } from 'antd';
+import { Button, Card, Grid, Modal, Space, Table, Typography } from 'antd';
 import { ColumnsType } from 'antd/es/table';
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
@@ -22,6 +22,7 @@ import { usePaginatedPayments } from '../hooks/usePaginatedPayments';
 import { useAuthorization } from '../../../hooks/useAuthorization';
 
 const { Title } = Typography;
+const { useBreakpoint } = Grid;
 
 export default function PaymentPage() {
   const notify = useNotification();
@@ -36,6 +37,8 @@ export default function PaymentPage() {
   const [selectedRecord, setSelectedRecord] = useState<PaymentDto | null>(null);
 
   const { canWrite } = useAuthorization();
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
 
   // Ref Data
   const { getReference, toDisplay } = useReference();
@@ -156,6 +159,7 @@ export default function PaymentPage() {
       title: 'Fee Type',
       dataIndex: 'feeType',
       key: 'feeType',
+      responsive: ['md'],
       render: (code: string) => toDisplay(ReferenceConstants.FEE_TYPE.NAME, code),
     },
     {
@@ -169,11 +173,13 @@ export default function PaymentPage() {
       title: 'Method',
       dataIndex: 'methodOfPayment',
       key: 'methodOfPayment',
+      responsive: ['md'],
       render: (code: string) => toDisplay(ReferenceConstants.PAYMENT_METHOD.NAME, code),
     },
     {
       title: 'Period',
       key: 'period',
+      responsive: ['md'],
       render: (_, record) =>
         record.year && record.quarter ? `${record.year}-Q${record.quarter}` : '',
     },
@@ -223,7 +229,7 @@ export default function PaymentPage() {
 
       <Card className="glass-card" style={{ padding: 0 }}>
         <Table<PaymentDto>
-          scroll={{ x: 'max-content' }}
+          scroll={{ x: true }}
           size="small"
           rowKey="paymentID"
           dataSource={payments}
@@ -233,7 +239,8 @@ export default function PaymentPage() {
             current: (meta?.page ?? 0) + 1,
             pageSize: meta?.pageSize ?? 10,
             total: meta?.totalRecords ?? 0,
-            showSizeChanger: true,
+            showSizeChanger: !isMobile,
+            simple: isMobile,
           }}
           onChange={(pagination, _filters, sorter) => {
             const sortField = Array.isArray(sorter) ? sorter[0].field : sorter.field;

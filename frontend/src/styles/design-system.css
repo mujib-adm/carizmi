@@ -114,6 +114,32 @@
   font-size: 1.1em;
 }
 
+@media (max-width: 768px) {
+  .page-header {
+    margin-bottom: 16px;
+  }
+
+  .page-title {
+    font-size: clamp(1.3rem, 4.5vw, 1.8rem) !important;
+    gap: 8px !important;
+  }
+
+  .page-title span[role='img'] {
+    font-size: 1em;
+  }
+}
+
+@media (max-width: 576px) {
+  .page-header {
+    margin-bottom: 12px;
+  }
+
+  .page-title {
+    font-size: 1.25rem !important;
+    gap: 6px !important;
+  }
+}
+
 .chart-title {
   align-self: flex-start;
   font-family: 'Federo', sans-serif;

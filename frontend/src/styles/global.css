@@ -329,6 +329,13 @@ ul {
   }
 }
 
+@media (max-width: 576px) {
+  .content {
+    padding: 0.5rem;
+    padding-bottom: 60px;
+  }
+}
+
 .content-title {
   display: flex;
   align-items: center;

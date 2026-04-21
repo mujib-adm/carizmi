@@ -1,5 +1,5 @@
 import { DeleteOutlined, EditOutlined, ShoppingCartOutlined } from '@ant-design/icons';
-import { Button, Card, Modal, Space, Table, Typography } from 'antd';
+import { Button, Card, Grid, Modal, Space, Table, Typography } from 'antd';
 import { ColumnsType } from 'antd/es/table';
 import { useMemo, useState } from 'react';
 import { expensesApi } from '../../../api/generated/expenses/expenses';
@@ -21,6 +21,7 @@ import { usePaginatedExpenses } from '../hooks/usePaginatedExpenses';
 import { useAuthorization } from '../../../hooks/useAuthorization';
 
 const { Title } = Typography;
+const { useBreakpoint } = Grid;
 
 export default function ExpensePage() {
   const notify = useNotification();
@@ -35,6 +36,8 @@ export default function ExpensePage() {
   const [selectedRecord, setSelectedRecord] = useState<ExpenseDto | null>(null);
 
   const { canWrite } = useAuthorization();
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
 
   // Ref Data
   const { getReference, toDisplay } = useReference();
@@ -199,7 +202,7 @@ export default function ExpensePage() {
 
       <Card className="glass-card" style={{ padding: 0 }}>
         <Table<ExpenseDto>
-          scroll={{ x: 'max-content' }}
+          scroll={{ x: true }}
           size="small"
           rowKey="expenseID"
           dataSource={expenses}
@@ -209,7 +212,8 @@ export default function ExpensePage() {
             current: (meta?.page ?? 0) + 1,
             pageSize: meta?.pageSize ?? 10,
             total: meta?.totalRecords ?? 0,
-            showSizeChanger: true,
+            showSizeChanger: !isMobile,
+            simple: isMobile,
           }}
           onChange={(pagination, _filters, sorter) => {
             const sortField = Array.isArray(sorter) ? sorter[0].field : sorter.field;
