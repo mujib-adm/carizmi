@@ -438,7 +438,7 @@ jobs:
             --execution-environment=gen2
             --cpu=1
             --memory=1536Mi
-            --startup-cpu-boost
+            --cpu-boost
 
       - name: Deploy Frontend to Cloud Run
         id: deploy-frontend
