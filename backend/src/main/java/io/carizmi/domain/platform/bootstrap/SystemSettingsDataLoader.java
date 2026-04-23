@@ -37,7 +37,7 @@ public class SystemSettingsDataLoader implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) throws Exception {
-        logger.info("Starting System Settings Data Synchronization...");
+        logger.info("Syncing system settings from {}", SETTINGS_JSON_FILE);
 
         ClassPathResource resource = new ClassPathResource(SETTINGS_JSON_FILE);
 
@@ -59,7 +59,7 @@ public class SystemSettingsDataLoader implements CommandLineRunner {
                     }
                 }
             }
-            logger.info("System Settings Data Synchronization Completed.");
+            logger.info("System settings sync complete");
         } catch (Exception e) {
             logger.error("Failed to load system settings", e);
         }

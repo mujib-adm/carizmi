@@ -53,7 +53,7 @@ public class UserValidator extends AbstractDomainValidator<UserVO> {
             validateRequired(vo, FieldConstants.EMAIL, vo.getEmail());
             return;
         }
-        // Basic email format check (VO has @Email annotation for JPA, but we do domain check here for fail-fast)
+        // Fail-fast format check — JPA @Email validates at persist time
         if (!vo.getEmail().contains("@")) {
             vo.addFieldMessage(FieldConstants.EMAIL, ValidationMessages.INVALID_VALUE);
         }

@@ -1,7 +1,6 @@
 services:
   db:
     image: mysql:8.0
-    platform: linux/arm64/v8 # Explicitly target Arm for Oracle Cloud
     deploy:
       resources:
         limits:
@@ -22,7 +21,6 @@ services:
 
   redis:
     image: redis:7.4-alpine
-    platform: linux/arm64/v8
     deploy:
       resources:
         limits:
@@ -36,8 +34,7 @@ services:
     command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
 
   backend:
-    image: ghcr.io/mujib-adm/carizmi-backend:main
-    platform: linux/arm64/v8
+    image: ${BACKEND_IMAGE:-carizmi-backend:main}
     pull_policy: always
     build: !reset null
     ports:
@@ -64,8 +61,7 @@ services:
           memory: 1G
 
   frontend:
-    image: ghcr.io/mujib-adm/carizmi-frontend:main
-    platform: linux/arm64/v8
+    image: ${FRONTEND_IMAGE:-carizmi-frontend:main}
     pull_policy: always
     build: !reset null
     ports:

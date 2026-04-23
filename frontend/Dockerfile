@@ -5,9 +5,6 @@ RUN npm ci
 COPY frontend ./
 RUN chmod +x node_modules/.bin/* || true
 
-ARG VITE_API_URL
-ENV VITE_API_URL=$VITE_API_URL
-
 # Regenerate TypeScript API client from the committed OpenAPI contract before building
 RUN npm run generate:api && npm run build
 

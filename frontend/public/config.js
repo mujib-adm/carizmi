@@ -18,6 +18,6 @@ window.APP_CONFIG = {
     headerTitle: "SOF'UMAR",
     headerSubtitle: 'COMMUNITY OF MINNESOTA',
     logoAlt: "Sof'umar Logo",
-    copyright: "© " + new Date().getFullYear() + " Sof'umar Community of Minnesota.",
+    copyright: "Sof'umar Community of Minnesota",
   },
 };

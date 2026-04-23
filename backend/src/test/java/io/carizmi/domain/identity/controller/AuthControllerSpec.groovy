@@ -59,7 +59,7 @@ class AuthControllerSpec extends BaseSpecification {
 
         and: "The expected result"
         result.statusCode == HttpStatus.OK
-        result.body.globalMessages[0].message == "Successfully logged out"
+        result.body.globalMessages[0].message == "Logged out successfully"
         noExceptionThrown()
 
         where:

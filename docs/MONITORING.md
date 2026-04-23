@@ -13,14 +13,14 @@ The application exposes Spring Boot Actuator endpoints for monitoring:
 
 ## Uptime Monitoring
 
-For the Oracle Cloud "Always Free" deployment, set up a free uptime monitor:
+For Cloud Run or self-hosted deployments, set up a free uptime monitor:
 
 1. **[UptimeRobot](https://uptimerobot.com/)** (recommended, free tier)
    - Monitor URL: `https://your-domain.com/api/actuator/health`
    - Check interval: 5 minutes
    - Alert contacts: Email or Slack webhook
 
-2. Alternatively, use Oracle Cloud's built-in Health Checks service.
+2. For GCP deployments, use **Cloud Monitoring** uptime checks (included in free tier).
 
 ## Prometheus / Grafana (Future)
 

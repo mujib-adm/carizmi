@@ -65,7 +65,6 @@ public class CookieService {
         cookie.setSecure(secure);
         cookie.setPath(StringUtils.isNotBlank(contextPath) ? contextPath : "/");
         cookie.setMaxAge(maxAge);
-        // SameSite is set via response header since Cookie API doesn't support it directly
         cookie.setAttribute("SameSite", sameSite);
         return cookie;
     }

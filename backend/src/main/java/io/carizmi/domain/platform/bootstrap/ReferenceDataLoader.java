@@ -36,7 +36,7 @@ public class ReferenceDataLoader implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) throws Exception {
-        logger.info("Starting Reference Data Synchronization...");
+        logger.info("Syncing reference data from {}", REFERENCE_JSON_FILE);
 
         ClassPathResource resource = new ClassPathResource(REFERENCE_JSON_FILE);
 
@@ -58,7 +58,7 @@ public class ReferenceDataLoader implements CommandLineRunner {
                     }
                 }
             }
-            logger.info("Reference Data Synchronization Completed.");
+            logger.info("Reference data sync complete");
         } catch (Exception e) {
             logger.error("Failed to load reference data", e);
         }

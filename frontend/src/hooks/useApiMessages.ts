@@ -63,16 +63,16 @@ export function useApiMessages<T extends FieldValues>(
       }
 
       // 2. Fallback: Network Error, Timeout, or Backend crashed (500 with HTML)
-      let fallbackMsg = 'An unexpected error occurred. Please try again.';
+      let fallbackMsg = 'Something went wrong. Please try again.';
 
       if (error.code === 'ERR_NETWORK') {
-        fallbackMsg = 'Network Error. Please check your internet connection.';
+        fallbackMsg = 'Network error. Check your connection and try again.';
       } else if (error.code === 'ECONNABORTED') {
         fallbackMsg = 'Request timed out. Please try again later.';
       } else if (error.response?.status === 500) {
-        fallbackMsg = 'Internal Server Error. Please contact support.';
+        fallbackMsg = 'Server error. Please try again or contact support.';
       } else if (error.response?.status === 403) {
-        fallbackMsg = "You don't have permission to perform this action.";
+        fallbackMsg = 'You do not have permission to perform this action.';
       } else if (error.message) {
         fallbackMsg = error.message;
       }

@@ -62,15 +62,10 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // permit preflight globally
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        // public endpoints
                         .requestMatchers(AUTHORIZED_PATHS).permitAll()
-                        // catch-all: any other request must be authenticated.
-                        // Fine-grained role checks are handled at the Method (Controller) level.
                         .anyRequest().authenticated()
                 )
-                // ensure JWT filter does not block preflight; JwtAuthenticationFilter should skip OPTIONS
                 .addFilterBefore(requestsRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jsonAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
@@ -84,10 +79,7 @@ public class SecurityConfig {
         return http.build();
     }
 
-    /**
-     * Global CorsFilter with highest precedence.
-     * Ensures CORS headers are applied before any security or error handling.
-     */
+    /** Global CORS filter — runs before security filters so error responses include CORS headers. */
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE)
     public CorsFilter corsFilter() {
@@ -96,10 +88,7 @@ public class SecurityConfig {
         return new CorsFilter(source);
     }
 
-    /**
-     * CorsConfigurationSource kept for Spring Security .cors(...) integration.
-     * This is useful if other parts of Spring expect a CorsConfigurationSource bean.
-     */
+    /** CORS config source for Spring Security's .cors() integration. */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -131,14 +120,11 @@ public class SecurityConfig {
 
     private CorsConfiguration buildCorsConfiguration() {
         CorsConfiguration config = new CorsConfiguration();
-
-        // Use explicit origins when allowCredentials is true
         config.setAllowedOrigins(Arrays.asList(allowedOrigins));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Requested-With"));
         config.setExposedHeaders(List.of("Authorization", "Link"));
         config.setAllowCredentials(true);
-
         // Cache preflight for 1 hour to reduce preflight traffic
         config.setMaxAge(3600L);
 

@@ -31,7 +31,7 @@ public class RefreshTokenService {
     public String rotateRefreshToken(String oldToken) {
         Optional<String> usernameOpt = validateRefreshToken(oldToken);
         if (usernameOpt.isPresent()) {
-            // Grace period for concurrency (20s)
+            // Keep old token valid briefly for in-flight requests using it
             redisTemplate.expire(KEY_PREFIX + oldToken, Duration.ofSeconds(20));
             return createRefreshToken(usernameOpt.get());
         }
