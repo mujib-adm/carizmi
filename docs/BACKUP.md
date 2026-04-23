@@ -2,7 +2,7 @@
 
 ## Automated Backups (mysqldump)
 
-Add the following cron job on the Oracle Cloud instance:
+For self-hosted Docker Compose deployments, add the following cron job on the host:
 
 ```bash
 # /etc/cron.d/carizmi-backup
@@ -27,14 +27,9 @@ docker exec carizmi-db mysqldump -u root -p"$MYSQL_ROOT_PASSWORD" --single-trans
 gunzip < /opt/backups/carizmi-20260217.sql.gz | docker exec -i carizmi-db mysql -u root -p"$MYSQL_ROOT_PASSWORD" carizmi
 ```
 
-## Oracle Cloud Volume Snapshots
+## Cloud-Managed Backups
 
-For block volume backups:
-
-1. Navigate to **Block Storage → Boot Volumes** in OCI Console
-2. Select the compute instance's boot volume
-3. Create a **Volume Backup Policy** with daily schedule
-4. Retain snapshots for 7 days (free tier allows limited storage)
+For managed database services (e.g., GCP Cloud SQL), use the provider's automated backup feature instead of manual `mysqldump`. Configure daily backups with 7-day retention through the cloud console.
 
 ## Verification
 

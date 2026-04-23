@@ -202,9 +202,6 @@ public class MigrationDdlGenerator {
     }
 
     private static Path getResourcesPath() {
-        //    @Value("${migration.resources.dir}")
-        //    private static String migrationProp;
-
         String resourcesDirProp = System.getProperty("migration.resources.dir");
         Path resourcesPath;
         if (resourcesDirProp != null && !resourcesDirProp.isBlank()) {

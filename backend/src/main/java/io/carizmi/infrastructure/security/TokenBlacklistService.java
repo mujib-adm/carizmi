@@ -15,7 +15,6 @@ public class TokenBlacklistService {
     }
 
     public void revokeToken(String token, long expirationSeconds) {
-        // Store token in Redis with TTL equal to JWT expiration
         redisTemplate.opsForValue().set(token, "revoked", Duration.ofSeconds(expirationSeconds));
     }
 

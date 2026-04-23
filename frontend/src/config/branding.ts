@@ -41,7 +41,7 @@ const defaultBranding: BrandingConfig = {
   headerTitle: 'CARIZMI',
   headerSubtitle: 'COMMUNITY PLATFORM',
   logoAlt: 'Logo',
-  copyright: `© ${currentYear} Carizmi.`,
+  copyright: 'Carizmi',
 };
 
 /**
@@ -53,7 +53,7 @@ const defaultBranding: BrandingConfig = {
  */
 export function getBranding(): BrandingConfig {
   const runtimeBranding = window.APP_CONFIG?.branding;
-  if (!runtimeBranding) return defaultBranding;
+  if (!runtimeBranding) return assembleCopyright(defaultBranding);
 
   // Filter out empty/blank values so defaults are preserved when
   // Docker env vars are not set (envsubst produces "" for unset vars)
@@ -63,8 +63,20 @@ export function getBranding(): BrandingConfig {
     ),
   );
 
-  return {
+  return assembleCopyright({
     ...defaultBranding,
     ...branding,
+  });
+}
+
+/**
+ * Assembles the full copyright string with the current year like this: "© {year} {owner}".
+ * If the copyright value already contains "©", it is used as-is.
+ */
+function assembleCopyright(branding: BrandingConfig): BrandingConfig {
+  if (branding.copyright.includes('©')) return branding;
+  return {
+    ...branding,
+    copyright: `© ${currentYear} ${branding.copyright}.`,
   };
 }

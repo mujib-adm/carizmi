@@ -55,7 +55,7 @@ public class AuthController {
         // Clear auth cookies
         cookieService.clearAuthCookies(response);
 
-        return ResponseUtils.ok("Successfully logged out");
+        return ResponseUtils.ok("Logged out successfully");
     }
 
     @PostMapping("/refresh")
@@ -102,6 +102,6 @@ public class AuthController {
         // If we reach here, password update was successful — clear cookies to force re-login
         cookieService.clearAuthCookies(response);
 
-        return ResponseUtils.ok("Password updated successfully! Please log in again.");
+        return ResponseUtils.ok("Password updated. Please sign in again.");
     }
 }

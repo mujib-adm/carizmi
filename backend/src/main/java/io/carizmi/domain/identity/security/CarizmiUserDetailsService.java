@@ -22,7 +22,7 @@ public class CarizmiUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         UserVO userVO = user.findUserForAuthentication(username);
         if (userVO == null) {
-            throw new UsernameNotFoundException("User not found with username: " + username);
+            throw new UsernameNotFoundException("User not found");
         }
         return new CarizmiUserDetails(userVO, lockoutDurationMinutes);
     }

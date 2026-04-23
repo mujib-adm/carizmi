@@ -54,22 +54,14 @@ public abstract class AbstractDomainValidator<V extends ValueObject> implements 
         }
     }
 
-    /**
-     * This version supports specific error message with 'param message' instead of default "Invalid value".
-     */
+    /** Regex validation with a custom error message. */
     protected void validateRegex(V vo, String fieldName, String value, String regex, Message message) {
         if (isNotMatchRegex(value, regex)) {
             vo.addFieldMessage(fieldName, message);
         }
     }
 
-    /**
-     * Helper to check if a value matches a regex.
-     *
-     * @param value the value to check
-     * @param regex the regex pattern
-     * @return true if it DOES NOT match or is blank
-     */
+    /** Returns {@code true} if value is blank or does not match the regex. */
     protected boolean isNotMatchRegex(String value, String regex) {
         if (StringUtils.isBlank(value)) {
             return true;

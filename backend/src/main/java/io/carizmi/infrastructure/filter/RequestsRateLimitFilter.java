@@ -28,8 +28,7 @@ import static io.carizmi.framework.message.constant.CommonMessages.TOO_MANY_REQU
  * Limits requests based on IP address.
  * Uses Caffeine cache to bound memory and auto-evict stale entries.
  *
- * <p><b>Note:</b> Rate-limit state is held in-memory and lost on restart.
- * This is acceptable for single-instance deployments (e.g., Oracle Cloud "Always Free").
+ * <p><b>Note:</b> Rate-limit state is in-memory and lost on restart.
  * For multi-instance deployments, consider Redis-backed rate limiting.</p>
  */
 @Component

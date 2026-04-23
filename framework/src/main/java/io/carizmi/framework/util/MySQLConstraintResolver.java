@@ -70,9 +70,6 @@ public class MySQLConstraintResolver {
         return constraintMap.getOrDefault(constraintName, List.of("unknown"));
     }
 
-    /**
-     * For debugging or introspection.
-     */
     public Map<String, List<String>> getAllConstraints() {
         return Collections.unmodifiableMap(constraintMap);
     }

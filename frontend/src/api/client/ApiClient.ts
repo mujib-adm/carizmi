@@ -102,13 +102,14 @@ const processQueue = (error: any) => {
  * Configuration:
  *   - `baseURL`         — Resolved API base (see above).
  *   - `Content-Type`    — JSON by default; individual requests can override.
- *   - `timeout`         — 15 seconds to prevent hanging requests.
+ *   - `timeout`         — 30 seconds to accommodate container cold starts
+ *                         (Java/Spring Boot apps can take 5–15s to initialise on first request).
  *   - `withCredentials` — Sends httpOnly cookies with every request (JWT auth).
  */
 const apiClient = axios.create({
   baseURL: API_BASE,
   headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-  timeout: 15000,
+  timeout: 30000,
   withCredentials: true,
 });
 
