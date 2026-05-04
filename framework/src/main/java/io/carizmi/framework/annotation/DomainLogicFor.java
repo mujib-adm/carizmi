@@ -6,11 +6,17 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotation to mark a Business Logic class as the owner of a specific Value Object (VO) class.
+ * Declares the class as the business logic owner for the specified Value Object.
+ *
+ * <p>Used by the framework's runtime singleton enforcement in {@code AbstractBusinessLogic}
+ * to guarantee that each Value Object has exactly one business logic implementation.</p>
+ *
+ * @see RepositoryOwnerFor
  */
-
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface DomainLogicFor {
-    Class<?> value(); // the VO class this BL owns
+
+    /** The Value Object class that this business logic exclusively owns. */
+    Class<?> value();
 }

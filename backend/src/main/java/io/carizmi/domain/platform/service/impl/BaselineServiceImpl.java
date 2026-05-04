@@ -8,7 +8,7 @@ import io.carizmi.domain.finance.service.Expense;
 import io.carizmi.domain.finance.service.Payment;
 import io.carizmi.domain.platform.service.SystemSetting;
 import io.carizmi.domain.platform.service.BaselineService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +17,7 @@ import java.time.LocalDate;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class BaselineServiceImpl implements BaselineService {
     private static final Logger logger = LoggerFactory.getLogger(BaselineServiceImpl.class);
 
@@ -25,15 +26,6 @@ public class BaselineServiceImpl implements BaselineService {
     private final SystemSetting systemSetting;
     private final Payment payment;
     private final Expense expense;
-
-    @Autowired
-    public BaselineServiceImpl(final SystemSetting systemSetting,
-                               final Payment payment,
-                               final Expense expense) {
-        this.systemSetting = systemSetting;
-        this.payment = payment;
-        this.expense = expense;
-    }
 
     @Override
     @Transactional

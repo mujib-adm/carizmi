@@ -45,7 +45,7 @@ import java.util.stream.Collectors;
 import static io.carizmi.shared.message.ValidationMessages.RECORD_NOT_FOUND;
 
 @Service
-public non-sealed class MemberImpl extends MemberAbstractBL implements Member {
+public final class MemberImpl extends MemberAbstractBL implements Member {
     private static final Logger logger = LoggerFactory.getLogger(MemberImpl.class);
 
     private final Payment payment;
@@ -176,11 +176,9 @@ public non-sealed class MemberImpl extends MemberAbstractBL implements Member {
 
         // 1. Total Paid
         BigDecimal totalPaid = payment.sumAmountByMemberID(memberID);
-        if (totalPaid == null) totalPaid = BigDecimal.ZERO;
 
         // 2. Outstanding (Current Quarter)
         BigDecimal collectedCurrentQ = payment.sumAmountByMemberIDAndYearAndQuarter(memberID, currentYear, currentQuarter);
-        if (collectedCurrentQ == null) collectedCurrentQ = BigDecimal.ZERO;
 
         BigDecimal outstanding = quarterlyFeeAmt.subtract(collectedCurrentQ);
         if (outstanding.compareTo(BigDecimal.ZERO) < 0) outstanding = BigDecimal.ZERO;

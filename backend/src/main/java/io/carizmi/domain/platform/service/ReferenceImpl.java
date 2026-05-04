@@ -14,6 +14,7 @@ import io.carizmi.framework.exception.RecordNotFoundException;
 import io.carizmi.domain.platform.repository.ReferenceRepository;
 import io.carizmi.domain.platform.repository.spec.ReferenceSpecifications;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -27,7 +28,7 @@ import java.util.Optional;
 import static io.carizmi.shared.message.ValidationMessages.RECORD_NOT_FOUND;
 
 @Service
-public non-sealed class ReferenceImpl extends ReferenceAbstractBL implements Reference {
+public final class ReferenceImpl extends ReferenceAbstractBL implements Reference {
 
     private static final Logger logger = LoggerFactory.getLogger(ReferenceImpl.class);
 
@@ -59,6 +60,7 @@ public non-sealed class ReferenceImpl extends ReferenceAbstractBL implements Ref
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "referenceData", key = "#referenceName")
     public List<ReferenceDescDto> getReferencesByName(String referenceName) {
         Specification<ReferenceVO> spec = Specification.allOf(
                 ReferenceSpecifications.hasReferenceName(referenceName),

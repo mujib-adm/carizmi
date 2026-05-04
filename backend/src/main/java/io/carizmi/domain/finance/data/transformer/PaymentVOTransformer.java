@@ -4,10 +4,15 @@ import io.carizmi.domain.finance.data.dto.PaymentDto;
 import io.carizmi.domain.membership.model.MemberVO;
 import io.carizmi.domain.finance.model.PaymentVO;
 import io.carizmi.framework.data.transformer.Transformer;
+import jakarta.persistence.EntityManager;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class PaymentVOTransformer implements Transformer<PaymentDto, PaymentVO> {
+
+    private final EntityManager entityManager;
 
     @Override
     public PaymentVO transform(PaymentDto dto) {
@@ -21,9 +26,7 @@ public class PaymentVOTransformer implements Transformer<PaymentDto, PaymentVO> 
         vo.setQuarter(dto.getQuarter());
 
         if (dto.getMemberID() != null) {
-            MemberVO member = new MemberVO();
-            member.setMemberID(dto.getMemberID());
-            vo.setMember(member);
+            vo.setMember(entityManager.getReference(MemberVO.class, dto.getMemberID()));
         }
         return vo;
     }

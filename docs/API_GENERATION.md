@@ -393,7 +393,7 @@ export type SortOrder = typeof SortOrder[keyof typeof SortOrder];
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | Old type names persist | Stale generated files | Run `npm run generate:api` (deletes `src/api/generated/` first) |
-| `GlobalResponseListXxxDto` appears | `clean-orval.mjs` didn't run | Check `postgenerate:api` hook in `package.json` |
+| `GlobalResponseListFooDto` appears | `clean-orval.mjs` didn't run | Check `postgenerate:api` hook in `package.json` |
 | Per-entity `SortOrder` duplicates | `clean-orval.mjs` Step 5 didn't match | Check regex patterns in the script |
 
 ### CI fails with "Contract Drift Detected"

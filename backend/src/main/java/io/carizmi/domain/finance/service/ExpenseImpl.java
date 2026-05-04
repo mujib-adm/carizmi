@@ -28,7 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import static io.carizmi.shared.message.ValidationMessages.RECORD_NOT_FOUND;
 
 @Service
-public non-sealed class ExpenseImpl extends ExpenseAbstractBL implements Expense {
+public final class ExpenseImpl extends ExpenseAbstractBL implements Expense {
 
     private static final Logger logger = LoggerFactory.getLogger(ExpenseImpl.class);
 

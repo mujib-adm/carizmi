@@ -38,7 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 import static io.carizmi.shared.message.ValidationMessages.RECORD_NOT_FOUND;
 
 @Service
-public non-sealed class UserImpl extends UserAbstractBL implements User {
+public final class UserImpl extends UserAbstractBL implements User {
     private static final Logger logger = LoggerFactory.getLogger(UserImpl.class);
 
     @Value("${jwt.expirationMinutes}")

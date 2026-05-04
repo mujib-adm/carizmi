@@ -12,9 +12,9 @@ import java.time.LocalDate;
 
 public interface ExpenseRepository extends JpaRepository<ExpenseVO, Integer>, JpaSpecificationExecutor<ExpenseVO> {
 
-    @Query("select sum(e.amount) from ExpenseVO e where e.dateOfExpense < :date")
+    @Query("select coalesce(sum(e.amount), 0) from ExpenseVO e where e.dateOfExpense < :date")
     BigDecimal sumAmountByDateOfExpenseBefore(@Param("date") LocalDate date);
 
-    @Query("select sum(e.amount) from ExpenseVO e where e.dateOfExpense >= :start and e.dateOfExpense <= :end")
+    @Query("select coalesce(sum(e.amount), 0) from ExpenseVO e where e.dateOfExpense >= :start and e.dateOfExpense <= :end")
     BigDecimal sumAmountByDateOfExpenseBetween(@Param("start") LocalDate start, @Param("end") LocalDate end);
 }

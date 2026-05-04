@@ -1,5 +1,6 @@
 package io.carizmi.domain.identity.security;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -9,6 +10,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class RefreshTokenService {
 
     private final StringRedisTemplate redisTemplate;
@@ -17,10 +19,6 @@ public class RefreshTokenService {
     private long refreshTokenExpirationMinutes;
 
     private static final String KEY_PREFIX = "refresh_token:";
-
-    public RefreshTokenService(StringRedisTemplate redisTemplate) {
-        this.redisTemplate = redisTemplate;
-    }
 
     public String createRefreshToken(String username) {
         String token = UUID.randomUUID().toString();

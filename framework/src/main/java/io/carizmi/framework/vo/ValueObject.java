@@ -4,6 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.Transient;
+import jakarta.persistence.Version;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -51,6 +52,10 @@ public abstract class ValueObject {
     @LastModifiedDate
     @Column(name = AuditFieldConstants.LAST_MODIFIED_DATE_TIME)
     protected LocalDateTime lastModifiedDateTime;
+
+    @Version
+    @Column(name = "version")
+    private Long version;
 
     @Transient
     private boolean errorExists;
