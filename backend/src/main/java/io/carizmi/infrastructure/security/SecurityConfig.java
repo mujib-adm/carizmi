@@ -45,8 +45,6 @@ public class SecurityConfig {
     public void logCorsConfiguration() {
         if (allowedOrigins == null || allowedOrigins.length == 0) {
             log.warn("CORS: No allowed origins configured. Frontend access may be blocked.");
-        } else {
-            log.info("CORS: Allowed origins initialized: {}", Arrays.toString(allowedOrigins));
         }
     }
 

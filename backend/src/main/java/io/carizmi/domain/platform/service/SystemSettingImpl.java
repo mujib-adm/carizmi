@@ -15,6 +15,8 @@ import io.carizmi.domain.platform.repository.SystemSettingRepository;
 import io.carizmi.domain.platform.repository.spec.SystemSettingsSpecifications;
 import io.carizmi.domain.platform.validation.SystemSettingsValidator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -28,7 +30,7 @@ import java.util.Optional;
 import static io.carizmi.shared.message.ValidationMessages.RECORD_NOT_FOUND;
 
 @Service
-public non-sealed class SystemSettingImpl extends SystemSettingAbstractBL implements SystemSetting {
+public final class SystemSettingImpl extends SystemSettingAbstractBL implements SystemSetting {
     private static final Logger logger = LoggerFactory.getLogger(SystemSettingImpl.class);
 
     private final SystemSettingsDtoTransformer dtoTransformer;
@@ -59,6 +61,7 @@ public non-sealed class SystemSettingImpl extends SystemSettingAbstractBL implem
 
     @Override
     @Transactional
+    @CacheEvict(value = "systemSettings", allEntries = true)
     public void updateSystemSetting(SystemSettingsDto dto) {
         SystemSettingsVO existing = getRepo().findById(dto.getSystemSettingsID())
                 .orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
@@ -104,8 +107,9 @@ public non-sealed class SystemSettingImpl extends SystemSettingAbstractBL implem
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<SystemSettingsVO> findBySettingKey(String key) {
-        return getRepo().findOne(SystemSettingsSpecifications.withSettingKey(key));
+    @Cacheable(value = "systemSettings", key = "#settingKey")
+    public Optional<SystemSettingsVO> findBySettingKey(String settingKey) {
+        return getRepo().findOne(SystemSettingsSpecifications.withSettingKey(settingKey));
     }
 
     @Override

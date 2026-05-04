@@ -1,5 +1,6 @@
 package io.carizmi.domain.membership.service
 
+import io.carizmi.framework.event.DomainEventPublisher
 import org.mockito.MockedStatic
 import org.mockito.Mockito
 import io.carizmi.shared.constants.FieldConstants
@@ -43,12 +44,14 @@ class MemberSpec extends BaseSpecification {
     MemberDtoTransformer dtoTransformer = Mock()
     MemberValidator validator = Mock()
     MySQLConstraintResolver constraintResolver = Mock()
+    DomainEventPublisher domainEventPublisher = Mock()
 
     @Subject
     MemberImpl memberImpl = new MemberImpl(memberRepo, payment, systemSetting, voTransformer, dtoTransformer, validator)
 
     void setup() {
         ReflectionTestUtils.setField(memberImpl, "constraintResolver", constraintResolver)
+        ReflectionTestUtils.setField(memberImpl, "domainEventPublisher", domainEventPublisher)
         systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
     }
 
@@ -69,6 +72,7 @@ class MemberSpec extends BaseSpecification {
         1 * voTransformer.transform(_) >> { MemberDto dto -> capturedDto = dto; transformedVo }
         1 * validator.validate(transformedVo)
         1 * memberRepo.save(_) >> { MemberVO vo -> capturedVo = vo; savedVo }
+        1 * domainEventPublisher.publish("CREATED", savedVo, id)
         0 * _
 
         and: "The expected result"
@@ -132,6 +136,7 @@ class MemberSpec extends BaseSpecification {
         1 * voTransformer.transformForUpdate(dto, vo) >> vo
         1 * validator.validateForUpdate(vo)
         1 * memberRepo.save(vo) >> vo
+        1 * domainEventPublisher.publish("UPDATED", vo, id)
         0 * _
 
         and: "The expected result"
@@ -200,6 +205,7 @@ class MemberSpec extends BaseSpecification {
         then: "The expected calls are made"
         1 * memberRepo.findById(1) >> Optional.of(vo)
         1 * memberRepo.delete(vo)
+        1 * domainEventPublisher.publish("DELETED", vo, id)
         0 * _
 
         and: "The expected result"
@@ -356,16 +362,13 @@ class MemberSpec extends BaseSpecification {
 
         then: "The expected calls are made"
         1 * memberRepo.findById(id) >> (found ? Optional.of(member) : Optional.empty())
-        if (found) {
-            1 * payment.sumAmountByMemberID(id) >> paidTotal
-            1 * payment.sumAmountByMemberIDAndYearAndQuarter(id, currentYear, 2) >> paidCurrent
-            1 * payment.findMemberPaymentSummaries(id, ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE) >> (paidPast != null ? [psQ1] : [])
-            // Implicit calls - use wildcards to handle varying scenarios strictly
-            _ * psQ1.getYear() >> currentYear
-            _ * psQ1.getQuarter() >> 1
-            _ * psQ1.getTotalPaid() >> paidPast
-            1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
-        }
+        (found ? 1 : 0) * payment.sumAmountByMemberID(id) >> paidTotal
+        (found ? 1 : 0) * payment.sumAmountByMemberIDAndYearAndQuarter(id, currentYear, 2) >> paidCurrent
+        (found ? 1 : 0) * payment.findMemberPaymentSummaries(id, ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE) >> (paidPast != null ? [psQ1] : [])
+        _ * psQ1.getYear() >> currentYear
+        _ * psQ1.getQuarter() >> 1
+        _ * psQ1.getTotalPaid() >> paidPast
+        (found ? 1 : 0) * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
         0 * _
 
         and: "The expected result"
@@ -388,7 +391,7 @@ class MemberSpec extends BaseSpecification {
         where:
         id | found | joinType | paidTotal | paidCurrent | paidPast
         1  | true  | 'START'  | 90.00     | 30.00       | 60.00
-        2  | true  | 'Q2'     | 0         | null        | null
+        2  | true  | 'Q2'     | 0         | 0           | null
         3  | true  | 'NULL'   | 100.00    | 20.00       | null
         4  | false | 'NULL'   | null      | null        | null
         5  | true  | 'NEXT'   | 0         | 0           | null

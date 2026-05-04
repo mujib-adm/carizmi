@@ -1,5 +1,6 @@
 package io.carizmi.domain.finance.service
 
+import io.carizmi.framework.event.DomainEventPublisher
 import io.carizmi.shared.constants.FieldConstants
 import io.carizmi.domain.finance.data.dto.ExpenseDto
 import io.carizmi.domain.finance.data.dto.request.ExpenseSearchRequestDto
@@ -32,12 +33,14 @@ class ExpenseSpec extends BaseSpecification {
     ExpenseDtoTransformer dtoTransformer = Mock()
     ExpenseValidator validator = Mock()
     MySQLConstraintResolver constraintResolver = Mock()
+    DomainEventPublisher domainEventPublisher = Mock()
 
     @Subject
     ExpenseImpl expenseImpl = new ExpenseImpl(expenseRepo, voTransformer, dtoTransformer, validator)
 
     void setup() {
         ReflectionTestUtils.setField(expenseImpl, "constraintResolver", constraintResolver)
+        ReflectionTestUtils.setField(expenseImpl, "domainEventPublisher", domainEventPublisher)
     }
 
     def "test - addExpense: Success"() {
@@ -53,6 +56,7 @@ class ExpenseSpec extends BaseSpecification {
         1 * voTransformer.transform(requestDto) >> vo
         1 * validator.validate(vo)
         1 * expenseRepo.save(vo) >> vo
+        1 * domainEventPublisher.publish("CREATED", vo, id)
         0 * _
 
         and: "The expected result"
@@ -112,6 +116,7 @@ class ExpenseSpec extends BaseSpecification {
         1 * voTransformer.transformForUpdate(dto, vo) >> vo
         1 * validator.validateForUpdate(vo)
         1 * expenseRepo.save(vo) >> vo
+        1 * domainEventPublisher.publish("UPDATED", vo, id)
         0 * _
 
         and: "The expected result"
@@ -166,6 +171,7 @@ class ExpenseSpec extends BaseSpecification {
         then: "The expected calls are made"
         1 * expenseRepo.findById(1) >> Optional.of(vo)
         1 * expenseRepo.delete(vo)
+        1 * domainEventPublisher.publish("DELETED", vo, id)
         0 * _
 
         and: "The expected result"

@@ -16,7 +16,6 @@ spring:
   mvc:
     async:
       request-timeout: 30s
-      
   datasource:
     # In production, these MUST be provided by environment variables
     url: ${DB_URL}
@@ -24,13 +23,14 @@ spring:
     password: ${DB_PASS}
     hikari:
       minimum-idle: 2
-      maximum-pool-size: 20
+      maximum-pool-size: 30
       idle-timeout: 30000
+      connection-timeout: 5000
       pool-name: ${APP_NAME:Carizmi}ProdPool
       
   jpa:
-    open-in-view: false # Prevents lazy-loading outside transactions
-    show-sql: false # Disabled in production
+    open-in-view: false
+    show-sql: false
     properties:
       hibernate:
         format_sql: false
@@ -74,6 +74,12 @@ management:
       show-details: when_authorized # Don't show full DB details to public
     shutdown:
       enabled: false # Security: disable shutdown endpoint
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: https://cloudtrace.googleapis.com
 
 app:
   cookie:
@@ -95,3 +101,10 @@ springdoc:
     enabled: false
   api-docs:
     enabled: false
+
+# Event-Driven Architecture — Outbox Relay
+# Controls whether domain events are persisted to the outbox_event table.
+carizmi:
+  outbox:
+    relay:
+      enabled: false

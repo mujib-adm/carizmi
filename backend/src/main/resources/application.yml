@@ -4,8 +4,13 @@ server:
     context-path: /api
 
 spring:
+  aop:
+    proxy-target-class: false
   config:
     import: "optional:configtree:/run/secrets/"
+  threads:
+    virtual:
+      enabled: true
 #  main:
 #    banner-mode: off
 #    lazy-initialization: true
@@ -90,3 +95,21 @@ springdoc:
   default-produces-media-type: application/json
   default-consumes-media-type: application/json
   wrapper-classes: io.carizmi.framework.data.response.GlobalResponse
+
+# Resilience4j Circuit Breaker Configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      outboxRelay:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+        register-health-indicator: true
+
+# Event-Driven Architecture — Outbox Relay
+# Controls whether domain events are persisted to the outbox_event table.
+carizmi:
+  outbox:
+    relay:
+      enabled: false

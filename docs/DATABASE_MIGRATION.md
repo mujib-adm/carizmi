@@ -127,4 +127,3 @@ graph TD
 | `JpaLiquibaseConfig.java` | `backend/.../infrastructure/bootstrap/` | DataSource + JPA config for `liquibase-diff` profile |
 | `V1__DB_Schema_Baseline.sql` | `backend/src/main/resources/db/migration/` | Initial database schema |
 | `application.yml` | `backend/src/main/resources/` | Flyway + Hibernate validation config |
-| `generated-changelog.xml` | `backend/src/main/resources/db/migration/` | Temporary Liquibase output (gitignored) |

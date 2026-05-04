@@ -1,10 +1,13 @@
 package io.carizmi.domain.finance.service
 
+import io.carizmi.framework.event.DomainEventPublisher
 import io.carizmi.shared.constants.ReferenceConstants
 import io.carizmi.shared.constants.FieldConstants
 import io.carizmi.shared.constants.TableConstants
+import io.carizmi.shared.data.dto.QuarterlyTotalProjection
 import io.carizmi.shared.data.dto.SortOrder
 import io.carizmi.domain.finance.data.dto.response.LatestPaymentDto
+import io.carizmi.domain.finance.data.dto.LatestPaymentProjection
 import io.carizmi.domain.finance.data.dto.PaymentDto
 import io.carizmi.domain.finance.data.dto.request.PaymentSearchRequestDto
 import io.carizmi.domain.finance.data.transformer.PaymentDtoTransformer
@@ -39,12 +42,14 @@ class PaymentSpec extends BaseSpecification {
     PaymentDtoTransformer dtoTransformer = Mock()
     PaymentValidator validator = Mock()
     MySQLConstraintResolver constraintResolver = Mock()
+    DomainEventPublisher domainEventPublisher = Mock()
 
     @Subject
     PaymentImpl paymentImpl = new PaymentImpl(paymentRepo, voTransformer, dtoTransformer, validator)
 
     void setup() {
         ReflectionTestUtils.setField(paymentImpl, "constraintResolver", constraintResolver)
+        ReflectionTestUtils.setField(paymentImpl, "domainEventPublisher", domainEventPublisher)
     }
 
     def "test - addPayment: Success - Membership Fee"() {
@@ -66,6 +71,7 @@ class PaymentSpec extends BaseSpecification {
         1 * validator.validate(vo)
         1 * paymentRepo.exists(_ as JpaSpecification) >> { JpaSpecification spec -> capturedSpec = spec; false }
         1 * paymentRepo.save(vo) >> vo
+        1 * domainEventPublisher.publish("CREATED", vo, paymentId)
         0 * _
 
         and: "The expected result"
@@ -123,6 +129,7 @@ class PaymentSpec extends BaseSpecification {
         1 * voTransformer.transform(request) >> vo
         1 * validator.validate(vo)
         1 * paymentRepo.save(vo) >> vo
+        1 * domainEventPublisher.publish("CREATED", vo, paymentId)
         0 * _
 
         and: "The expected result"
@@ -178,22 +185,19 @@ class PaymentSpec extends BaseSpecification {
         BigDecimal amount = 100.0
         LocalDate dateReceived = LocalDate.now()
 
-        Page<PaymentVO> mockPage = Mock(Page)
-        MemberVO member = new MemberVO(memberID: memberID, firstName: firstName, lastName: lastName)
-        PaymentVO payment = new PaymentVO(
-                paymentID: paymentID,
-                member: member,
-                feeType: feeType,
-                amount: amount,
-                dateReceived: dateReceived
-        )
+        LatestPaymentProjection projection = Mock(LatestPaymentProjection)
 
         when: "The target method executed"
         List<LatestPaymentDto> result = paymentImpl.getLatestPayments(5)
 
         then: "The expected calls are made"
-        1 * paymentRepo.findAll(_ as PageRequest) >> mockPage
-        1 * mockPage.getContent() >> [payment]
+        1 * paymentRepo.findLatestPayments(_ as PageRequest) >> [projection]
+        1 * projection.getPaymentID() >> paymentID
+        1 * projection.getMemberID() >> memberID
+        1 * projection.getMemberName() >> "${firstName} ${lastName}"
+        1 * projection.getFeeType() >> feeType
+        1 * projection.getAmount() >> amount
+        1 * projection.getPaymentDate() >> dateReceived
         0 * _
 
         and: "The expected result"
@@ -211,14 +215,12 @@ class PaymentSpec extends BaseSpecification {
 
     def "test - getLatestPayments: Handling empty results"() {
         given: "An empty payment repository"
-        Page<PaymentVO> mockPage = Mock(Page)
 
         when: "The target method executed"
         List<LatestPaymentDto> result = paymentImpl.getLatestPayments(5)
 
         then: "The expected calls are made"
-        1 * paymentRepo.findAll(_ as PageRequest) >> mockPage
-        1 * mockPage.getContent() >> []
+        1 * paymentRepo.findLatestPayments(_ as PageRequest) >> []
         0 * _
 
         and: "The expected result"
@@ -239,6 +241,7 @@ class PaymentSpec extends BaseSpecification {
         1 * voTransformer.transformForUpdate(_, _) >> vo
         1 * validator.validateForUpdate(_)
         1 * paymentRepo.save(vo) >> vo
+        1 * domainEventPublisher.publish("UPDATED", vo, _)
         0 * _
 
         and: "The expected result"
@@ -325,6 +328,7 @@ class PaymentSpec extends BaseSpecification {
         then: "The expected calls are made"
         1 * paymentRepo.findById(1) >> Optional.of(vo)
         1 * paymentRepo.delete(vo)
+        1 * domainEventPublisher.publish("DELETED", vo, _)
         0 * _
 
         and: "The expected result"
@@ -660,5 +664,70 @@ class PaymentSpec extends BaseSpecification {
                 [Mock(PaymentSummary)],
                 [Mock(PaymentSummary), Mock(PaymentSummary)]
         ]
+    }
+
+    @Unroll
+    def "test findQuarterlyTotals - Should return quarterly totals for year [size: #expectedList.size()]"() {
+        given:
+        int currentYear = LocalDate.now().year
+
+        when: "The target method executed"
+        def result = paymentImpl.findQuarterlyTotals(currentYear)
+
+        then: "The expected calls are made"
+        1 * paymentRepo.findQuarterlyTotals(currentYear) >> expectedList
+        0 * _
+
+        and: "The expected result"
+        result == expectedList
+        noExceptionThrown()
+
+        where:
+        expectedList << [
+                [],
+                [Stub(QuarterlyTotalProjection)],
+                [Stub(QuarterlyTotalProjection), Stub(QuarterlyTotalProjection)]
+        ]
+    }
+
+    def "test calculateTotalOverdue - Should return overdue total from repo"() {
+        given:
+        int currentYear = LocalDate.now().year
+        int currentQuarter = 2
+        BigDecimal feeAmt = new BigDecimal("60.00")
+        String feeType = ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE
+        String status = ReferenceConstants.MEMBER_STATUS.ACTIVE
+        BigDecimal expectedOverdue = new BigDecimal("180.00")
+
+        when: "The target method executed"
+        BigDecimal result = paymentImpl.calculateTotalOverdue(currentYear, currentQuarter, feeAmt, feeType, status)
+
+        then: "The expected calls are made"
+        1 * paymentRepo.calculateTotalOverdue(currentYear, currentQuarter, feeAmt, feeType, status) >> expectedOverdue
+        0 * _
+
+        and: "The expected result"
+        result == expectedOverdue
+        noExceptionThrown()
+    }
+
+    def "test calculateTotalOverdue - Should return zero when no overdue"() {
+        given:
+        int currentYear = LocalDate.now().year
+        int currentQuarter = 1
+        BigDecimal feeAmt = new BigDecimal("60.00")
+        String feeType = ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE
+        String status = ReferenceConstants.MEMBER_STATUS.ACTIVE
+
+        when: "The target method executed"
+        BigDecimal result = paymentImpl.calculateTotalOverdue(currentYear, currentQuarter, feeAmt, feeType, status)
+
+        then: "The expected calls are made"
+        1 * paymentRepo.calculateTotalOverdue(currentYear, currentQuarter, feeAmt, feeType, status) >> BigDecimal.ZERO
+        0 * _
+
+        and: "The expected result"
+        result == BigDecimal.ZERO
+        noExceptionThrown()
     }
 }

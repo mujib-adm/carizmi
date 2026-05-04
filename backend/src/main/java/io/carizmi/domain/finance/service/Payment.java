@@ -13,6 +13,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import io.carizmi.shared.data.dto.PaymentSummary;
+import io.carizmi.shared.data.dto.QuarterlyTotalProjection;
 import org.springframework.data.jpa.domain.Specification;
 
 public interface Payment extends BusinessLogic<PaymentVO> {
@@ -43,6 +44,12 @@ public interface Payment extends BusinessLogic<PaymentVO> {
     List<PaymentSummary> findMembersPaymentSummaries(List<Integer> memberIds, String feeType, @NonNull Integer year);
 
     List<PaymentSummary> findPaymentSummaries(String feeType, @NonNull Integer year);
+
+    List<QuarterlyTotalProjection> findQuarterlyTotals(@NonNull Integer year);
+
+    BigDecimal calculateTotalOverdue(@NonNull Integer year, @NonNull Integer currentQuarter,
+                                     @NonNull BigDecimal feeAmt, @NonNull String feeType,
+                                     @NonNull String status);
 
     List<PaymentVO> findPaymentsByCriteria(Specification<PaymentVO> spec);
 

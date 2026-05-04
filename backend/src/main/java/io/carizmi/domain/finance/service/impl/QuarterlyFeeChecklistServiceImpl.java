@@ -49,8 +49,6 @@ public class QuarterlyFeeChecklistServiceImpl implements QuarterlyFeeChecklistSe
     @Override
     public SinglePagedResult<QuarterlyChecklistDto> getQuarterlyChecklist(ChecklistSearchRequestDto request) {
         int year = (request.getYear() != null) ? request.getYear() : LocalDate.now().getYear();
-        logger.info("Generating quarterly fee checklist for year: {}", year);
-
         BigDecimal quarterlyFeeAmount = systemSetting.getQuarterlyFeeAmount();
 
         LocalDate now = LocalDate.now();

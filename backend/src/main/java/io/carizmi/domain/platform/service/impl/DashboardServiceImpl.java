@@ -1,175 +1,77 @@
 package io.carizmi.domain.platform.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.carizmi.domain.platform.data.dto.response.DashboardMetricsDto;
+import io.carizmi.domain.platform.data.dto.response.QuarterlyCollectionDto;
+import io.carizmi.domain.platform.model.DashboardSnapshotVO;
+import io.carizmi.domain.platform.service.DashboardProjector;
+import io.carizmi.domain.platform.service.DashboardService;
+import io.carizmi.domain.platform.service.DashboardSnapshot;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.carizmi.shared.constants.QuarterStatus;
-import io.carizmi.shared.constants.ReferenceConstants;
-import io.carizmi.domain.finance.service.Expense;
-import io.carizmi.domain.membership.service.Member;
-import io.carizmi.domain.finance.service.Payment;
-import io.carizmi.domain.platform.service.SystemSetting;
-import io.carizmi.domain.membership.model.MemberVO;
-import io.carizmi.domain.platform.data.dto.response.DashboardMetricsDto;
-import io.carizmi.shared.data.dto.PaymentSummary;
-import io.carizmi.domain.platform.data.dto.response.QuarterlyCollectionDto;
-import io.carizmi.domain.platform.service.BaselineService;
-import io.carizmi.domain.platform.service.DashboardService;
-import io.carizmi.shared.util.QuarterUtils;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
+/**
+ * CQRS Read Path for dashboard metrics.
+ *
+ * <p>Reads pre-computed metrics from the {@code dashboard_metrics_snapshot} table.
+ * This helps to avoid performing a cross-domain queries synchronously on each request.</p>
+ *
+ * <p>The write path (metric computation) is handled by
+ * {@link DashboardProjector}, which listens to in-process Spring events and
+ * rebuilds the snapshot whenever a Payment, Expense, or Member change occurs.</p>
+ */
 @Service
 @RequiredArgsConstructor
 public class DashboardServiceImpl implements DashboardService {
     private static final Logger logger = LoggerFactory.getLogger(DashboardServiceImpl.class);
 
-    private final Member member;
-    private final Payment payment;
-    private final Expense expense;
-    private final BaselineService baselineService;
-    private final SystemSetting systemSetting;
+    private final DashboardSnapshot dashboardSnapshot;
+    private final DashboardProjector dashboardProjector;
+    private final ObjectMapper objectMapper;
 
     @Override
     public DashboardMetricsDto getMetrics() {
-        logger.info("Fetching dashboard metrics");
+        DashboardSnapshotVO snapshotVO = dashboardSnapshot.getSnapshot().orElse(null);
 
-        BigDecimal quarterlyFeeAmt = systemSetting.getQuarterlyFeeAmount();
-
-        LocalDate now = LocalDate.now();
-        int currentYear = now.getYear();
-        int currentQuarter = QuarterUtils.quarterOf(now);
-        LocalDate startOfYear = LocalDate.of(currentYear, 1, 1);
-
-        // 1. Total Active Members
-        long totalActiveMembers = member.countActiveMembers();
-
-        // 2. Total Revenue: Yearly Baseline + Current Year Payments - Current Year Expenses
-        BigDecimal yearlyBaseline = baselineService.getBaselineForYear(currentYear);
-
-        BigDecimal currentYearPayments = payment.sumAmountByDateReceivedBetween(startOfYear, now);
-        BigDecimal currentYearExpenses = expense.sumAmountByDateOfExpenseBetween(startOfYear, now);
-
-        if (currentYearPayments == null)
-            currentYearPayments = BigDecimal.ZERO;
-        if (currentYearExpenses == null)
-            currentYearExpenses = BigDecimal.ZERO;
-
-        BigDecimal totalRevenue = yearlyBaseline.add(currentYearPayments).subtract(currentYearExpenses);
-
-        // 3. Dues for Current Quarter
-        // Expected: Active Members * quarterlyFeeAmt
-        BigDecimal expectedDues = BigDecimal.valueOf(totalActiveMembers).multiply(quarterlyFeeAmt);
-        // Collected in current quarter
-        BigDecimal collectedCurrentQ = payment.sumAmountByYearAndQuarter(currentYear, currentQuarter);
-        if (collectedCurrentQ == null)
-            collectedCurrentQ = BigDecimal.ZERO;
-
-        BigDecimal duesThisQuarter = expectedDues.subtract(collectedCurrentQ);
-        if (duesThisQuarter.compareTo(BigDecimal.ZERO) < 0) {
-            duesThisQuarter = BigDecimal.ZERO;
+        if (snapshotVO == null) {
+            logger.info("Dashboard snapshot not found — triggering initial projection");
+            dashboardProjector.rebuildProjection();
+            snapshotVO = dashboardSnapshot.getSnapshot().orElse(null);
         }
 
-        // 4. Overdues (Excluding Current Quarter)
-        // Fetch Membership Fee payments aggregated for the current year only
-        List<PaymentSummary> summaries = payment.findPaymentSummaries(ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, currentYear);
-
-        // Map: MemberID -> Quarter -> Amount
-        Map<Integer, Map<Integer, BigDecimal>> paymentMap = new HashMap<>();
-        for (PaymentSummary s : summaries) {
-            paymentMap.computeIfAbsent(s.getMemberID(), k -> new HashMap<>())
-                    .merge(s.getQuarter(), s.getTotalPaid(), BigDecimal::add);
-        }
-
-        BigDecimal overdueTotal = BigDecimal.ZERO;
-
-        // Fetch active members
-        List<MemberVO> activeMembers = member.findAllActiveMembers();
-
-        for (MemberVO m : activeMembers) {
-            LocalDate joinDate = QuarterUtils.resolveJoinDate(m.getJoinDate());
-
-            // We only care about overdues in the current year
-            // Start assessment from Q1 of current year, or the member's join quarter (if
-            // joined this year)
-            int startQ = 1;
-            if (joinDate.getYear() == currentYear) {
-                startQ = QuarterUtils.quarterOf(joinDate);
-            } else if (joinDate.getYear() > currentYear) {
-                continue; // Joined in the future? Skip.
-            }
-
-            // Iterate through "Past" quarters of the current year
-            for (int q = startQ; q < currentQuarter; q++) {
-                BigDecimal paid = paymentMap.getOrDefault(m.getMemberID(), Collections.emptyMap())
-                        .getOrDefault(q, BigDecimal.ZERO);
-
-                BigDecimal due = quarterlyFeeAmt.subtract(paid);
-                if (due.compareTo(BigDecimal.ZERO) > 0) {
-                    overdueTotal = overdueTotal.add(due);
-                }
-            }
-        }
-
-        // 5. Quarterly Collections (Calendar Year: Q1, Q2, Q3, Q4)
-        List<QuarterlyCollectionDto> collections = new ArrayList<>();
-
-        for (int q = 1; q <= 4; q++) {
-            collections.add(computeQuarterData(currentYear, q, currentQuarter, totalActiveMembers, quarterlyFeeAmt));
+        if (snapshotVO == null) {
+            logger.warn("Dashboard snapshot could not be built — returning empty metrics");
+            return DashboardMetricsDto.builder()
+                    .quarterlyCollections(Collections.emptyList())
+                    .build();
         }
 
         return DashboardMetricsDto.builder()
-                .totalMembers(totalActiveMembers)
-                .totalRevenue(totalRevenue)
-                .duesThisQuarter(duesThisQuarter)
-                .overdueTotal(overdueTotal)
-                .quarterlyFeeAmt(quarterlyFeeAmt)
-                .quarterlyCollections(collections)
+                .totalMembers(snapshotVO.getTotalActiveMembers())
+                .totalRevenue(snapshotVO.getTotalRevenue())
+                .duesThisQuarter(snapshotVO.getDuesThisQuarter())
+                .overdueTotal(snapshotVO.getOverdueTotal())
+                .quarterlyFeeAmt(snapshotVO.getQuarterlyFeeAmt())
+                .quarterlyCollections(deserializeCollections(snapshotVO.getQuarterlyCollections()))
                 .build();
     }
 
-    private QuarterlyCollectionDto computeQuarterData(int year, int quarter, int currentQuarter, long totalActiveMembers, BigDecimal quarterlyFeeAmt) {
-        BigDecimal collected = BigDecimal.ZERO;
-        QuarterStatus status;
-
-        if (quarter > currentQuarter) {
-            status = QuarterStatus.FUTURE;
-        } else if (quarter == currentQuarter) {
-            status = QuarterStatus.CURRENT;
-            collected = payment.sumAmountByYearAndQuarter(year, quarter);
-        } else {
-            status = QuarterStatus.PAST;
-            collected = payment.sumAmountByYearAndQuarter(year, quarter);
+    private List<QuarterlyCollectionDto> deserializeCollections(String json) {
+        if (json == null || json.isBlank()) {
+            return Collections.emptyList();
         }
-
-        if (collected == null)
-            collected = BigDecimal.ZERO;
-
-        // Denom: Active * quarterlyFeeAmt
-        BigDecimal denom = BigDecimal.valueOf(totalActiveMembers).multiply(quarterlyFeeAmt);
-        double pct = 0;
-        if (denom.compareTo(BigDecimal.ZERO) > 0) {
-            pct = collected.divide(denom, 4, RoundingMode.HALF_UP).doubleValue();
+        try {
+            return objectMapper.readValue(json, new TypeReference<>() {});
+        } catch (JsonProcessingException e) {
+            logger.error("Failed to deserialize quarterly collections from dashboard snapshot", e);
+            return Collections.emptyList();
         }
-
-        String label = "Q" + quarter;
-        if (QuarterStatus.CURRENT.equals(status)) {
-            label += " (Current)";
-        }
-
-        return QuarterlyCollectionDto.builder()
-                .quarterLabel(label)
-                .collectedAmount(collected)
-                .percentage(pct)
-                .status(status)
-                .build();
     }
 }

@@ -11,7 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.carizmi.infrastructure.security.TokenBlacklistService;
 import io.carizmi.domain.identity.security.JwtService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import static io.carizmi.domain.identity.security.CookieService.ACCESS_TOKEN_COOKIE;
 
 @Component
+@RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
     private static final List<String> EXCLUDED_PATHS = List.of(
@@ -45,13 +46,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final TokenBlacklistService blacklistService;
     private final BearerTokenResolver bearerTokenResolver;
     private final JwtService jwtService;
-
-    @Autowired
-    public JwtAuthenticationFilter(TokenBlacklistService blacklistService, BearerTokenResolver bearerTokenResolver, JwtService jwtService) {
-        this.blacklistService = blacklistService;
-        this.bearerTokenResolver = bearerTokenResolver;
-        this.jwtService = jwtService;
-    }
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain chain)

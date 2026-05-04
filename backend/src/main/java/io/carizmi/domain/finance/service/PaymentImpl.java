@@ -12,6 +12,7 @@ import io.carizmi.domain.finance.data.dto.PaymentDto;
 import io.carizmi.domain.finance.data.dto.request.PaymentSearchRequestDto;
 import io.carizmi.domain.finance.data.dto.response.LatestPaymentDto;
 import io.carizmi.shared.data.dto.PaymentSummary;
+import io.carizmi.shared.data.dto.QuarterlyTotalProjection;
 import io.carizmi.domain.finance.data.transformer.PaymentDtoTransformer;
 import io.carizmi.domain.finance.data.transformer.PaymentVOTransformer;
 import io.carizmi.framework.data.response.PagedResult;
@@ -35,7 +36,7 @@ import java.util.List;
 import static io.carizmi.shared.message.ValidationMessages.RECORD_NOT_FOUND;
 
 @Service
-public non-sealed class PaymentImpl extends PaymentAbstractBL implements Payment {
+public final class PaymentImpl extends PaymentAbstractBL implements Payment {
 
     private static final Logger logger = LoggerFactory.getLogger(PaymentImpl.class);
 
@@ -78,18 +79,15 @@ public non-sealed class PaymentImpl extends PaymentAbstractBL implements Payment
     @Override
     @Transactional(readOnly = true)
     public List<LatestPaymentDto> getLatestPayments(int limit) {
-        logger.info("Fetching {} latest payments", limit);
-        PageRequest pageRequest = PageRequest.of(0, limit,
-                Sort.by(Sort.Direction.DESC, FieldConstants.DATE_RECEIVED, FieldConstants.PAYMENT_ID));
-
-        return getRepo().findAll(pageRequest).getContent().stream()
+        PageRequest pageRequest = PageRequest.of(0, limit);
+        return getRepo().findLatestPayments(pageRequest).stream()
                 .map(p -> LatestPaymentDto.builder()
                         .paymentID(p.getPaymentID())
-                        .memberID(p.getMember().getMemberID())
-                        .memberName(p.getMember().getFirstName() + " " + p.getMember().getLastName())
+                        .memberID(p.getMemberID())
+                        .memberName(p.getMemberName())
                         .feeType(p.getFeeType())
                         .amount(p.getAmount())
-                        .paymentDate(p.getDateReceived())
+                        .paymentDate(p.getPaymentDate())
                         .build())
                 .toList();
     }
@@ -198,6 +196,20 @@ public non-sealed class PaymentImpl extends PaymentAbstractBL implements Payment
     @Transactional(readOnly = true)
     public BigDecimal sumAmountByDateReceivedBefore(LocalDate date) {
         return getRepo().sumAmountByDateReceivedBefore(date);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<QuarterlyTotalProjection> findQuarterlyTotals(@NonNull Integer year) {
+        return getRepo().findQuarterlyTotals(year);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BigDecimal calculateTotalOverdue(@NonNull Integer year, @NonNull Integer currentQuarter,
+                                            @NonNull BigDecimal feeAmt, @NonNull String feeType,
+                                            @NonNull String status) {
+        return getRepo().calculateTotalOverdue(year, currentQuarter, feeAmt, feeType, status);
     }
 
     private void performStatefulValidation(PaymentVO vo) {

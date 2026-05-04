@@ -2,20 +2,23 @@ package io.carizmi.domain.finance.data.transformer
 
 import io.carizmi.domain.finance.model.PaymentVO
 import io.carizmi.domain.finance.data.dto.PaymentDto
+import io.carizmi.domain.membership.model.MemberVO
 import io.carizmi.testbase.BaseSpecification
-import spock.lang.Unroll
+import jakarta.persistence.EntityManager
 
 import java.time.LocalDate
 
 class PaymentVOTransformerSpec extends BaseSpecification {
 
-    PaymentVOTransformer transformer = new PaymentVOTransformer()
+    EntityManager entityManager = Mock()
+    PaymentVOTransformer transformer = new PaymentVOTransformer(entityManager)
 
-    @Unroll
-    def "test - transform: Should transform PaymentDto to PaymentVO [hasMemberID: #hasMemberID]"() {
+    def "test - transform: Should transform PaymentDto to PaymentVO"() {
         given: "TestData setup"
+        Integer memberID = 100
+        MemberVO memberRef = new MemberVO(memberID: memberID)
         PaymentDto dto = PaymentDto.builder()
-                .memberID(hasMemberID ? 100 : null)
+                .memberID(memberID)
                 .feeType("DONATION")
                 .amount(100.00)
                 .dateReceived(LocalDate.now())
@@ -28,26 +31,19 @@ class PaymentVOTransformerSpec extends BaseSpecification {
         PaymentVO result = transformer.transform(dto)
 
         then: "The expected calls are made"
+        1 * entityManager.getReference(MemberVO.class, 100) >> memberRef
         0 * _
 
         and: "The expected result"
         result != null
+        result.member == memberRef
         result.feeType == dto.feeType
         result.amount == dto.amount
         result.dateReceived == dto.dateReceived
         result.methodOfPayment == dto.methodOfPayment
         result.year == dto.year
         result.quarter == dto.quarter
-        if (hasMemberID) {
-            result.member != null
-            result.member.memberID == 100L
-        } else {
-            result.member == null
-        }
         noExceptionThrown()
-
-        where:
-        hasMemberID << [true, false]
     }
 
     def "test - transform: Should return null when input is null"() {

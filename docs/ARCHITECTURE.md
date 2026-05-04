@@ -1,6 +1,6 @@
-# Business Logic and Domain Validation Architecture
+# Backend Architecture
 
-This document describes the core architectural patterns governing business logic, domain validation, and data integrity in the Carizmi Platform backend.
+This document describes the core architectural patterns governing business logic, domain validation, event-driven processing, and data integrity in the Carizmi Platform backend.
 
 ## Table of Contents
 1. [Overview](#1-overview)
@@ -8,21 +8,27 @@ This document describes the core architectural patterns governing business logic
 3. [Framework-Level Class Hierarchy](#3-framework-level-class-hierarchy)
 4. [Domain Ownership Enforcement](#4-domain-ownership-enforcement)
 5. [Lifecycle Hook Architecture](#5-lifecycle-hook-architecture)
-6. [Domain Validation Strategy](#6-domain-validation-strategy)
-7. [Error Propagation Flow](#7-error-propagation-flow)
-8. [How to Create a New Domain Module](#8-how-to-create-a-new-domain-module)
+6. [CQRS Architecture](#6-cqrs-architecture)
+7. [Event-Driven Architecture](#7-event-driven-architecture)
+8. [Domain Validation Strategy](#8-domain-validation-strategy)
+9. [Error Propagation Flow](#9-error-propagation-flow)
+10. [How to Create a New Domain Module](#10-how-to-create-a-new-domain-module)
 
 ---
 
 ## 1. Overview
 
-The Carizmi Platform backend is built on a **framework-driven business logic architecture** that standardizes how domain data is validated, persisted, and protected. The architecture is composed of three core pillars:
+The Carizmi Platform backend is built on a **framework-driven architecture** that standardizes how domain data is validated, persisted, projected, and protected. The architecture is composed of five core pillars:
 
-1. **Lifecycle-Managed Persistence** — All create and update operations flow through `AbstractBusinessLogic`, which enforces a strict hook sequence (`beforeAdd`/`beforeUpdate` → `performDomainValidation` → `save`). No code path can bypass this lifecycle.
+1. **Lifecycle-Managed Persistence (Write-Side)** — All create, update, and delete operations flow through `AbstractBusinessLogic`, which enforces a strict hook sequence (`beforeAdd`/`beforeUpdate` → `performDomainValidation` → `save` → `publish DomainEvent`). No code path can bypass this lifecycle.
 
-2. **Domain Rules Enforcement**: The `performDomainValidation()` hook in the Business Logic layer ensures that every entity is validated against its `DomainValidator` before any database operation.
+2. **Domain Rules Enforcement** — The `performDomainValidation()` hook in the Business Logic layer ensures that every entity is validated against its `DomainValidator` before any database operation.
 
-3. **One VO → One Business Logic**: Each Value Object is owned/managed by exactly one Business Logic class preventing logic fragmentation, enforced at compile-time, startup, and test-time.
+3. **One VO → One Business Logic** — Each Value Object is owned/managed by exactly one Business Logic class, preventing logic fragmentation. Enforced at compile-time, startup, and test-time.
+
+4. **CQRS (Command Query Responsibility Segregation)** — Write operations flow through `AbstractBusinessLogic`; read-side projections are computed asynchronously by `AbstractProjector` subclasses, triggered by domain events after the write transaction commits.
+
+5. **Event-Driven Architecture** — Domain events are published automatically after every successful write operation and consumed in-process by projectors. A Transactional Outbox infrastructure is ready for future external broker integration.
 
 > [!IMPORTANT]
 > **No code path may bypass validation.** This includes data loaders, schedulers, and any other code that persists data — they must call `add()`/`update()` on the BL, never `repo.save()` directly.
@@ -61,15 +67,16 @@ This section documents the complete flow of a request from the React frontend th
 └──────────────┬───────────────────┘
                │ delegates
 ┌──────────────▼───────────────────┐
-│   AbstractBusinessLogic          │
-│   Lifecycle hooks → validation → │
-│   save / exception propagation   │
-└──────────────┬───────────────────┘
-               │
-┌──────────────▼───────────────────┐
-│   JpaRepository (Data Layer)     │
-│   Returns: Entity / VO           │
-└──────────────────────────────────┘
+│   AbstractBusinessLogic          │       ┌────────────────────────────┐
+│   Lifecycle hooks → validation → │──────►│   DomainEventPublisher     │
+│   save / exception propagation   │ event │   Spring ApplicationEvent  │
+└──────────────┬───────────────────┘       └─────────────┬──────────────┘
+               │                                         │ async, after commit
+┌──────────────▼───────────────────┐       ┌─────────────▼──────────────┐
+│   JpaRepository (Data Layer)     │       │   AbstractProjector        │
+│   Returns: Entity / VO           │       │   (Read-Side CQRS)         │
+└──────────────────────────────────┘       │   Rebuilds snapshot tables │
+                                           └────────────────────────────┘
 ```
 
 ### Request/Response Flow
@@ -152,7 +159,7 @@ Each layer has a well-defined contract governing what it returns and what it is 
 | **Frontend** | React hooks / pages | Typed `GlobalResponse<T>` | `responseData`, `globalMessages`, `fieldMessages`, `meta` | Backend internals |
 | **HTTP Client** | `apiClient` + `apiMutator` | `AxiosResponse<GlobalResponse>` | Base URL, cookies, 401 refresh | Business logic |
 | **Controller** | `@RestController` | `ResponseEntity<GlobalResponse<T>>` | `ResponseUtils`, HTTP status codes, security annotations | Database, VOs, repositories |
-| **Business Logic** | `Xxx` interface + `XxxImpl` | Domain types: `T`, `void`, `PagedResult<T>` | DTOs, VOs, transformers, validators, domain exceptions | `ResponseEntity`, `GlobalResponse`, HTTP status codes |
+| **Business Logic** | `Foo` interface + `FooImpl` | Domain types: `T`, `void`, `PagedResult<T>` | DTOs, VOs, transformers, validators, domain exceptions | `ResponseEntity`, `GlobalResponse`, HTTP status codes |
 | **Framework BL** | `AbstractBusinessLogic` | `V` (ValueObject) | Lifecycle hooks, validation, `JpaRepository` | HTTP, controllers, response formatting |
 | **Exception Handler** | `GlobalExceptionHandler` | `ResponseEntity<GlobalResponse<Void>>` | Exception types → HTTP status mapping, `ResponseUtils` | Business logic details |
 | **Data Layer** | `JpaRepository` | `Optional<V>`, `Page<V>`, `List<V>` | JPA, database queries | Anything above the repository |
@@ -210,6 +217,8 @@ React Page / Hook
 
 ## 3. Framework-Level Class Hierarchy
 
+### Write-Side — Business Logic Engine
+
 ```
                  ┌───────────────────────┐
                  │  BusinessLogic<V>     │  (interface — CRUD contract)
@@ -218,19 +227,61 @@ React Page / Hook
                              │ implements
               ┌──────────────┴──────────────┐
               │  AbstractBusinessLogic<V,R> │  (abstract — lifecycle engine)
-              │  hooks, validation, save    │
+              │  hooks, validation, save,   │
+              │  domain event publishing    │
               └──────────────┬──────────────┘
                              │ extends
               ┌──────────────┴──────────────┐
-              │  XxxAbstractBL              │  (sealed — 1:1 binding)
-              │  @DomainLogicFor(XxxVO)     │
+              │  FooAbstractBL              │  (sealed — 1:1 binding)
+              │  @DomainLogicFor(FooVO)     │
+              │  @RepositoryOwnerFor(FooR)  │
               └──────────────┬──────────────┘
-                             │ permits (non-sealed)
+                             │ permits (final)
+              ┌──────────────┴──────────────┐     ┌─────────────────────────────┐
+              │  FooImpl                    │     │  Foo                        │
+              │  overrides hooks,           │────▶│  (Service Interface)        │
+              │  performDomainValidation,   │     │  Domain-specific methods    │
+              │  domain-specific methods    │     │  Injected by all consumers  │
+              └─────────────────────────────┘     └─────────────────────────────┘
+```
+
+> [!IMPORTANT]
+> **Interface-Based Dependency Injection** — All `*Impl` classes are declared `final`
+> and proxied via JDK interface-based proxies (`spring.aop.proxy-target-class: false`).
+> Consumers must always inject the **service interface** (`Member`, `Payment`, etc.),
+> never the concrete class (`MemberImpl`). Injecting a concrete type will cause
+> `BeanNotOfRequiredTypeException` at startup.
+
+### Read-Side — CQRS Projection Engine
+
+```
+              ┌─────────────────────────────┐
+              │  AbstractProjector          │  (abstract — template method)
+              │  @TransactionalEventListener│
+              │  @Async                     │
+              │  onDomainEvent() [final]    │
+              └──────────────┬──────────────┘
+                             │ extends
               ┌──────────────┴──────────────┐
-              │  XxxImpl                    │  (@Service — domain logic)
-              │  overrides hooks,           │
-              │  performDomainValidation,   │
-              │  domain-specific methods    │
+              │  DashboardProjector         │  (@Component — projection)
+              │  supportedAggregateTypes()  │
+              │  rebuildProjection()        │
+              └─────────────────────────────┘
+```
+
+### Event Infrastructure
+
+```
+              ┌─────────────────────────────┐
+              │  DomainEvent<V>             │  (record — immutable envelope)
+              │  eventType, aggregateType,  │
+              │  aggregateId, payload       │
+              └─────────────────────────────┘
+                             │ published by
+              ┌──────────────┴──────────────┐
+              │  DomainEventPublisher       │  (@Component)
+              │  delegates to Spring's      │
+              │  ApplicationEventPublisher  │
               └─────────────────────────────┘
 ```
 
@@ -239,10 +290,14 @@ React Page / Hook
 | Component | Location | Purpose |
 |-----------|----------|---------|
 | `BusinessLogic<V>` | `framework/.../bl/` | Interface defining `add`, `update`, `delete` |
-| `AbstractBusinessLogic<V,R>` | `framework/.../bl/` | Lifecycle engine: hooks → validate → save, exception handling, runtime registry |
+| `AbstractBusinessLogic<V,R>` | `framework/.../bl/` | Write-side lifecycle engine: hooks → validate → save → publish events |
+| `AbstractProjector` | `framework/.../projection/` | Read-side projection engine: event listener → filter → rebuild snapshot |
+| `DomainEvent<V>` | `framework/.../event/` | Immutable record: `eventType`, `aggregateType`, `aggregateId`, `payload`, `occurredAt` |
+| `DomainEventPublisher` | `framework/.../event/` | Delegates to Spring's `ApplicationEventPublisher` for in-process event delivery |
 | `DomainValidator<V>` | `framework/.../bl/` | Validator contract: pure message accumulators, no exception throwing |
 | `ValueObject` | `framework/.../vo/` | JPA `@MappedSuperclass` with audit fields and transient error/warning message maps |
 | `@DomainLogicFor` | `framework/.../annotation/` | Annotation binding a BL to its VO class |
+| `@RepositoryOwnerFor` | `framework/.../annotation/` | Annotation binding a BL to its Repository interface |
 | `DomainLogicProcessor` | `framework/.../processor/` | Annotation processor — compile-time 1:1 enforcement |
 | `GlobalExceptionHandler` | `framework/.../exception/` | Maps `ValidationException` → 400, `DuplicateRecordException` → 409 |
 
@@ -256,7 +311,7 @@ Every Value Object must have **exactly one** Business Logic implementation. This
 |----------------|------------------|----------------------------------------------------|
 | **Compile-Time** | `javac`          | `DomainLogicProcessor` (annotation processor)        |
 | **Startup**      | `afterPropertiesSet()` | Runtime registry in `AbstractBusinessLogic`   |
-| **Test-Time**    | `mvn test`       | `DomainLogicOneToOneArchUnitSpec` (ArchUnit)         |
+| **Test-Time**    | `mvn test`       | `DomainLogicOwnershipRulesSpec` (ArchUnit)         |
 
 ### 1. Compile-Time — Annotation Processing (`DomainLogicProcessor`)
 During compilation, the processor scans all `@DomainLogicFor` annotations and fails the build if two classes claim the same VO:
@@ -278,29 +333,86 @@ public abstract sealed class MemberAbstractBL
 }
 
 @Service
-public non-sealed class MemberImpl extends MemberAbstractBL implements Member {
+public final class MemberImpl extends MemberAbstractBL implements Member {
     // domain logic here
 }
 ```
 
-### 3. Startup — Runtime Registry (`AbstractBusinessLogic.afterPropertiesSet()`)
-On Spring startup, each BL instance registers its VO class in a `ConcurrentHashMap`. Duplicates throw `IllegalStateException`, preventing the application from starting.
+### 3. Startup — Runtime Enforcement (`AbstractBusinessLogic.afterPropertiesSet()`)
 
-### 4. Test-Time — ArchUnit Spec (`DomainLogicOneToOneArchUnitSpec`)
-An ArchUnit spec runs during `mvn test` to validate:
-- All `AbstractBusinessLogic` subclasses reside in their domain `service` package
-- Each VO has exactly one `@DomainLogicFor` mapping
+On Spring startup, each BL instance is validated against two critical invariants:
+
+| Rule | What It Catches | Error |
+|------|----------------|-------|
+| **VO → BL Uniqueness** | Two BL beans claiming the same VO type | `IllegalStateException` — duplicate detected |
+| **Annotation ↔ Generic Cross-Validation** | `@DomainLogicFor(FooVO)` but generic `<V>` is `BarVO` (copy-paste error) | `IllegalStateException` — mismatch detected |
+
+### 4. Test-Time — Architecture Rules Enforcement (ArchUnit)
+
+Two ArchUnit specs run during `mvn test` to enforce architectural invariants at the structural level:
+
+**`DomainLogicOwnershipRulesSpec`** (6 rules):
+
+| Rule | What It Enforces |
+|------|-----------------|
+| Package Location | All ABL subclasses reside in `..domain..service..` |
+| Annotation Coverage | Every abstract ABL subclass has `@DomainLogicFor` |
+| 1-to-1 Uniqueness | Each VO is claimed by exactly one `@DomainLogicFor` |
+| Sealed Hierarchy | All `*AbstractBL` classes are declared `sealed` |
+| Naming Convention | ABL subclasses end with `*AbstractBL` or `*Impl` |
+| Final Impl | All `*Impl` classes are declared `final`, closing the hierarchy |
+
+**`RepositoryOwnershipRulesSpec`** (4 rules):
+
+| Rule | What It Enforces |
+|------|-----------------|
+| `@RepositoryOwnerFor` Enforcement | Annotated classes only access their declared repository |
+| Inbound Access Guard | A repository may only be accessed by its designated owner |
+| Outbound Access Guard | `*Impl`/`*AbstractBL` classes may only access their own repository |
+| Naming Convention | All `JpaRepository` subinterfaces end with `*Repository` |
 
 ### Current Domain Mappings
 
-| Value Object | Sealed Abstract BL | Implementation |
+| Value Object | Sealed Abstract BL | Implementation | Repository Owner | Publishes Events |
+|---|---|---|---|---|
+| `MemberVO` | `MemberAbstractBL` | `MemberImpl` | `MemberRepository` | ✅ |
+| `PaymentVO` | `PaymentAbstractBL` | `PaymentImpl` | `PaymentRepository` | ✅ |
+| `ExpenseVO` | `ExpenseAbstractBL` | `ExpenseImpl` | `ExpenseRepository` | ✅ |
+| `UserVO` | `UserAbstractBL` | `UserImpl` | `UserRepository` | ❌ |
+| `SystemSettingsVO` | `SystemSettingAbstractBL` | `SystemSettingImpl` | `SystemSettingRepository` | ❌ |
+| `ReferenceVO` | `ReferenceAbstractBL` | `ReferenceImpl` | `ReferenceRepository` | ❌ |
+
+#### Infrastructure Service Mappings (non-ABL, `@RepositoryOwnerFor` enforced)
+
+| Value Object | Implementation | Repository Owner |
 |---|---|---|
-| `MemberVO` | `MemberAbstractBL` | `MemberImpl` |
-| `PaymentVO` | `PaymentAbstractBL` | `PaymentImpl` |
-| `ExpenseVO` | `ExpenseAbstractBL` | `ExpenseImpl` |
-| `UserVO` | `UserAbstractBL` | `UserImpl` |
-| `SystemSettingsVO` | `SystemSettingAbstractBL` | `SystemSettingImpl` |
-| `ReferenceVO` | `ReferenceAbstractBL` | `ReferenceImpl` |
+| `DashboardSnapshotVO` | `DashboardSnapshotImpl` | `DashboardSnapshotRepository` |
+| `OutboxEventVO` | `OutboxEventImpl` | `OutboxEventRepository` |
+
+### Interface-Based Dependency Injection
+
+All `*Impl` classes are declared `final` and all consumers inject via the **service interface** — never the concrete class:
+
+```java
+// ✅ Correct — inject by interface
+@Autowired private Member member;
+@Autowired private Payment payment;
+
+// ❌ Will fail at startup — BeanNotOfRequiredTypeException
+@Autowired private MemberImpl member;
+@Autowired private PaymentImpl payment;
+```
+
+This is enforced by `spring.aop.proxy-target-class: false`, which uses JDK interface-based proxies instead of CGLIB subclass proxies. JDK proxies implement the service interface and delegate to the `final` bean — no subclassing required.
+
+| Service Interface | Final Implementation |
+|---|---|
+| `Member` | `MemberImpl` |
+| `Payment` | `PaymentImpl` |
+| `Expense` | `ExpenseImpl` |
+| `User` | `UserImpl` |
+| `SystemSetting` | `SystemSettingImpl` |
+| `Reference` | `ReferenceImpl` |
 
 ---
 
@@ -320,6 +432,10 @@ graph TD
     F -->|Yes| D
     F -->|No| G["repo.save(vo)"]
     G --> H["afterExecuteAdd(vo)"]
+    H --> P{"publishesDomainEvents()?"}
+    P -->|Yes| Q["domainEventPublisher.publish(CREATED, vo, id)"]
+    P -->|No| R["return vo"]
+    Q --> R
     G -.->|DataIntegrityViolationException| I["throw DuplicateRecordException<br/>(→ HTTP 409)"]
     G -.->|DataAccessException| J["Log error, add message to VO"]
     D --> K["GlobalExceptionHandler<br/>→ HTTP 400 BAD_REQUEST"]
@@ -337,6 +453,10 @@ graph TD
     F -->|Yes| D
     F -->|No| G["repo.save(vo)"]
     G --> H["afterExecuteUpdate(vo)"]
+    H --> P{"publishesDomainEvents()?"}
+    P -->|Yes| Q["domainEventPublisher.publish(UPDATED, vo, id)"]
+    P -->|No| R["return vo"]
+    Q --> R
     G -.->|OptimisticLockingFailure| I["Log stale record warning"]
     G -.->|DataIntegrityViolation| J["throw DuplicateRecordException<br/>(→ HTTP 409)"]
     G -.->|DataAccessException| K["Log error, add message to VO"]
@@ -352,10 +472,116 @@ graph TD
 | `performDomainValidation(vo, isUpdate)` | After hooks, before save | Delegate to `DomainValidator` | No-op |
 | `afterExecuteAdd(vo)` | After successful save | Post-processing, audit | No-op |
 | `afterExecuteUpdate(vo)` | After successful save | Post-processing, audit | No-op |
+| `publishesDomainEvents()` | Checked after successful save | Opt-in to event-driven flows | `false` |
 
 ---
 
-## 6. Domain Validation Strategy
+## 6. CQRS Architecture
+
+The platform implements **Command Query Responsibility Segregation (CQRS)** by separating write-side operations from read-side projections:
+
+```mermaid
+graph LR
+    subgraph "Write-Side (Command)"
+        C["Controller"] --> BL["Business Logic<br/>(FooImpl)"]
+        BL --> ABL["AbstractBusinessLogic"]
+        ABL --> R["JpaRepository"]
+        ABL --> DEP["DomainEventPublisher"]
+    end
+
+    subgraph "Read-Side (Query)"
+        DEP -.->|"DomainEvent<br/>(async, after commit)"| AP["AbstractProjector"]
+        AP --> PROJ["DashboardProjector"]
+        PROJ --> SS["DashboardSnapshot"]
+        SS --> SR["DashboardSnapshotRepository"]
+    end
+
+    subgraph "Dashboard API"
+        DSI["DashboardServiceImpl"] --> SS
+        DSI --> PROJ
+    end
+```
+
+### Write-Side (`AbstractBusinessLogic`)
+
+- Governs all `add()`, `update()`, and `delete()` operations
+- Enforces validation lifecycle, exception handling, and singleton registry
+- Publishes `DomainEvent` records after successful persistence (opt-in via `publishesDomainEvents()`)
+
+### Read-Side (`AbstractProjector`)
+
+- Receives `DomainEvent` instances via `@TransactionalEventListener(phase = AFTER_COMMIT)`
+- Executes `@Async` — never blocks the write-side thread
+- Template method pattern: `onDomainEvent()` is `final`; subclasses implement `rebuildProjection()`
+- Filters events by `supportedAggregateTypes()` — only relevant events trigger a rebuild
+
+### Dashboard Projection Example
+
+`DashboardProjector` is the first concrete implementation of `AbstractProjector`. It:
+1. Listens for `PaymentVO`, `ExpenseVO`, and `MemberVO` events
+2. Queries all relevant domain services to compute metrics
+3. Serializes quarterly collections to JSON
+4. Persists the result as a single-row `DashboardSnapshotVO` in `dashboard_metrics_snapshot`
+5. Uses `@Transactional(propagation = REQUIRES_NEW)` to guarantee snapshot visibility
+
+---
+
+## 7. Event-Driven Architecture
+
+### Phase 1: In-Process Spring Events (Active)
+
+Domain events flow through Spring's `ApplicationEventPublisher` within the same JVM:
+
+```mermaid
+sequenceDiagram
+    participant ABL as AbstractBusinessLogic
+    participant DEP as DomainEventPublisher
+    participant SE as Spring EventBus
+    participant DP as DashboardProjector
+    participant DS as DashboardSnapshot
+
+    ABL->>ABL: repo.save(vo) ✓
+    ABL->>DEP: publish("CREATED", vo, id)
+    DEP->>SE: publishEvent(DomainEvent)
+    Note over SE: Transaction commits
+    SE-->>DP: onDomainEvent(event) [async, after commit]
+    DP->>DP: supportedAggregateTypes().contains()?
+    DP->>DP: rebuildProjection()
+    DP->>DS: saveSnapshot(snapshotVO)
+```
+
+### Phase 2: Transactional Outbox (Infrastructure Ready)
+
+A complete Transactional Outbox infrastructure is implemented and **dormant by default**. It activates when `carizmi.outbox.relay.enabled=true`:
+
+```mermaid
+graph LR
+    subgraph "Same Transaction"
+        ABL["AbstractBusinessLogic<br/>repo.save(vo)"] --> DEP["DomainEventPublisher"]
+        DEP --> OEL["OutboxEventListener<br/>(BEFORE_COMMIT)"]
+        OEL --> OT["outbox_event table"]
+    end
+
+    subgraph "Separate Scheduler (10s polling)"
+        ORS["OutboxRelayScheduler"] --> OT
+        ORS --> B["External Broker<br/>(e.g., Pub/Sub)"]
+    end
+
+    style OEL fill:#f9f,stroke:#333
+    style ORS fill:#f9f,stroke:#333
+```
+
+| Component | Activation | Role |
+|-----------|-----------|------|
+| `OutboxEventListener` | `carizmi.outbox.relay.enabled=true` | Persists `DomainEvent` to `outbox_event` table atomically within the domain transaction |
+| `OutboxRelayScheduler` | `carizmi.outbox.relay.enabled=true` | Polls for unprocessed events every 10s, relays to external broker, marks as processed |
+| `OutboxEventVO` | Always available | JPA entity mapping the `outbox_event` table |
+| Circuit Breaker | Resilience4j `@CircuitBreaker` | If broker is unavailable, events stay safely in the outbox table until recovery |
+
+> [!NOTE]
+> The in-process event flow (Phase 1) works independently of the outbox. Phase 2 adds **at-least-once delivery** to external consumers without modifying any existing code.
+
+## 8. Domain Validation Strategy
 
 Validation is split into two layers to handle domain-specific concerns:
 
@@ -429,7 +655,7 @@ graph TD
 
 ---
 
-## 7. Error Propagation Flow
+## 9. Error Propagation Flow
 
 The `ValueObject` acts as an error accumulator with two message channels:
 
@@ -449,7 +675,7 @@ When `vo.hasErrors()` is `true` after validation, `AbstractBusinessLogic` throws
 
 ---
 
-## 8. How to Create a New Domain Module
+## 10. How to Create a New Domain Module
 
 Follow these steps to add a new domain entity (e.g., `Invoice`). All files go under `io.carizmi.domain.<domain>/` (e.g., `domain/finance/`):
 
@@ -475,14 +701,43 @@ public interface InvoiceRepository extends JpaRepository<InvoiceVO, Integer> { }
 **Location**: `domain/<domain>/service/InvoiceAbstractBL.java`
 ```java
 @DomainLogicFor(InvoiceVO.class)
+@RepositoryOwnerFor(InvoiceRepository.class)
 public abstract sealed class InvoiceAbstractBL
-    extends AbstractBusinessLogic<InvoiceVO, InvoiceRepository>
-    permits InvoiceImpl {
+    extends AbstractBusinessLogic<InvoiceVO, InvoiceRepository> permits InvoiceImpl {
+
     protected InvoiceAbstractBL(InvoiceRepository repo) { super(repo); }
+
+    @Override
+    protected Integer getId(InvoiceVO vo) {
+        return vo.getInvoiceID();
+    }
+
+    // Optional: override to opt-in to domain event publishing.
+    // When enabled, CREATED/UPDATED/DELETED events are published after
+    // every successful write operation — triggering projectors and the
+    // outbox relay (if active). Default is false (no events published).
+    @Override
+    protected boolean publishesDomainEvents() {
+        return true;
+    }
 }
 ```
 
-### Step 4: Create the Validator
+### Step 4: Create the Service Interface
+**Location**: `domain/<domain>/service/Invoice.java`
+```java
+public interface Invoice {
+    InvoiceVO add(InvoiceVO vo);
+    InvoiceVO update(InvoiceVO vo);
+    void delete(InvoiceVO vo);
+    // Domain-specific query methods
+}
+```
+
+> [!IMPORTANT]
+> This interface is what all consumers inject. Never inject the `*Impl` class directly.
+
+### Step 5: Create the Validator
 **Location**: `domain/<domain>/validation/InvoiceValidator.java`
 ```java
 @Component
@@ -494,11 +749,11 @@ public class InvoiceValidator implements DomainValidator<InvoiceVO> {
 }
 ```
 
-### Step 5: Create the Implementation
+### Step 6: Create the Implementation
 **Location**: `domain/<domain>/service/InvoiceImpl.java`
 ```java
 @Service
-public non-sealed class InvoiceImpl extends InvoiceAbstractBL implements Invoice {
+public final class InvoiceImpl extends InvoiceAbstractBL implements Invoice {
     private final InvoiceValidator validator;
 
     @Override
@@ -511,11 +766,19 @@ public non-sealed class InvoiceImpl extends InvoiceAbstractBL implements Invoice
 }
 ```
 
-### Step 6: Create DTOs and Transformer
+### Step 7: Create DTOs and Transformer
 **Location**: `domain/<domain>/data/dto/InvoiceDto.java`, `domain/<domain>/data/transformer/InvoiceDtoTransformer.java`
 
-### Step 7: Create the Controller
+### Step 8: Create the Controller
 **Location**: `domain/<domain>/controller/InvoiceController.java`
 
-### Step 8: Verify
-Run `mvn test` — the ArchUnit spec will automatically verify 1:1 mapping compliance.
+```java
+@RestController
+@RequiredArgsConstructor
+public class InvoiceController {
+    private final Invoice invoice;  // ← inject by interface, never InvoiceImpl
+}
+```
+
+### Step 9: Verify
+Run `mvn test` — the ArchUnit specs will automatically verify 1:1 mapping, repository ownership, sealed hierarchy, final impl, and naming convention compliance.

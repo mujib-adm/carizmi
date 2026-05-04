@@ -1,119 +1,160 @@
 package io.carizmi.domain.platform.service
 
-import io.carizmi.domain.platform.service.impl.DashboardServiceImpl
-
-import org.mockito.MockedStatic
-import org.mockito.Mockito
-import io.carizmi.shared.constants.QuarterStatus
-import io.carizmi.shared.constants.ReferenceConstants
+import com.fasterxml.jackson.core.type.TypeReference
+import com.fasterxml.jackson.databind.ObjectMapper
 import io.carizmi.domain.platform.data.dto.response.DashboardMetricsDto
-import io.carizmi.domain.membership.model.MemberVO
-import io.carizmi.domain.finance.service.Expense
-import io.carizmi.domain.membership.service.Member
-import io.carizmi.domain.finance.service.Payment
-import io.carizmi.domain.platform.service.SystemSetting
-import io.carizmi.shared.data.dto.PaymentSummary
-import io.carizmi.domain.platform.service.BaselineService
+import io.carizmi.domain.platform.data.dto.response.QuarterlyCollectionDto
+import io.carizmi.domain.platform.model.DashboardSnapshotVO
+import io.carizmi.domain.platform.service.impl.DashboardServiceImpl
+import io.carizmi.shared.constants.QuarterStatus
 import io.carizmi.testbase.BaseSpecification
-import org.springframework.data.jpa.domain.Specification as JpaSpecification
 import spock.lang.Subject
 
-import java.time.LocalDate
+import java.time.LocalDateTime
 
 class DashboardServiceSpec extends BaseSpecification {
 
-    Member member = Mock()
-    Payment payment = Mock()
-    Expense expense = Mock()
-    BaselineService baselineService = Mock()
-    SystemSetting systemSetting = Mock()
+    DashboardSnapshot dashboardSnapshot = Mock()
+    DashboardProjector dashboardProjector = Mock()
+    ObjectMapper objectMapper = Mock()
 
     @Subject
-    DashboardServiceImpl dashboardService = new DashboardServiceImpl(member, payment, expense, baselineService, systemSetting)
+    DashboardServiceImpl dashboardService = new DashboardServiceImpl(dashboardSnapshot, dashboardProjector, objectMapper)
 
-    def setup() {
-        systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
-    }
+    def "test - getMetrics: Should return pre-computed metrics from snapshot"() {
+        given: "A pre-computed dashboard snapshot"
+        List<QuarterlyCollectionDto> collections = [
+                QuarterlyCollectionDto.builder()
+                        .quarterLabel("Q1")
+                        .collectedAmount(new BigDecimal("180.00"))
+                        .percentage(1.0)
+                        .status(QuarterStatus.PAST)
+                        .build(),
+                QuarterlyCollectionDto.builder()
+                        .quarterLabel("Q2 (Current)")
+                        .collectedAmount(new BigDecimal("60.00"))
+                        .percentage(0.3333)
+                        .status(QuarterStatus.CURRENT)
+                        .build(),
+                QuarterlyCollectionDto.builder()
+                        .quarterLabel("Q3")
+                        .collectedAmount(BigDecimal.ZERO)
+                        .percentage(0)
+                        .status(QuarterStatus.FUTURE)
+                        .build()
+        ]
 
-    def "test - getMetrics: Should handle various time contexts and data states"() {
-        given: "A mocked date in Q2 and specific data states"
-        int year = LocalDate.now().year
-        LocalDate fixedDate = LocalDate.of(year, 5, 15) // Q2
-        MockedStatic<LocalDate> localDateMock = Mockito.mockStatic(LocalDate, Mockito.CALLS_REAL_METHODS)
-        localDateMock.when(LocalDate::now).thenReturn(fixedDate)
-
-        long activeMemberCount = 3
-        BigDecimal yearlyBaseline = new BigDecimal("5000.00")
-        BigDecimal paidAmount = new BigDecimal("30.00")
-
-        MemberVO m1 = new MemberVO(memberID: 1, joinDate: LocalDate.of(year - 1, 1, 1))
-        MemberVO m2 = new MemberVO(memberID: 2, joinDate: LocalDate.of(year, 1, 1))
-        MemberVO m3 = new MemberVO(memberID: 3, joinDate: LocalDate.of(year + 1, 1, 1))
-        MemberVO m4 = new MemberVO(memberID: 4, joinDate: null)
-
-        PaymentSummary ps1 = Mock(PaymentSummary)
+        DashboardSnapshotVO snapshot = new DashboardSnapshotVO(
+                id: 1,
+                totalActiveMembers: 3L,
+                totalRevenue: new BigDecimal("5000.00"),
+                duesThisQuarter: new BigDecimal("120.00"),
+                overdueTotal: new BigDecimal("30.00"),
+                quarterlyFeeAmt: new BigDecimal("60.00"),
+                quarterlyCollections: '[]',
+                lastProjectedAt: LocalDateTime.now()
+        )
 
         when: "The target method executed"
         DashboardMetricsDto result = dashboardService.getMetrics()
 
         then: "The expected calls are made"
-        1 * member.countActiveMembers() >> activeMemberCount
-        1 * baselineService.getBaselineForYear(year) >> yearlyBaseline
-        1 * payment.sumAmountByDateReceivedBetween(_ as LocalDate, fixedDate) >> null
-        1 * expense.sumAmountByDateOfExpenseBetween(_ as LocalDate, fixedDate) >> null
-        // Q2 logic: 1 call from main method, 1 from compute(Q1), 1 from compute(Q2) = 3 total
-        3 * payment.sumAmountByYearAndQuarter(year, _ as Integer) >> null
-        1 * payment.findPaymentSummaries(ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> [ps1]
-        1 * member.findAllActiveMembers() >> [m1, m2, m3, m4]
-        // Implicit calls from summary logic - use wildcards effectively but strictly
-        _ * ps1.getMemberID() >> 1
-        _ * ps1.getQuarter() >> 1
-        _ * ps1.getTotalPaid() >> paidAmount
-        1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
+        1 * dashboardSnapshot.getSnapshot() >> Optional.of(snapshot)
+        1 * objectMapper.readValue('[]', _ as TypeReference) >> collections
         0 * _
 
         and: "The expected result"
         result != null
-        result.totalRevenue == yearlyBaseline
-        result.overdueTotal >= paidAmount
+        result.totalMembers == 3L
+        result.totalRevenue == new BigDecimal("5000.00")
+        result.duesThisQuarter == new BigDecimal("120.00")
+        result.overdueTotal == new BigDecimal("30.00")
+        result.quarterlyCollections.size() == 3
         result.quarterlyCollections[0].status == QuarterStatus.PAST
         result.quarterlyCollections[1].status == QuarterStatus.CURRENT
         result.quarterlyCollections[2].status == QuarterStatus.FUTURE
         noExceptionThrown()
-
-        cleanup:
-        localDateMock.close()
     }
 
-    def "test - getMetrics: Handling zero members and negative dues"() {
-        given: "No active members and high relative collections"
-        int year = LocalDate.now().year
-        LocalDate fixedDate = LocalDate.of(year, 2, 1) // Q1
-        MockedStatic<LocalDate> localDateMock = Mockito.mockStatic(LocalDate, Mockito.CALLS_REAL_METHODS)
-        localDateMock.when(LocalDate::now).thenReturn(fixedDate)
-        BigDecimal collectionAmount = new BigDecimal("100.00")
+    def "test - getMetrics: Handling zero members"() {
+        given: "A snapshot with zero members"
+        DashboardSnapshotVO snapshot = new DashboardSnapshotVO(
+                id: 1,
+                totalActiveMembers: 0L,
+                totalRevenue: BigDecimal.ZERO,
+                duesThisQuarter: BigDecimal.ZERO,
+                overdueTotal: BigDecimal.ZERO,
+                quarterlyFeeAmt: new BigDecimal("60.00"),
+                quarterlyCollections: '[]',
+                lastProjectedAt: LocalDateTime.now()
+        )
+
+        List<QuarterlyCollectionDto> collections = [
+                QuarterlyCollectionDto.builder()
+                        .quarterLabel("Q1 (Current)")
+                        .collectedAmount(BigDecimal.ZERO)
+                        .percentage(0)
+                        .status(QuarterStatus.CURRENT)
+                        .build()
+        ]
 
         when: "The target method executed"
         DashboardMetricsDto result = dashboardService.getMetrics()
 
         then: "The expected calls are made"
-        1 * member.countActiveMembers() >> 0
-        1 * baselineService.getBaselineForYear(year) >> BigDecimal.ZERO
-        1 * payment.sumAmountByDateReceivedBetween(_, _) >> BigDecimal.ZERO
-        1 * expense.sumAmountByDateOfExpenseBetween(_, _) >> BigDecimal.ZERO
-        // Q1 logic: 1 call from main, 1 from compute(Q1) = 2 total
-        2 * payment.sumAmountByYearAndQuarter(year, _) >> collectionAmount
-        1 * payment.findPaymentSummaries(_, _) >> []
-        1 * member.findAllActiveMembers() >> []
-        1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
+        1 * dashboardSnapshot.getSnapshot() >> Optional.of(snapshot)
+        1 * objectMapper.readValue('[]', _ as TypeReference) >> collections
         0 * _
 
         and: "The expected result"
         result.duesThisQuarter == BigDecimal.ZERO
+        result.totalMembers == 0L
         result.quarterlyCollections[0].percentage == 0.0
         noExceptionThrown()
+    }
 
-        cleanup:
-        localDateMock.close()
+    def "test - getMetrics: Should trigger initial projection when snapshot not found"() {
+        given: "No snapshot exists initially"
+        DashboardSnapshotVO snapshot = new DashboardSnapshotVO(
+                id: 1,
+                totalActiveMembers: 0L,
+                totalRevenue: BigDecimal.ZERO,
+                duesThisQuarter: BigDecimal.ZERO,
+                overdueTotal: BigDecimal.ZERO,
+                quarterlyFeeAmt: new BigDecimal("60.00"),
+                quarterlyCollections: null,
+                lastProjectedAt: LocalDateTime.now()
+        )
+
+        when: "The target method executed"
+        DashboardMetricsDto result = dashboardService.getMetrics()
+
+        then: "Initial projection is triggered"
+        1 * dashboardSnapshot.getSnapshot() >> Optional.empty()
+        1 * dashboardProjector.rebuildProjection()
+        1 * dashboardSnapshot.getSnapshot() >> Optional.of(snapshot)
+        0 * _
+
+        and: "The expected result"
+        result != null
+        result.totalMembers == 0L
+        result.quarterlyCollections.isEmpty()
+        noExceptionThrown()
+    }
+
+    def "test - getMetrics: Should return empty metrics when snapshot cannot be built"() {
+        when: "The target method executed"
+        DashboardMetricsDto result = dashboardService.getMetrics()
+
+        then: "Projection is triggered but returns nothing"
+        1 * dashboardSnapshot.getSnapshot() >> Optional.empty()
+        1 * dashboardProjector.rebuildProjection()
+        1 * dashboardSnapshot.getSnapshot() >> Optional.empty()
+        0 * _
+
+        and: "The expected result"
+        result != null
+        result.quarterlyCollections.isEmpty()
+        noExceptionThrown()
     }
 }
