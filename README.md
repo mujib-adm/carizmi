@@ -86,32 +86,76 @@ cd frontend && npm install && npm run dev
 - **Full Stack Backend API (Docker):** http://localhost:8080/api
 - **Standalone Frontend (npm run dev):** http://localhost:5173/
 
+### Local Environment Setup
+
+The repository includes a [`.env.example`](.env.example) template with all required configuration variables. Copy it to create your local `.env` file before running the platform:
+
+```bash
+# 1. Create your local environment file from the template
+cp .env.example .env
+
+# 2. Generate a secure JWT signing key and update .env
+openssl rand -base64 64
+# Copy the output and paste it as the JWT_SECRET value in .env
+
+# 3. (Optional) Customize the remaining values as needed
+```
+
+> **⚠️ Important:** The `.env` file contains sensitive credentials and is excluded from version control via `.gitignore`. Never commit it to the repository. All secret values (database passwords, JWT keys) should be replaced with strong, unique values for any non-local environment.
+
 ### Environment Variables
 
-For local development via Docker Compose or production deployment, the following environment variables configure the platform. **Do not** commit actual secrets to version control.
+The following environment variables configure the platform for local development via Docker Compose and production deployment.
 
-#### 1. Database Configuration
-| Variable | Description | Example |
+#### 1. Application & Runtime
+| Variable | Description | Default |
 |----------|-------------|---------|
-| `DB_NAME` | Name of the MySQL database schema | `carizmi` |
+| `APP_PORT` | HTTP port the backend server listens on | `8080` |
+| `SPRING_PROFILES_ACTIVE` | Active Spring profile (`dev` or `prod`) | `dev` |
+| `JAVA_OPTS` | JVM memory and tuning flags | `-Xms256m -Xmx512m` |
+
+#### 2. Database
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `DB_NAME` | MySQL database schema name | `carizmi` |
 | `DB_USER` | MySQL application username | `carizmi` |
 | `DB_PASS` | MySQL application password | `carizmi_pwd` |
 | `DB_ROOT_PASS` | MySQL root administrator password | `root_pwd_change_me` |
 | `DB_URL` | Full JDBC connection string | `jdbc:mysql://db:3306/${DB_NAME}?useSSL=false...` |
 
-#### 2. Default Admin User (Auto-Provisioning)
-| Variable | Description | Example |
+#### 3. Redis (Session & Cache Store)
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `REDIS_HOST` | Redis server hostname | `redis` |
+| `REDIS_PORT` | Redis server port | `6379` |
+
+#### 4. Default Admin User (Auto-Provisioned on First Startup)
+| Variable | Description | Default |
 |----------|-------------|---------|
 | `ADMIN_DEFAULT_FIRSTNAME` | First name of the initial admin user | `System` |
 | `ADMIN_DEFAULT_LASTNAME` | Last name of the initial admin user | `Administrator` |
 | `ADMIN_DEFAULT_EMAIL` | Email address of the initial admin user | `admin@mail.com` |
 | `ADMIN_DEFAULT_USERNAME`| Login username for the initial admin | `admin` |
 
-#### 3. Security & Frontend
-| Variable | Description | Example |
+#### 5. Security
+| Variable | Description | Default |
 |----------|-------------|---------|
-| `JWT_SECRET` | Secret key for HS512 JWT signing (min 64 bytes) | `openssl rand -base64 64` |
+| `JWT_SECRET` | Secret key for HS512 JWT signing (min 64 bytes) | *(must be generated)* |
+
+#### 6. Frontend & CORS
+| Variable | Description | Default |
+|----------|-------------|---------|
 | `VITE_API_URL` | Base URL for the frontend API client | `http://localhost:8080/api` |
+| `APP_CORS_ALLOWED_ORIGINS` | Comma-separated list of allowed CORS origins | `http://localhost:8081,http://localhost:5173` |
+
+#### 7. Branding (Injected into Frontend at Container Startup)
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `APP_ORG_NAME` | Organization name used throughout the UI | `Your Organization Name` |
+| `APP_HEADER_TITLE` | Main header title displayed in the portal | `YOUR ORG` |
+| `APP_HEADER_SUBTITLE` | Header subtitle beneath the title | `COMMUNITY PORTAL` |
+| `APP_LOGO_ALT` | Alt text for the organization logo | `Organization Logo` |
+| `APP_COPYRIGHT` | Footer copyright notice | `© 2026 Your Organization Name.` |
 
 ## License
 

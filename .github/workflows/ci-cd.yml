@@ -21,6 +21,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+# Default: no permissions. Each job declares only what it needs.
+permissions: {}
+
 env:
   JAVA_VERSION: '21'
   NODE_VERSION: '24'
