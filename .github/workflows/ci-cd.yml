@@ -186,7 +186,7 @@ jobs:
         run: mvn -B install -pl framework -DskipTests -q
 
       - name: OWASP Dependency-Check (Backend)
-        uses: dependency-check/Dependency-Check_Action@v5
+        uses: dependency-check/Dependency-Check_Action@main
         env:
           JAVA_HOME: /opt/jdk
         with:
