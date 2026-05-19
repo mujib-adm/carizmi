@@ -1,46 +1,108 @@
-# Carizmi Community Platform
+# Carizmi
 
-An open-source, full-stack community management platform built to deliver comprehensive solutions for **nonprofit organizations** and **task automation** for small to mid-size businesses.
+Production-grade open-source community management platform built with Java 21, Spring Boot 3, CQRS architecture, event-driven workflows, and cloud-native infrastructure.
 
-## Overview
+Carizmi was created to provide nonprofit organizations with free access to enterprise-grade operational tooling while serving as a long-term open-source initiative focused on scalable backend engineering, distributed systems architecture, and maintainable platform design.
 
-Carizmi Community Platform is designed to be a modular, extensible foundation that organizations can adopt and customize to manage their community operations, from membership records and financial tracking to automated workflows and reporting.
+The platform emphasizes:
 
-### Our Mission
-This open-source initiative was born from a desire to support **non-profit organizations dedicated to community service**. Many of these organizations operate on tight budgets and lack the resources to afford complex, customized software development. Carizmi provides them with a premium, enterprise-grade platform completely free of charge.
+- Event-Driven Architecture (EDA)
+- CQRS + Transactional Outbox patterns
+- Cloud-native deployment workflows
+- Observability and operational resilience
+- Architectural enforcement and maintainability
+- Real-world production reliability
 
-While the currently implemented domains (Membership, Finance) are intentionally limited in scope, the primary focus of this initial release was to engineer a **rock-solid architectural foundation**. By establishing strict CQRS patterns, event-driven workflows, and scalable security, the platform is perfectly positioned for future expansion. The actual scope of the application will continue to evolve alongside our growing community of open-source contributors.
-
-### Proven in Production
-We believe that real-world deployment is the ultimate test of software quality. Carizmi is currently running in production, provided 100% free of charge to our first beneficiary: a Minnesota-based community organization.
-
+**Current status:** Carizmi is actively deployed in production and currently supports real-world organizational administration, membership management workflows, and financial operations for a Minnesota-based nonprofit community organization, provided completely free of charge.
 - **Beneficiary:** Sofumar Community of Minnesota
-- **Live Portal:** [portal.sofumarcommunityofmn.org](https://portal.sofumarcommunityofmn.org/)
+- **Live In Prod:** [portal.sofumarcommunityofmn.org](https://portal.sofumarcommunityofmn.org/)
+</br>*(Are you a non-profit using Carizmi? We would love to feature you here!)*
 
-*(Are you a non-profit using Carizmi? We would love to feature you here!)*
+### Why Carizmi Exists
+This open-source initiative was born from a desire to support **non-profit organizations dedicated to community service**. Many nonprofit and community-driven organizations operate on tight budgets with limited technical resources and cannot afford expensive enterprise software platforms or dedicated software engineering teams. Carizmi was created to help bridge that gap.
 
-## Documentation
+While the currently implemented domains are intentionally limited in scope, the primary focus of this initial release was to engineer a **rock-solid architectural foundation**. By establishing strict CQRS patterns, event-driven processes, and scalable design, the platform is perfectly positioned for future expansion. The actual scope of the application will continue to evolve alongside our growing community of open-source contributors. The project intentionally prioritizes architectural quality, long-term extensibility, reliability, and operational resilience over rapid feature expansion.
 
-The repository contains comprehensive documentation covering the platform's architecture, scaling strategies, and operational guidelines.
+The project’s long-term mission is to provide distributed, event-driven, scalable, maintainable, and modern operational tooling with a modular and extensible foundation that organizations can adopt and customize to manage and automat their community operations and workflows, while simultaneously building an open-source engineering ecosystem focused on sustainable architecture and long-term maintainability.
+
+## Architecture Overview
+
+Carizmi is built on an event-driven, CQRS-based architecture designed for reliability, auditability, and seamless scalability. The high-level diagram below illustrates how a single request flows through the system — from client entry and authentication, through command processing and domain event publication, to asynchronous read-side projection and external event relay.
+
+<p align="center">
+  <img src="docs/images/high_level_system_architecture.svg" alt="Carizmi Distributed System Architecture Overview" />
+</p>
+
+> **Frontend & Entry** · **Write Side** · **Data & Events** · **Read & Outbox** · **Observability** — each boundary is independently scalable while maintaining strong transactional guarantees through the Outbox pattern.
+
+## Engineering Highlights
+
+### Distributed Systems & Architecture
+- **CQRS architecture** with independent command/query processing.
+- **Event-driven asynchronous workflows** using messaging patterns.
+- **Transactional Outbox implementation** for reliable event propagation.
+- **Bounded-context-oriented modular architecture**.
+- **Architectural enforcement mechanisms** using ArchUnit and Java 21 sealed classes.
+- **Automated OpenAPI-driven** API with type-safe TypeScript client generation.
+
+### Cloud-Native Platform Engineering
+- **Stateless JWT authentication** with Redis-backed refresh token rotation.
+- **Production deployment on Google Cloud Run**.
+- **Zero-downtime CI/CD delivery workflows**.
+- **Infrastructure-oriented observability and distributed tracing**.
+
+### Observability & Reliability
+- **OpenTelemetry distributed tracing**.
+- **Structured JSON logging** with trace correlation.
+- **Micrometer metrics instrumentation**.
+- **Prometheus-compatible monitoring architecture**.
+- **Operational diagnostics and resilience tooling**.
+
+### DevSecOps & Automation
+- **Automated API contract drift detection**.
+- **Multi-layer security scanning** with OWASP Dependency-Check, npm audit, Trivy container scanning, and TruffleHog secret detection.
+- **GitHub Actions CI/CD pipelines** for zero-downtime deployment.
+
+### Key Architecture Decisions
+
+| Decision                  | Why                                                   |
+| ------------------------- | ----------------------------------------------------- |
+| CQRS                      | Independent scalability and cleaner domain separation |
+| Transactional Outbox      | Reliable async consistency guarantees                 |
+| Redis-backed JWT rotation | Distributed session invalidation                      |
+| OpenTelemetry tracing     | End-to-end observability                              |
+| ArchUnit enforcement      | Prevent architectural drift                           |
+| OpenAPI generation        | Contract-driven frontend/backend consistency          |
+
+## Technical Documentation
+
+### Backend Engineering
 
 | Document | Description |
 |----------|-------------|
 | **[Backend Architecture](docs/ARCHITECTURE.md)** | Overview of the core Java/Spring framework, including domain validation, event lifecycles, and structural enforcement patterns. |
+| **[Architectural Scale Upgrade](docs/ARCHITECTURAL_SCALE_UPGRADE.md)** | **[Engineering Highlight]** Comprehensive breakdown of the platform's evolution into a resilient Event-Driven Architecture using CQRS and Outbox patterns. |
+
+### Frontend Engineering
+
+| Document | Description |
+|----------|-------------|
 | **[UI/UX Architecture](docs/UI_UX_ARCHITECTURE.md)** | Frontend design system, responsive theming engine, and React component architecture. |
 | **[API Generation Pipeline](docs/API_GENERATION.md)** | Automated extraction of OpenAPI contracts and type-safe TypeScript client generation. |
-| **[Architectural Scale Upgrade](docs/ARCHITECTURAL_SCALE_UPGRADE.md)** | **[Engineering Highlight]** Comprehensive breakdown of the platform's evolution into a resilient Event-Driven Architecture using CQRS and Outbox patterns. |
-| **[Database Migration Strategy](docs/DATABASE_MIGRATION.md)** | Strategy for managing database schema evolution using immutable, timestamp-based migrations. |
+
+### Platform Engineering
+
+| Document | Description |
+|----------|-------------|
 | **[DevSecOps & CI/CD Pipeline](docs/DEVSECOPS_PIPELINE.md)** | Enterprise GitHub Actions workflow covering continuous integration, security audits, and automated GCP Cloud Run deployments. |
-| **[Monitoring & Alerting](docs/MONITORING.md)** | Application observability via Spring Actuator, uptime monitoring, and system health checks. |
-| **[Backup Strategy](docs/BACKUP.md)** | Automated database backup workflows and disaster recovery procedures. |
+| **[Monitoring & Observability](docs/MONITORING.md)** | Application observability via Spring Actuator, uptime monitoring, and system health checks. |
+| **[Backup and Recovery](docs/BACKUP.md)** | Automated database backup workflows and disaster recovery procedures. |
 
-## Core Platform Capabilities
+### DB Migration Strategy
 
-- **Membership Management** — End-to-end member lifecycle management, including registration workflows, secure profiles, status tracking, and directory lookup.
-- **Financial Operations** — Comprehensive financial oversight featuring payment tracking, expense management, automated quarterly fee checklists, and collection summaries.
-- **Identity & Access Control** — Secure, stateless JWT authentication coupled with granular role-based authorization and automated administrator provisioning.
-- **API-First Integration** — Contract-driven development powered by auto-generated OpenAPI schemas and fully type-safe TypeScript API clients.
-- **Event-Driven Resilience** — High-performance asynchronous metrics projection and transactional outbox patterns guaranteeing data consistency under load.
+| Document | Description |
+|----------|-------------|
+| **[Database Migration](docs/DATABASE_MIGRATION.md)** | Strategy for managing database schema evolution using immutable, timestamp-based migrations. |
 
 ## Tech Stack
 
