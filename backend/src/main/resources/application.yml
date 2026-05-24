@@ -79,8 +79,8 @@ app:
   cors:
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:}
   cookie:
-    # Set to true in production when TLS is enabled
-    secure: false
+    # Default to secure (production-safe). Override to false in dev profile for localhost.
+    secure: true
     same-site: Strict
   security:
     max-login-attempts: 5
