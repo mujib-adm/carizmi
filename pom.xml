@@ -12,7 +12,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.13</version>
+        <version>3.5.14</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
@@ -22,9 +22,10 @@
         <npm.version>11.6.2</npm.version>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
-        <spring.boot.version>3.5.13</spring.boot.version>
-        <!-- Override Spring Boot's managed Tomcat to fix vulnerabilities -->
-        <tomcat.version>10.1.54</tomcat.version>
+        <spring.boot.version>3.5.14</spring.boot.version>
+        <!-- Override Spring Boot's managed versions to fix vulnerabilities -->
+        <tomcat.version>10.1.55</tomcat.version>
+        <netty.version>4.1.133.Final</netty.version>
         <skipTests>false</skipTests>
         <skipApiGen>false</skipApiGen>
     </properties>
