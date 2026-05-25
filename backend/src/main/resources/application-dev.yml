@@ -1,0 +1,13 @@
+# ──────────────────────────────────────────────────────────────
+# Development profile overrides
+# Activated via SPRING_PROFILES_ACTIVE=dev (set in .env)
+# ──────────────────────────────────────────────────────────────
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+app:
+  cookie:
+    # Localhost does not use TLS, so Secure cookies would be rejected by the browser
+    secure: false
