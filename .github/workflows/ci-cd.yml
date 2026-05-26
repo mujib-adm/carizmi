@@ -60,6 +60,76 @@ jobs:
       - name: Build & Test (Framework + Backend)
         run: mvn -B verify -pl framework,backend
 
+      # ---- Coverage Reporting ----
+      - name: Upload JaCoCo Coverage Report
+        if: always() && !cancelled()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: jacoco-coverage-report
+          path: backend/target/site/jacoco/
+          retention-days: 30
+
+      - name: Generate Coverage Summary
+        if: always() && !cancelled()
+        run: |
+          REPORT="backend/target/site/jacoco/jacoco.xml"
+          if [ ! -f "$REPORT" ]; then
+            echo "::warning::JaCoCo report not found at $REPORT"
+            echo "## ⚠️ Coverage Report Not Found" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+
+          # Extract BUNDLE-level counters (last occurrence of each type in the XML)
+          extract() {
+            grep -o "type=\"$1\"[^/]*" "$REPORT" | tail -1 | grep -o "$2=\"[0-9]*\"" | grep -o '[0-9]*'
+          }
+          calc_pct() {
+            local m=$1 c=$2
+            [ $((m + c)) -eq 0 ] && echo "0.00" && return
+            awk "BEGIN {printf \"%.2f\", ($c / ($m + $c)) * 100}"
+          }
+          badge() {
+            local pct=$(echo "$1" | awk '{printf "%d", $1}')
+            [ "$pct" -ge 80 ] && echo "🟢" && return
+            [ "$pct" -ge 60 ] && echo "🟡" && return
+            echo "🔴"
+          }
+
+          IM=$(extract INSTRUCTION missed); IC=$(extract INSTRUCTION covered)
+          BM=$(extract BRANCH missed);      BC=$(extract BRANCH covered)
+          LM=$(extract LINE missed);        LC=$(extract LINE covered)
+          MM=$(extract METHOD missed);      MC=$(extract METHOD covered)
+
+          IP=$(calc_pct "$IM" "$IC"); BP=$(calc_pct "$BM" "$BC")
+          LP=$(calc_pct "$LM" "$LC"); MP=$(calc_pct "$MM" "$MC")
+
+          {
+            echo "## 📊 Backend Test Coverage"
+            echo ""
+            echo "| Metric | Covered | Missed | Coverage |"
+            echo "|--------|---------|--------|----------|"
+            echo "| **Instructions** | $IC | $IM | ${IP}% |"
+            echo "| **Branches** | $BC | $BM | $(badge "$BP") ${BP}% |"
+            echo "| **Lines** | $LC | $LM | $(badge "$LP") ${LP}% |"
+            echo "| **Methods** | $MC | $MM | ${MP}% |"
+            echo ""
+            echo "> **Thresholds:** Line ≥ 60% · Branch ≥ 50%"
+            echo "> **Scope:** Backend unit tests only (integration tests excluded)"
+            echo ""
+            echo "📁 Full HTML report: download the **jacoco-coverage-report** artifact"
+          } >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload Coverage to Codecov
+        if: always() && !cancelled()
+        uses: codecov/codecov-action@0565863a31f2c772f9f0395002a31e3f06189574  # v5.4.0
+        with:
+          files: backend/target/site/jacoco/jacoco.xml
+          flags: backend-unit-tests
+          name: carizmi-backend
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
       - name: Check for API Contract Drift
         run: |
           if ! git diff --exit-code frontend/src/api/openapi.json; then

@@ -28,6 +28,8 @@
         <netty.version>4.1.133.Final</netty.version>
         <skipTests>false</skipTests>
         <skipApiGen>false</skipApiGen>
+        <jacoco.line.minimum>0.60</jacoco.line.minimum>
+        <jacoco.branch.minimum>0.50</jacoco.branch.minimum>
     </properties>
 
     <modules>
