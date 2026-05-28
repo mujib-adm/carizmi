@@ -68,15 +68,22 @@ management:
   endpoints:
     web:
       exposure:
-        include: "health,info,metrics,prometheus" # Expose metrics for monitoring
+        include: "health,info,metrics,prometheus"
   endpoint:
     health:
-      show-details: when_authorized # Don't show full DB details to public
+      show-details: when-authorized
+      probes:
+        enabled: true                # Enables /health/liveness and /health/readiness
+      group:
+        liveness:                    # Minimal — just "is the JVM alive?"
+          include: livenessState, ping
+        readiness:                   # Includes critical dependencies
+          include: readinessState, db, redis
     shutdown:
-      enabled: false # Security: disable shutdown endpoint
+      enabled: false
   tracing:
     sampling:
-      probability: 1.0
+      probability: 0.05             # 5% sampling (industry standard for production)
   otlp:
     tracing:
       endpoint: https://cloudtrace.googleapis.com

@@ -5,7 +5,7 @@
 [![Build](https://img.shields.io/github/actions/workflow/status/mujib-adm/carizmi/ci-cd.yml?label=build)](https://github.com/mujib-adm/carizmi/actions)
 [![Cloud Run](https://img.shields.io/badge/deployment-Google%20Cloud%20Run-4285F4?logo=googlecloud)](https://cloud.google.com/run)
 [![Architecture](https://img.shields.io/badge/Architecture-CQRS%20%2B%20EDA-purple)](./docs/ARCHITECTURE.md)
-[![Observability](https://img.shields.io/badge/Observability-OpenTelemetry-blueviolet)](./docs/MONITORING_AND_ALERTING.md)
+[![Observability](https://img.shields.io/badge/Observability-OpenTelemetry-blueviolet)](./docs/MONITORING.md)
 [![Security](https://img.shields.io/badge/security-OWASP%20Checks-success)](https://owasp.org/)
 [![Coverage](https://codecov.io/gh/mujib-adm/carizmi/graph/badge.svg)](https://codecov.io/gh/mujib-adm/carizmi)
 
@@ -104,7 +104,7 @@ Carizmi is built on an event-driven, CQRS-based architecture designed for reliab
 | Document | Description |
 |----------|-------------|
 | **[DevSecOps & CI/CD Pipeline](docs/DEVSECOPS_PIPELINE.md)** | Enterprise GitHub Actions workflow covering continuous integration, security audits, and automated GCP Cloud Run deployments. |
-| **[Monitoring & Observability](docs/MONITORING.md)** | Application observability via Spring Actuator, uptime monitoring, and system health checks. |
+| **[Monitoring & Observability](docs/MONITORING.md)** | Observability stack — health probes, distributed tracing (Cloud Trace), structured logging, alerting strategy, SLOs/SLIs, and operational runbooks. |
 | **[Backup and Recovery](docs/BACKUP.md)** | Automated database backup workflows and disaster recovery procedures. |
 
 ### DB Migration Strategy
