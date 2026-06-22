@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -52,7 +53,8 @@ public class MemberVO extends ValueObject {
     @Column(name = FieldConstants.STATUS, nullable = false, length = 3)
     private String status;
 
-    @Column(name = FieldConstants.JOIN_DATE)
+    @NotNull
+    @Column(name = FieldConstants.JOIN_DATE, nullable = false)
     private LocalDate joinDate;
 
     @Column(name = FieldConstants.ADDRESS1)

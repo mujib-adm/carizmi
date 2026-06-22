@@ -18,5 +18,5 @@ public class UserResponseDto {
     private String firstName;
     private String lastName;
     private String role;
-    private boolean active;
+    private Boolean active;
 }

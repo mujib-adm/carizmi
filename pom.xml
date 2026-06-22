@@ -6,26 +6,23 @@
 
     <groupId>io.carizmi</groupId>
     <artifactId>carizmi-platform</artifactId>
-    <version>1.0.0</version>
+    <version>2.0.0</version>
     <packaging>pom</packaging>
 
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.14</version>
+        <version>4.1.0</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>25</java.version>
         <node.version>v24.11.1</node.version>
         <npm.version>11.6.2</npm.version>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
-        <spring.boot.version>3.5.14</spring.boot.version>
-        <!-- Override Spring Boot's managed versions to fix vulnerabilities -->
-        <tomcat.version>10.1.55</tomcat.version>
-        <netty.version>4.1.133.Final</netty.version>
+        <maven.compiler.source>25</maven.compiler.source>
+        <maven.compiler.target>25</maven.compiler.target>
+        <spring.boot.version>4.1.0</spring.boot.version>
         <skipTests>false</skipTests>
         <skipApiGen>false</skipApiGen>
         <jacoco.line.minimum>0.60</jacoco.line.minimum>

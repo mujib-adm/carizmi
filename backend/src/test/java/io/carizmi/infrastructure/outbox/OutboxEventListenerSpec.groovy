@@ -1,7 +1,7 @@
 package io.carizmi.infrastructure.outbox
 
-import com.fasterxml.jackson.core.JsonProcessingException
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.core.JacksonException
+import tools.jackson.databind.ObjectMapper
 import io.carizmi.domain.finance.model.PaymentVO
 import io.carizmi.framework.event.DomainEvent
 import io.carizmi.testbase.BaseSpecification
@@ -40,7 +40,7 @@ class OutboxEventListenerSpec extends BaseSpecification {
         noExceptionThrown()
     }
 
-    def "test onDomainEvent - Should handle JsonProcessingException gracefully"() {
+    def "test onDomainEvent - Should handle JacksonException gracefully"() {
         given:
         DomainEvent event = new DomainEvent("UPDATED", "MemberVO", 1, null, Instant.now())
 
@@ -48,7 +48,7 @@ class OutboxEventListenerSpec extends BaseSpecification {
         listener.onDomainEvent(event)
 
         then: "Serialization fails but no exception propagates"
-        1 * objectMapper.writeValueAsString(_) >> { throw new JsonProcessingException("test error") {} }
+        1 * objectMapper.writeValueAsString(_) >> { throw new JacksonException("test error") {} }
         0 * _
 
         and: "The exception is caught gracefully"

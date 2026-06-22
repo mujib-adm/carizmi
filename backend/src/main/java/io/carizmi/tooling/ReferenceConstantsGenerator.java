@@ -1,9 +1,10 @@
 package io.carizmi.tooling;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -41,7 +42,7 @@ public class ReferenceConstantsGenerator {
             }
         }
 
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = JsonMapper.builder().build();
         JsonNode rootNode = mapper.readTree(jsonFile);
 
         StringBuilder sb = new StringBuilder();

@@ -34,7 +34,7 @@ class SystemSettingsDtoTransformerSpec extends BaseSpecification {
         result.settingKey == vo.settingKey
         result.settingValue == vo.settingValue
         result.effectiveDate == vo.effectiveDate
-        result.isActive() == vo.isActive()
+        result.getActive() == vo.isActive()
         noExceptionThrown()
     }
 

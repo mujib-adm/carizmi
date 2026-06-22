@@ -1,12 +1,13 @@
 package io.carizmi.domain.platform.service
 
-import com.fasterxml.jackson.core.JsonProcessingException
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.core.JacksonException
+import tools.jackson.databind.ObjectMapper
 import io.carizmi.domain.finance.service.Expense
 import io.carizmi.domain.finance.service.Payment
 import io.carizmi.domain.membership.service.Member
 import io.carizmi.domain.platform.model.DashboardSnapshotVO
 import io.carizmi.shared.constants.ReferenceConstants
+import io.carizmi.shared.data.dto.MemberJoinDateProjection
 import io.carizmi.shared.data.dto.QuarterlyTotalProjection
 import io.carizmi.shared.util.QuarterUtils
 import io.carizmi.testbase.BaseSpecification
@@ -66,6 +67,7 @@ class DashboardProjectorSpec extends BaseSpecification {
         1 * payment.calculateTotalOverdue(currentYear, currentQuarter, quarterlyFeeAmt,
                 ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, ReferenceConstants.MEMBER_STATUS.ACTIVE) >> overdueTotal
         1 * payment.findQuarterlyTotals(currentYear) >> [qt1, qt2]
+        1 * member.findActiveMemberJoinDates() >> []
         1 * dashboardSnapshot.getSnapshot() >> Optional.of(existingSnapshot)
         1 * objectMapper.writeValueAsString(_ as List) >> '[]'
         1 * dashboardSnapshot.saveSnapshot(_ as DashboardSnapshotVO) >> { DashboardSnapshotVO vo -> capturedSnapshot = vo }
@@ -100,6 +102,7 @@ class DashboardProjectorSpec extends BaseSpecification {
         1 * payment.calculateTotalOverdue(currentYear, currentQuarter, quarterlyFeeAmt,
                 ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, ReferenceConstants.MEMBER_STATUS.ACTIVE) >> BigDecimal.ZERO
         1 * payment.findQuarterlyTotals(currentYear) >> []
+        1 * member.findActiveMemberJoinDates() >> []
         1 * dashboardSnapshot.getSnapshot() >> Optional.empty()
         1 * objectMapper.writeValueAsString(_ as List) >> '[]'
         1 * dashboardSnapshot.saveSnapshot(_ as DashboardSnapshotVO) >> { DashboardSnapshotVO vo -> capturedSnapshot = vo }
@@ -134,6 +137,7 @@ class DashboardProjectorSpec extends BaseSpecification {
         1 * payment.calculateTotalOverdue(currentYear, currentQuarter, quarterlyFeeAmt,
                 ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, ReferenceConstants.MEMBER_STATUS.ACTIVE) >> BigDecimal.ZERO
         1 * payment.findQuarterlyTotals(currentYear) >> []
+        1 * member.findActiveMemberJoinDates() >> []
         1 * dashboardSnapshot.getSnapshot() >> Optional.empty()
         1 * objectMapper.writeValueAsString(_ as List) >> '[]'
         1 * dashboardSnapshot.saveSnapshot(_ as DashboardSnapshotVO) >> { DashboardSnapshotVO vo -> capturedSnapshot = vo }
@@ -144,7 +148,59 @@ class DashboardProjectorSpec extends BaseSpecification {
         noExceptionThrown()
     }
 
-    def "test rebuildProjection - Should handle JsonProcessingException gracefully"() {
+    def "test rebuildProjection - Should scope quarterly percentages to members who joined on or before that quarter"() {
+        given: "Two members: one joined in Q1 and one joined in Q2 of the current year"
+        MemberJoinDateProjection q1Member = Stub() {
+            getMemberID() >> 1
+            getJoinDate() >> LocalDate.of(currentYear, 1, 15)
+        }
+        MemberJoinDateProjection q2Member = Stub() {
+            getMemberID() >> 2
+            getJoinDate() >> LocalDate.of(currentYear, 4, 10)
+        }
+
+        QuarterlyTotalProjection qt1 = Stub() { getQuarter() >> 1; getTotalCollected() >> new BigDecimal("60.00") }
+        QuarterlyTotalProjection qt2 = Stub() { getQuarter() >> 2; getTotalCollected() >> new BigDecimal("60.00") }
+
+        List capturedCollections = null
+
+        when: "The target method executed"
+        projector.rebuildProjection()
+
+        then: "The expected calls are made"
+        1 * systemSetting.getQuarterlyFeeAmount() >> quarterlyFeeAmt
+        1 * member.countActiveMembers() >> 2L
+        1 * baselineService.getBaselineForYear(currentYear) >> BigDecimal.ZERO
+        1 * payment.sumAmountByDateReceivedBetween(startOfYear, now) >> BigDecimal.ZERO
+        1 * expense.sumAmountByDateOfExpenseBetween(startOfYear, now) >> BigDecimal.ZERO
+        1 * payment.sumAmountByYearAndQuarter(currentYear, currentQuarter) >> BigDecimal.ZERO
+        1 * payment.calculateTotalOverdue(currentYear, currentQuarter, quarterlyFeeAmt,
+                ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, ReferenceConstants.MEMBER_STATUS.ACTIVE) >> BigDecimal.ZERO
+        1 * payment.findQuarterlyTotals(currentYear) >> [qt1, qt2]
+        1 * member.findActiveMemberJoinDates() >> [q1Member, q2Member]
+        1 * dashboardSnapshot.getSnapshot() >> Optional.empty()
+        1 * objectMapper.writeValueAsString(_ as List) >> { args ->
+            capturedCollections = args[0] as List
+            return '[]'
+        }
+        1 * dashboardSnapshot.saveSnapshot(_ as DashboardSnapshotVO)
+        0 * _
+
+        and: "Q1 percentage is scoped to 1 eligible member: 60 / (1 × 60) = 100%"
+        capturedCollections != null
+        capturedCollections.size() == 4
+        capturedCollections[0].percentage == 1.0d
+
+        and: "Q2 percentage includes both members: 60 / (2 × 60) = 50%"
+        capturedCollections[1].percentage == 0.5d
+
+        and: "Q3 and Q4 have zero collected, so percentage is 0%"
+        capturedCollections[2].percentage == 0.0d
+        capturedCollections[3].percentage == 0.0d
+        noExceptionThrown()
+    }
+
+    def "test rebuildProjection - Should handle JacksonException gracefully"() {
         when: "The target method executed and serialization fails"
         projector.rebuildProjection()
 
@@ -158,8 +214,9 @@ class DashboardProjectorSpec extends BaseSpecification {
         1 * payment.calculateTotalOverdue(currentYear, currentQuarter, quarterlyFeeAmt,
                 ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, ReferenceConstants.MEMBER_STATUS.ACTIVE) >> BigDecimal.ZERO
         1 * payment.findQuarterlyTotals(currentYear) >> []
+        1 * member.findActiveMemberJoinDates() >> []
         1 * dashboardSnapshot.getSnapshot() >> Optional.empty()
-        1 * objectMapper.writeValueAsString(_ as List) >> { throw new JsonProcessingException("test error") {} }
+        1 * objectMapper.writeValueAsString(_ as List) >> { throw new JacksonException("test error") {} }
         0 * _
 
         and: "The exception is caught — no snapshot saved, but no exception thrown"

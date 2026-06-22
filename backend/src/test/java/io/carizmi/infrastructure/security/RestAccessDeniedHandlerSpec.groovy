@@ -1,6 +1,5 @@
 package io.carizmi.infrastructure.security
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.http.MediaType
@@ -9,12 +8,14 @@ import io.carizmi.framework.data.response.GlobalMsg
 import io.carizmi.framework.data.response.GlobalResponse
 import io.carizmi.testbase.BaseSpecification
 import io.carizmi.testbase.ServletCaptureHelper
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.databind.ObjectMapper
 
 import static io.carizmi.framework.message.constant.CommonMessages.ACCESS_DENIED
 
 class RestAccessDeniedHandlerSpec extends BaseSpecification {
 
-    ObjectMapper objectMapper = new ObjectMapper()
+    ObjectMapper objectMapper = JsonMapper.builder().build()
     RestAccessDeniedHandler handler = new RestAccessDeniedHandler(objectMapper)
 
     HttpServletRequest request = Mock(HttpServletRequest)

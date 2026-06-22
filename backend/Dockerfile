@@ -1,4 +1,4 @@
-FROM maven:3.9-eclipse-temurin-21 AS build
+FROM maven:3.9-eclipse-temurin-25 AS build
 WORKDIR /app
 
 # Copy dependency definitions first for layer caching
@@ -17,7 +17,7 @@ RUN mvn -q -e -DskipTests dependency:go-offline
 COPY backend/src ./src
 RUN mvn -q -DskipTests package
 
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
 
 # Install curl for healthcheck + apply all available security patches

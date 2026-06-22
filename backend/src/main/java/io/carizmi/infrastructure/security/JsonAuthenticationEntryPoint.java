@@ -1,17 +1,18 @@
 package io.carizmi.infrastructure.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import io.carizmi.framework.util.ResponseUtils;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 
 public class JsonAuthenticationEntryPoint implements AuthenticationEntryPoint {
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper objectMapper = JsonMapper.builder().build();
 
     @Override
     public void commence(HttpServletRequest req, HttpServletResponse res, AuthenticationException ex) throws IOException {

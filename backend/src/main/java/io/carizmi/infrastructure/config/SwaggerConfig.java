@@ -21,7 +21,7 @@ public class SwaggerConfig {
         return new OpenAPI()
                 .info(new Info()
                         .title(apiTitle)
-                        .version("1.0.0")
+                        .version("2.0.0")
                         .description("Auto-generated. DO NOT EDIT MANUALLY — " +
                                 "Changes are overwritten on each build."))
                 .addSecurityItem(new SecurityRequirement().addList(securitySchemeName))

@@ -14,5 +14,5 @@ public class ReferenceDto {
     private String referenceName;
     private String referenceCode;
     private String referenceDisplay;
-    private boolean active;
+    private Boolean active;
 }

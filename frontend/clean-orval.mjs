@@ -186,9 +186,9 @@ function refactorOrvalTypes() {
     // ── Step 3: Clean types/index.ts re-exports ─────────────────────────
     if (isTypesIndex) {
       // Remove re-exports of deleted GlobalResponseXxx files
-      content = content.replace(/export \* from '\.\/globalResponse[A-Z]\w*';\n?/g, '');
+      content = content.replace(/export \* from '\.\/globalResponse[A-Z]\w*(?:\.ts)?';\n?/g, '');
       // Remove re-exports of deleted per-entity SortOrder files
-      content = content.replace(/export \* from '\.\/(\w+)SortOrder';\n?/g, (match, prefix) => {
+      content = content.replace(/export \* from '\.\/(\w+)SortOrder(?:\.ts)?';\n?/g, (match, prefix) => {
         if (prefix !== 'sortOrder' && prefix !== '') {
           return '';
         }

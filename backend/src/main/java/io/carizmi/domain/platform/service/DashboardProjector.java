@@ -1,11 +1,12 @@
 package io.carizmi.domain.platform.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import io.carizmi.domain.finance.service.Expense;
 import io.carizmi.domain.finance.service.Payment;
 import io.carizmi.domain.membership.service.Member;
 import io.carizmi.domain.platform.data.dto.response.QuarterlyCollectionDto;
+import io.carizmi.shared.data.dto.MemberJoinDateProjection;
 import io.carizmi.domain.platform.model.DashboardSnapshotVO;
 import io.carizmi.framework.projection.AbstractProjector;
 import io.carizmi.shared.constants.QuarterStatus;
@@ -102,6 +103,17 @@ public class DashboardProjector extends AbstractProjector {
                 quarterlyTotalsMap.put(qt.getQuarter(), qt.getTotalCollected());
             }
 
+            // Pre-compute per-quarter eligible member counts from lightweight join-date projections
+            long[] eligibleMemberCounts = new long[4];
+            for (MemberJoinDateProjection proj : member.findActiveMemberJoinDates()) {
+                LocalDate joinDate = QuarterUtils.resolveJoinDate(proj.getJoinDate());
+                for (int q = 1; q <= 4; q++) {
+                    if (!joinDate.isAfter(QuarterUtils.lastDayOfQuarter(currentYear, q))) {
+                        eligibleMemberCounts[q - 1]++;
+                    }
+                }
+            }
+
             List<QuarterlyCollectionDto> collections = new ArrayList<>();
             for (int q = 1; q <= 4; q++) {
                 BigDecimal collected = quarterlyTotalsMap.getOrDefault(q, BigDecimal.ZERO);
@@ -114,7 +126,7 @@ public class DashboardProjector extends AbstractProjector {
                     status = QuarterStatus.PAST;
                 }
 
-                BigDecimal denom = BigDecimal.valueOf(totalActiveMembers).multiply(quarterlyFeeAmt);
+                BigDecimal denom = BigDecimal.valueOf(eligibleMemberCounts[q - 1]).multiply(quarterlyFeeAmt);
                 double pct = 0;
                 if (denom.compareTo(BigDecimal.ZERO) > 0) {
                     pct = collected.divide(denom, 4, RoundingMode.HALF_UP).doubleValue();
@@ -147,7 +159,7 @@ public class DashboardProjector extends AbstractProjector {
             dashboardSnapshot.saveSnapshot(snapshot);
             logger.info("Dashboard snapshot rebuilt successfully");
 
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             logger.error("Failed to serialize quarterly collections for dashboard snapshot", e);
         }
     }

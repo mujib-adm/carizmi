@@ -1,7 +1,7 @@
 package io.carizmi.infrastructure.bootstrap;
 
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -50,7 +50,6 @@ public class JpaLiquibaseConfig {
         emf.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
 
         Properties props = new Properties();
-        props.setProperty("hibernate.dialect", "org.hibernate.dialect.MySQLDialect");
         props.setProperty("hibernate.hbm2ddl.auto", "none"); // let Liquibase handle schema
         emf.setJpaProperties(props);
 

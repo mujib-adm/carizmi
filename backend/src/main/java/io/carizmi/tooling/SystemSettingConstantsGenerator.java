@@ -8,8 +8,9 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Utility to generate SystemSettingConstants.java from systemsettings-data.json.
@@ -41,7 +42,7 @@ public class SystemSettingConstantsGenerator {
             }
         }
 
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = JsonMapper.builder().build();
         JsonNode rootNode = mapper.readTree(jsonFile);
 
         StringBuilder sb = new StringBuilder();

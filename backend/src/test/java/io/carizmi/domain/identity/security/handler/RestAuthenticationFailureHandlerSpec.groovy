@@ -1,6 +1,5 @@
 package io.carizmi.domain.identity.security.handler
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import io.carizmi.domain.identity.service.User
@@ -14,6 +13,8 @@ import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.security.authentication.DisabledException
 import org.springframework.security.authentication.LockedException
 import org.springframework.security.core.AuthenticationException
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.databind.ObjectMapper
 
 import static io.carizmi.framework.message.constant.CommonMessages.INVALID_CREDENTIALS
 import static io.carizmi.framework.message.constant.CommonMessages.ACCOUNT_TEMP_LOCKED
@@ -21,7 +22,7 @@ import static io.carizmi.framework.message.constant.CommonMessages.ACCOUNT_DISAB
 
 class RestAuthenticationFailureHandlerSpec extends BaseSpecification {
 
-    ObjectMapper objectMapper = new ObjectMapper()
+    ObjectMapper objectMapper = JsonMapper.builder().build()
     User user = Mock()
     RestAuthenticationFailureHandler handler = new RestAuthenticationFailureHandler(objectMapper, user)
 

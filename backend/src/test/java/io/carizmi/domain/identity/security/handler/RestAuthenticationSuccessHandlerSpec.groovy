@@ -1,6 +1,5 @@
 package io.carizmi.domain.identity.security.handler
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import io.carizmi.shared.constants.Role
@@ -14,11 +13,13 @@ import io.carizmi.testbase.BaseSpecification
 import io.carizmi.testbase.ServletCaptureHelper
 import org.springframework.http.MediaType
 import org.springframework.security.core.Authentication
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.databind.ObjectMapper
 
 class RestAuthenticationSuccessHandlerSpec extends BaseSpecification {
 
     RefreshTokenService refreshTokenService = Mock()
-    ObjectMapper objectMapper = new ObjectMapper()
+    ObjectMapper objectMapper = JsonMapper.builder().build()
     User user = Mock()
     JwtService jwtService = Mock()
     CookieService cookieService = Mock()
