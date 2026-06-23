@@ -44,7 +44,7 @@ export default function UsersPage() {
   };
 
   useEffect(() => {
-    fetchUsers();
+    Promise.resolve().then(() => fetchUsers());
   }, []);
 
   const openEdit = (user: UserResponseDto) => {

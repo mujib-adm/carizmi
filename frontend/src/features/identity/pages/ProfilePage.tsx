@@ -36,7 +36,7 @@ export default function ProfilePage() {
   };
 
   useEffect(() => {
-    fetchProfile();
+    Promise.resolve().then(() => fetchProfile());
   }, []);
 
   const handleSubmit = async (values: PasswordUpdateRequestDto) => {

@@ -48,10 +48,12 @@ export function ReferenceProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isAuthenticated) {
-      fetchAllReferences();
+      Promise.resolve().then(() => fetchAllReferences());
     } else {
-      setReferences({});
-      setIsLoading(false);
+      Promise.resolve().then(() => {
+        setReferences({});
+        setIsLoading(false);
+      });
     }
   }, [isAuthenticated]);
 

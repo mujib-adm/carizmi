@@ -8,7 +8,8 @@ export function usePaginatedPayments(initialRequest: PaymentSearchRequestDto = {
   const [loading, setLoading] = useState(false);
 
   // Stabilize the input request
-  const memoInitialRequest = useMemo(() => initialRequest, [JSON.stringify(initialRequest)]);
+  const requestString = JSON.stringify(initialRequest);
+  const memoInitialRequest = useMemo(() => initialRequest, [requestString]);
 
   const fetchPayments = useCallback(
     async (request: PaymentSearchRequestDto = {}) => {
