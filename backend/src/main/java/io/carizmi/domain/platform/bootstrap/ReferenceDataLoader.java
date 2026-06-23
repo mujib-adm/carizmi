@@ -1,7 +1,7 @@
 package io.carizmi.domain.platform.bootstrap;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 
 import org.apache.commons.lang3.StringUtils;

@@ -3,7 +3,7 @@
   "info" : {
     "title" : "Carizmi API",
     "description" : "Auto-generated. DO NOT EDIT MANUALLY — Changes are overwritten on each build.",
-    "version" : "1.0.0"
+    "version" : "2.0.0"
   },
   "servers" : [ {
     "url" : "http://localhost:8080",
@@ -1022,19 +1022,23 @@
       },
       "FieldMsg" : {
         "type" : "object",
+        "default" : null,
         "description" : "Field-level validation message",
         "properties" : {
           "type" : {
             "$ref" : "#/components/schemas/MessageType",
+            "default" : "",
             "description" : "Message severity type"
           },
           "field" : {
             "type" : "string",
+            "default" : "",
             "description" : "Field name that the message applies to",
             "example" : "email"
           },
           "message" : {
             "type" : "string",
+            "default" : "",
             "description" : "Validation message text",
             "example" : "Email is required."
           }
@@ -1042,14 +1046,17 @@
       },
       "GlobalMsg" : {
         "type" : "object",
+        "default" : null,
         "description" : "Global-level message",
         "properties" : {
           "type" : {
             "$ref" : "#/components/schemas/MessageType",
+            "default" : "",
             "description" : "Message severity type"
           },
           "message" : {
             "type" : "string",
+            "default" : "",
             "description" : "Message text",
             "example" : "Operation completed successfully."
           }
@@ -1057,21 +1064,25 @@
       },
       "GlobalResponseVoid" : {
         "type" : "object",
+        "default" : null,
         "description" : "Unified API response envelope",
         "properties" : {
           "statusCode" : {
             "type" : "integer",
             "format" : "int32",
+            "default" : "",
             "description" : "HTTP status code",
             "example" : 200
           },
           "statusDesc" : {
             "type" : "string",
+            "default" : "",
             "description" : "HTTP status description",
             "example" : "OK"
           },
           "globalMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Global-level messages (errors, warnings, info)",
             "items" : {
               "$ref" : "#/components/schemas/GlobalMsg"
@@ -1079,50 +1090,59 @@
           },
           "fieldMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Field-level validation messages",
             "items" : {
               "$ref" : "#/components/schemas/FieldMsg"
             }
           },
           "responseData" : {
+            "default" : "",
             "description" : "Response payload"
           },
           "meta" : {
             "$ref" : "#/components/schemas/PaginationMeta",
+            "default" : "",
             "description" : "Pagination metadata"
           }
         }
       },
       "MessageType" : {
         "type" : "string",
+        "default" : null,
         "description" : "Message severity type",
         "enum" : [ "ERROR", "WARNING", "INFO", "STATUS", "SUCCESS", "CONFIRMATION" ]
       },
       "PaginationMeta" : {
         "type" : "object",
+        "default" : null,
         "description" : "Pagination metadata",
         "properties" : {
           "page" : {
             "type" : "integer",
             "format" : "int32",
+            "default" : "",
             "description" : "Current page number (0-based)",
             "example" : 0
           },
           "pageSize" : {
             "type" : "integer",
             "format" : "int32",
+            "default" : "",
             "description" : "Page size",
             "example" : 10
           },
           "totalRecords" : {
             "type" : "integer",
             "format" : "int64",
+            "default" : "",
             "description" : "Total number of records",
             "example" : 42
           },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32",
+            "default" : "",
             "description" : "Total number of pages",
             "example" : 5
           }
@@ -1265,10 +1285,13 @@
       },
       "SortOrder" : {
         "type" : "string",
+        "default" : null,
         "enum" : [ "asc", "desc" ]
       },
       "SystemSettingsSearchRequestDto" : {
         "type" : "object",
+        "default" : null,
+        "description" : "Pagination parameters",
         "properties" : {
           "page" : {
             "type" : "integer",
@@ -1286,11 +1309,13 @@
           },
           "sortField" : {
             "type" : "string",
+            "default" : "",
             "description" : "Sort field name",
             "example" : "firstName"
           },
           "sortOrder" : {
             "$ref" : "#/components/schemas/SortOrder",
+            "default" : "",
             "description" : "Sort direction",
             "example" : "asc"
           },
@@ -1301,21 +1326,25 @@
       },
       "GlobalResponseListSystemSettingsDto" : {
         "type" : "object",
+        "default" : null,
         "description" : "Unified API response envelope",
         "properties" : {
           "statusCode" : {
             "type" : "integer",
             "format" : "int32",
+            "default" : "",
             "description" : "HTTP status code",
             "example" : 200
           },
           "statusDesc" : {
             "type" : "string",
+            "default" : "",
             "description" : "HTTP status description",
             "example" : "OK"
           },
           "globalMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Global-level messages (errors, warnings, info)",
             "items" : {
               "$ref" : "#/components/schemas/GlobalMsg"
@@ -1323,6 +1352,7 @@
           },
           "fieldMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Field-level validation messages",
             "items" : {
               "$ref" : "#/components/schemas/FieldMsg"
@@ -1330,6 +1360,7 @@
           },
           "responseData" : {
             "type" : "array",
+            "default" : "",
             "description" : "Response payload",
             "items" : {
               "$ref" : "#/components/schemas/SystemSettingsDto"
@@ -1337,12 +1368,15 @@
           },
           "meta" : {
             "$ref" : "#/components/schemas/PaginationMeta",
+            "default" : "",
             "description" : "Pagination metadata"
           }
         }
       },
       "ReferenceSearchRequestDto" : {
         "type" : "object",
+        "default" : null,
+        "description" : "Pagination parameters",
         "properties" : {
           "page" : {
             "type" : "integer",
@@ -1360,11 +1394,13 @@
           },
           "sortField" : {
             "type" : "string",
+            "default" : "",
             "description" : "Sort field name",
             "example" : "firstName"
           },
           "sortOrder" : {
             "$ref" : "#/components/schemas/SortOrder",
+            "default" : "",
             "description" : "Sort direction",
             "example" : "asc"
           },
@@ -1375,21 +1411,25 @@
       },
       "GlobalResponseListReferenceDto" : {
         "type" : "object",
+        "default" : null,
         "description" : "Unified API response envelope",
         "properties" : {
           "statusCode" : {
             "type" : "integer",
             "format" : "int32",
+            "default" : "",
             "description" : "HTTP status code",
             "example" : 200
           },
           "statusDesc" : {
             "type" : "string",
+            "default" : "",
             "description" : "HTTP status description",
             "example" : "OK"
           },
           "globalMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Global-level messages (errors, warnings, info)",
             "items" : {
               "$ref" : "#/components/schemas/GlobalMsg"
@@ -1397,6 +1437,7 @@
           },
           "fieldMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Field-level validation messages",
             "items" : {
               "$ref" : "#/components/schemas/FieldMsg"
@@ -1404,6 +1445,7 @@
           },
           "responseData" : {
             "type" : "array",
+            "default" : "",
             "description" : "Response payload",
             "items" : {
               "$ref" : "#/components/schemas/ReferenceDto"
@@ -1411,6 +1453,7 @@
           },
           "meta" : {
             "$ref" : "#/components/schemas/PaginationMeta",
+            "default" : "",
             "description" : "Pagination metadata"
           }
         }
@@ -1438,6 +1481,8 @@
       },
       "PaymentSearchRequestDto" : {
         "type" : "object",
+        "default" : null,
+        "description" : "Pagination parameters",
         "properties" : {
           "page" : {
             "type" : "integer",
@@ -1455,11 +1500,13 @@
           },
           "sortField" : {
             "type" : "string",
+            "default" : "",
             "description" : "Sort field name",
             "example" : "firstName"
           },
           "sortOrder" : {
             "$ref" : "#/components/schemas/SortOrder",
+            "default" : "",
             "description" : "Sort direction",
             "example" : "asc"
           },
@@ -1490,21 +1537,25 @@
       },
       "GlobalResponseListPaymentDto" : {
         "type" : "object",
+        "default" : null,
         "description" : "Unified API response envelope",
         "properties" : {
           "statusCode" : {
             "type" : "integer",
             "format" : "int32",
+            "default" : "",
             "description" : "HTTP status code",
             "example" : 200
           },
           "statusDesc" : {
             "type" : "string",
+            "default" : "",
             "description" : "HTTP status description",
             "example" : "OK"
           },
           "globalMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Global-level messages (errors, warnings, info)",
             "items" : {
               "$ref" : "#/components/schemas/GlobalMsg"
@@ -1512,6 +1563,7 @@
           },
           "fieldMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Field-level validation messages",
             "items" : {
               "$ref" : "#/components/schemas/FieldMsg"
@@ -1519,6 +1571,7 @@
           },
           "responseData" : {
             "type" : "array",
+            "default" : "",
             "description" : "Response payload",
             "items" : {
               "$ref" : "#/components/schemas/PaymentDto"
@@ -1526,27 +1579,32 @@
           },
           "meta" : {
             "$ref" : "#/components/schemas/PaginationMeta",
+            "default" : "",
             "description" : "Pagination metadata"
           }
         }
       },
       "GlobalResponseInteger" : {
         "type" : "object",
+        "default" : null,
         "description" : "Unified API response envelope",
         "properties" : {
           "statusCode" : {
             "type" : "integer",
             "format" : "int32",
+            "default" : "",
             "description" : "HTTP status code",
             "example" : 200
           },
           "statusDesc" : {
             "type" : "string",
+            "default" : "",
             "description" : "HTTP status description",
             "example" : "OK"
           },
           "globalMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Global-level messages (errors, warnings, info)",
             "items" : {
               "$ref" : "#/components/schemas/GlobalMsg"
@@ -1554,6 +1612,7 @@
           },
           "fieldMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Field-level validation messages",
             "items" : {
               "$ref" : "#/components/schemas/FieldMsg"
@@ -1562,16 +1621,20 @@
           "responseData" : {
             "type" : "integer",
             "format" : "int32",
+            "default" : "",
             "description" : "Response payload"
           },
           "meta" : {
             "$ref" : "#/components/schemas/PaginationMeta",
+            "default" : "",
             "description" : "Pagination metadata"
           }
         }
       },
       "MemberSearchRequestDto" : {
         "type" : "object",
+        "default" : null,
+        "description" : "Pagination parameters",
         "properties" : {
           "page" : {
             "type" : "integer",
@@ -1589,11 +1652,13 @@
           },
           "sortField" : {
             "type" : "string",
+            "default" : "",
             "description" : "Sort field name",
             "example" : "firstName"
           },
           "sortOrder" : {
             "$ref" : "#/components/schemas/SortOrder",
+            "default" : "",
             "description" : "Sort direction",
             "example" : "asc"
           },
@@ -1613,21 +1678,25 @@
       },
       "GlobalResponseListMemberDto" : {
         "type" : "object",
+        "default" : null,
         "description" : "Unified API response envelope",
         "properties" : {
           "statusCode" : {
             "type" : "integer",
             "format" : "int32",
+            "default" : "",
             "description" : "HTTP status code",
             "example" : 200
           },
           "statusDesc" : {
             "type" : "string",
+            "default" : "",
             "description" : "HTTP status description",
             "example" : "OK"
           },
           "globalMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Global-level messages (errors, warnings, info)",
             "items" : {
               "$ref" : "#/components/schemas/GlobalMsg"
@@ -1635,6 +1704,7 @@
           },
           "fieldMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Field-level validation messages",
             "items" : {
               "$ref" : "#/components/schemas/FieldMsg"
@@ -1642,6 +1712,7 @@
           },
           "responseData" : {
             "type" : "array",
+            "default" : "",
             "description" : "Response payload",
             "items" : {
               "$ref" : "#/components/schemas/MemberDto"
@@ -1649,12 +1720,15 @@
           },
           "meta" : {
             "$ref" : "#/components/schemas/PaginationMeta",
+            "default" : "",
             "description" : "Pagination metadata"
           }
         }
       },
       "ExpenseSearchRequestDto" : {
         "type" : "object",
+        "default" : null,
+        "description" : "Pagination parameters",
         "properties" : {
           "page" : {
             "type" : "integer",
@@ -1672,11 +1746,13 @@
           },
           "sortField" : {
             "type" : "string",
+            "default" : "",
             "description" : "Sort field name",
             "example" : "firstName"
           },
           "sortOrder" : {
             "$ref" : "#/components/schemas/SortOrder",
+            "default" : "",
             "description" : "Sort direction",
             "example" : "asc"
           },
@@ -1695,21 +1771,25 @@
       },
       "GlobalResponseListExpenseDto" : {
         "type" : "object",
+        "default" : null,
         "description" : "Unified API response envelope",
         "properties" : {
           "statusCode" : {
             "type" : "integer",
             "format" : "int32",
+            "default" : "",
             "description" : "HTTP status code",
             "example" : 200
           },
           "statusDesc" : {
             "type" : "string",
+            "default" : "",
             "description" : "HTTP status description",
             "example" : "OK"
           },
           "globalMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Global-level messages (errors, warnings, info)",
             "items" : {
               "$ref" : "#/components/schemas/GlobalMsg"
@@ -1717,6 +1797,7 @@
           },
           "fieldMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Field-level validation messages",
             "items" : {
               "$ref" : "#/components/schemas/FieldMsg"
@@ -1724,6 +1805,7 @@
           },
           "responseData" : {
             "type" : "array",
+            "default" : "",
             "description" : "Response payload",
             "items" : {
               "$ref" : "#/components/schemas/ExpenseDto"
@@ -1731,12 +1813,15 @@
           },
           "meta" : {
             "$ref" : "#/components/schemas/PaginationMeta",
+            "default" : "",
             "description" : "Pagination metadata"
           }
         }
       },
       "ChecklistSearchRequestDto" : {
         "type" : "object",
+        "default" : null,
+        "description" : "Pagination parameters",
         "properties" : {
           "page" : {
             "type" : "integer",
@@ -1754,11 +1839,13 @@
           },
           "sortField" : {
             "type" : "string",
+            "default" : "",
             "description" : "Sort field name",
             "example" : "firstName"
           },
           "sortOrder" : {
             "$ref" : "#/components/schemas/SortOrder",
+            "default" : "",
             "description" : "Sort direction",
             "example" : "asc"
           },
@@ -1787,21 +1874,25 @@
       },
       "GlobalResponseQuarterlyChecklistDto" : {
         "type" : "object",
+        "default" : null,
         "description" : "Unified API response envelope",
         "properties" : {
           "statusCode" : {
             "type" : "integer",
             "format" : "int32",
+            "default" : "",
             "description" : "HTTP status code",
             "example" : 200
           },
           "statusDesc" : {
             "type" : "string",
+            "default" : "",
             "description" : "HTTP status description",
             "example" : "OK"
           },
           "globalMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Global-level messages (errors, warnings, info)",
             "items" : {
               "$ref" : "#/components/schemas/GlobalMsg"
@@ -1809,6 +1900,7 @@
           },
           "fieldMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Field-level validation messages",
             "items" : {
               "$ref" : "#/components/schemas/FieldMsg"
@@ -1816,10 +1908,12 @@
           },
           "responseData" : {
             "$ref" : "#/components/schemas/QuarterlyChecklistDto",
+            "default" : "",
             "description" : "Response payload"
           },
           "meta" : {
             "$ref" : "#/components/schemas/PaginationMeta",
+            "default" : "",
             "description" : "Pagination metadata"
           }
         }
@@ -1865,6 +1959,7 @@
       },
       "QuarterCellStatus" : {
         "type" : "string",
+        "default" : null,
         "description" : "Payment status of a member for a specific quarter",
         "enum" : [ "PAID", "UNPAID", "NOT_APPLICABLE", "FUTURE" ]
       },
@@ -1967,21 +2062,25 @@
       },
       "GlobalResponseListUserResponseDto" : {
         "type" : "object",
+        "default" : null,
         "description" : "Unified API response envelope",
         "properties" : {
           "statusCode" : {
             "type" : "integer",
             "format" : "int32",
+            "default" : "",
             "description" : "HTTP status code",
             "example" : 200
           },
           "statusDesc" : {
             "type" : "string",
+            "default" : "",
             "description" : "HTTP status description",
             "example" : "OK"
           },
           "globalMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Global-level messages (errors, warnings, info)",
             "items" : {
               "$ref" : "#/components/schemas/GlobalMsg"
@@ -1989,6 +2088,7 @@
           },
           "fieldMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Field-level validation messages",
             "items" : {
               "$ref" : "#/components/schemas/FieldMsg"
@@ -1996,6 +2096,7 @@
           },
           "responseData" : {
             "type" : "array",
+            "default" : "",
             "description" : "Response payload",
             "items" : {
               "$ref" : "#/components/schemas/UserResponseDto"
@@ -2003,6 +2104,7 @@
           },
           "meta" : {
             "$ref" : "#/components/schemas/PaginationMeta",
+            "default" : "",
             "description" : "Pagination metadata"
           }
         }
@@ -2036,21 +2138,25 @@
       },
       "GlobalResponseSystemSettingsDto" : {
         "type" : "object",
+        "default" : null,
         "description" : "Unified API response envelope",
         "properties" : {
           "statusCode" : {
             "type" : "integer",
             "format" : "int32",
+            "default" : "",
             "description" : "HTTP status code",
             "example" : 200
           },
           "statusDesc" : {
             "type" : "string",
+            "default" : "",
             "description" : "HTTP status description",
             "example" : "OK"
           },
           "globalMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Global-level messages (errors, warnings, info)",
             "items" : {
               "$ref" : "#/components/schemas/GlobalMsg"
@@ -2058,6 +2164,7 @@
           },
           "fieldMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Field-level validation messages",
             "items" : {
               "$ref" : "#/components/schemas/FieldMsg"
@@ -2065,31 +2172,37 @@
           },
           "responseData" : {
             "$ref" : "#/components/schemas/SystemSettingsDto",
+            "default" : "",
             "description" : "Response payload"
           },
           "meta" : {
             "$ref" : "#/components/schemas/PaginationMeta",
+            "default" : "",
             "description" : "Pagination metadata"
           }
         }
       },
       "GlobalResponseListReferenceDescDto" : {
         "type" : "object",
+        "default" : null,
         "description" : "Unified API response envelope",
         "properties" : {
           "statusCode" : {
             "type" : "integer",
             "format" : "int32",
+            "default" : "",
             "description" : "HTTP status code",
             "example" : 200
           },
           "statusDesc" : {
             "type" : "string",
+            "default" : "",
             "description" : "HTTP status description",
             "example" : "OK"
           },
           "globalMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Global-level messages (errors, warnings, info)",
             "items" : {
               "$ref" : "#/components/schemas/GlobalMsg"
@@ -2097,6 +2210,7 @@
           },
           "fieldMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Field-level validation messages",
             "items" : {
               "$ref" : "#/components/schemas/FieldMsg"
@@ -2104,6 +2218,7 @@
           },
           "responseData" : {
             "type" : "array",
+            "default" : "",
             "description" : "Response payload",
             "items" : {
               "$ref" : "#/components/schemas/ReferenceDescDto"
@@ -2111,6 +2226,7 @@
           },
           "meta" : {
             "$ref" : "#/components/schemas/PaginationMeta",
+            "default" : "",
             "description" : "Pagination metadata"
           }
         }
@@ -2128,21 +2244,25 @@
       },
       "GlobalResponseReferenceDto" : {
         "type" : "object",
+        "default" : null,
         "description" : "Unified API response envelope",
         "properties" : {
           "statusCode" : {
             "type" : "integer",
             "format" : "int32",
+            "default" : "",
             "description" : "HTTP status code",
             "example" : 200
           },
           "statusDesc" : {
             "type" : "string",
+            "default" : "",
             "description" : "HTTP status description",
             "example" : "OK"
           },
           "globalMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Global-level messages (errors, warnings, info)",
             "items" : {
               "$ref" : "#/components/schemas/GlobalMsg"
@@ -2150,6 +2270,7 @@
           },
           "fieldMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Field-level validation messages",
             "items" : {
               "$ref" : "#/components/schemas/FieldMsg"
@@ -2157,31 +2278,37 @@
           },
           "responseData" : {
             "$ref" : "#/components/schemas/ReferenceDto",
+            "default" : "",
             "description" : "Response payload"
           },
           "meta" : {
             "$ref" : "#/components/schemas/PaginationMeta",
+            "default" : "",
             "description" : "Pagination metadata"
           }
         }
       },
       "GlobalResponseListLatestPaymentDto" : {
         "type" : "object",
+        "default" : null,
         "description" : "Unified API response envelope",
         "properties" : {
           "statusCode" : {
             "type" : "integer",
             "format" : "int32",
+            "default" : "",
             "description" : "HTTP status code",
             "example" : 200
           },
           "statusDesc" : {
             "type" : "string",
+            "default" : "",
             "description" : "HTTP status description",
             "example" : "OK"
           },
           "globalMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Global-level messages (errors, warnings, info)",
             "items" : {
               "$ref" : "#/components/schemas/GlobalMsg"
@@ -2189,6 +2316,7 @@
           },
           "fieldMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Field-level validation messages",
             "items" : {
               "$ref" : "#/components/schemas/FieldMsg"
@@ -2196,6 +2324,7 @@
           },
           "responseData" : {
             "type" : "array",
+            "default" : "",
             "description" : "Response payload",
             "items" : {
               "$ref" : "#/components/schemas/LatestPaymentDto"
@@ -2203,6 +2332,7 @@
           },
           "meta" : {
             "$ref" : "#/components/schemas/PaginationMeta",
+            "default" : "",
             "description" : "Pagination metadata"
           }
         }
@@ -2235,21 +2365,25 @@
       },
       "GlobalResponsePaymentDto" : {
         "type" : "object",
+        "default" : null,
         "description" : "Unified API response envelope",
         "properties" : {
           "statusCode" : {
             "type" : "integer",
             "format" : "int32",
+            "default" : "",
             "description" : "HTTP status code",
             "example" : 200
           },
           "statusDesc" : {
             "type" : "string",
+            "default" : "",
             "description" : "HTTP status description",
             "example" : "OK"
           },
           "globalMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Global-level messages (errors, warnings, info)",
             "items" : {
               "$ref" : "#/components/schemas/GlobalMsg"
@@ -2257,6 +2391,7 @@
           },
           "fieldMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Field-level validation messages",
             "items" : {
               "$ref" : "#/components/schemas/FieldMsg"
@@ -2264,31 +2399,37 @@
           },
           "responseData" : {
             "$ref" : "#/components/schemas/PaymentDto",
+            "default" : "",
             "description" : "Response payload"
           },
           "meta" : {
             "$ref" : "#/components/schemas/PaginationMeta",
+            "default" : "",
             "description" : "Pagination metadata"
           }
         }
       },
       "GlobalResponseMemberSummaryDto" : {
         "type" : "object",
+        "default" : null,
         "description" : "Unified API response envelope",
         "properties" : {
           "statusCode" : {
             "type" : "integer",
             "format" : "int32",
+            "default" : "",
             "description" : "HTTP status code",
             "example" : 200
           },
           "statusDesc" : {
             "type" : "string",
+            "default" : "",
             "description" : "HTTP status description",
             "example" : "OK"
           },
           "globalMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Global-level messages (errors, warnings, info)",
             "items" : {
               "$ref" : "#/components/schemas/GlobalMsg"
@@ -2296,6 +2437,7 @@
           },
           "fieldMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Field-level validation messages",
             "items" : {
               "$ref" : "#/components/schemas/FieldMsg"
@@ -2303,10 +2445,12 @@
           },
           "responseData" : {
             "$ref" : "#/components/schemas/MemberSummaryDto",
+            "default" : "",
             "description" : "Response payload"
           },
           "meta" : {
             "$ref" : "#/components/schemas/PaginationMeta",
+            "default" : "",
             "description" : "Pagination metadata"
           }
         }
@@ -2327,21 +2471,25 @@
       },
       "GlobalResponseListMemberLookupDto" : {
         "type" : "object",
+        "default" : null,
         "description" : "Unified API response envelope",
         "properties" : {
           "statusCode" : {
             "type" : "integer",
             "format" : "int32",
+            "default" : "",
             "description" : "HTTP status code",
             "example" : 200
           },
           "statusDesc" : {
             "type" : "string",
+            "default" : "",
             "description" : "HTTP status description",
             "example" : "OK"
           },
           "globalMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Global-level messages (errors, warnings, info)",
             "items" : {
               "$ref" : "#/components/schemas/GlobalMsg"
@@ -2349,6 +2497,7 @@
           },
           "fieldMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Field-level validation messages",
             "items" : {
               "$ref" : "#/components/schemas/FieldMsg"
@@ -2356,6 +2505,7 @@
           },
           "responseData" : {
             "type" : "array",
+            "default" : "",
             "description" : "Response payload",
             "items" : {
               "$ref" : "#/components/schemas/MemberLookupDto"
@@ -2363,6 +2513,7 @@
           },
           "meta" : {
             "$ref" : "#/components/schemas/PaginationMeta",
+            "default" : "",
             "description" : "Pagination metadata"
           }
         }
@@ -2390,21 +2541,25 @@
       },
       "GlobalResponseMemberDto" : {
         "type" : "object",
+        "default" : null,
         "description" : "Unified API response envelope",
         "properties" : {
           "statusCode" : {
             "type" : "integer",
             "format" : "int32",
+            "default" : "",
             "description" : "HTTP status code",
             "example" : 200
           },
           "statusDesc" : {
             "type" : "string",
+            "default" : "",
             "description" : "HTTP status description",
             "example" : "OK"
           },
           "globalMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Global-level messages (errors, warnings, info)",
             "items" : {
               "$ref" : "#/components/schemas/GlobalMsg"
@@ -2412,6 +2567,7 @@
           },
           "fieldMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Field-level validation messages",
             "items" : {
               "$ref" : "#/components/schemas/FieldMsg"
@@ -2419,31 +2575,37 @@
           },
           "responseData" : {
             "$ref" : "#/components/schemas/MemberDto",
+            "default" : "",
             "description" : "Response payload"
           },
           "meta" : {
             "$ref" : "#/components/schemas/PaginationMeta",
+            "default" : "",
             "description" : "Pagination metadata"
           }
         }
       },
       "GlobalResponseExpenseDto" : {
         "type" : "object",
+        "default" : null,
         "description" : "Unified API response envelope",
         "properties" : {
           "statusCode" : {
             "type" : "integer",
             "format" : "int32",
+            "default" : "",
             "description" : "HTTP status code",
             "example" : 200
           },
           "statusDesc" : {
             "type" : "string",
+            "default" : "",
             "description" : "HTTP status description",
             "example" : "OK"
           },
           "globalMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Global-level messages (errors, warnings, info)",
             "items" : {
               "$ref" : "#/components/schemas/GlobalMsg"
@@ -2451,6 +2613,7 @@
           },
           "fieldMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Field-level validation messages",
             "items" : {
               "$ref" : "#/components/schemas/FieldMsg"
@@ -2458,10 +2621,12 @@
           },
           "responseData" : {
             "$ref" : "#/components/schemas/ExpenseDto",
+            "default" : "",
             "description" : "Response payload"
           },
           "meta" : {
             "$ref" : "#/components/schemas/PaginationMeta",
+            "default" : "",
             "description" : "Pagination metadata"
           }
         }
@@ -2495,21 +2660,25 @@
       },
       "GlobalResponseDashboardMetricsDto" : {
         "type" : "object",
+        "default" : null,
         "description" : "Unified API response envelope",
         "properties" : {
           "statusCode" : {
             "type" : "integer",
             "format" : "int32",
+            "default" : "",
             "description" : "HTTP status code",
             "example" : 200
           },
           "statusDesc" : {
             "type" : "string",
+            "default" : "",
             "description" : "HTTP status description",
             "example" : "OK"
           },
           "globalMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Global-level messages (errors, warnings, info)",
             "items" : {
               "$ref" : "#/components/schemas/GlobalMsg"
@@ -2517,6 +2686,7 @@
           },
           "fieldMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Field-level validation messages",
             "items" : {
               "$ref" : "#/components/schemas/FieldMsg"
@@ -2524,16 +2694,19 @@
           },
           "responseData" : {
             "$ref" : "#/components/schemas/DashboardMetricsDto",
+            "default" : "",
             "description" : "Response payload"
           },
           "meta" : {
             "$ref" : "#/components/schemas/PaginationMeta",
+            "default" : "",
             "description" : "Pagination metadata"
           }
         }
       },
       "QuarterStatus" : {
         "type" : "string",
+        "default" : null,
         "description" : "The temporal status of a fiscal quarter",
         "enum" : [ "PAST", "CURRENT", "FUTURE" ]
       },
@@ -2557,21 +2730,25 @@
       },
       "GlobalResponseUserProfileDto" : {
         "type" : "object",
+        "default" : null,
         "description" : "Unified API response envelope",
         "properties" : {
           "statusCode" : {
             "type" : "integer",
             "format" : "int32",
+            "default" : "",
             "description" : "HTTP status code",
             "example" : 200
           },
           "statusDesc" : {
             "type" : "string",
+            "default" : "",
             "description" : "HTTP status description",
             "example" : "OK"
           },
           "globalMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Global-level messages (errors, warnings, info)",
             "items" : {
               "$ref" : "#/components/schemas/GlobalMsg"
@@ -2579,6 +2756,7 @@
           },
           "fieldMessages" : {
             "type" : "array",
+            "default" : "",
             "description" : "Field-level validation messages",
             "items" : {
               "$ref" : "#/components/schemas/FieldMsg"
@@ -2586,10 +2764,12 @@
           },
           "responseData" : {
             "$ref" : "#/components/schemas/UserProfileDto",
+            "default" : "",
             "description" : "Response payload"
           },
           "meta" : {
             "$ref" : "#/components/schemas/PaginationMeta",
+            "default" : "",
             "description" : "Pagination metadata"
           }
         }

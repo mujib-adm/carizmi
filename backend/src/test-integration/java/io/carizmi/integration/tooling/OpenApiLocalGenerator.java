@@ -1,12 +1,13 @@
 package io.carizmi.integration.tooling;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.carizmi.integration.config.TestContainersConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.web.client.RestTemplate;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -40,7 +41,7 @@ public class OpenApiLocalGenerator {
                 throw new IllegalStateException("Received empty OpenAPI specification");
             }
 
-            ObjectMapper mapper = new ObjectMapper();
+            ObjectMapper mapper = JsonMapper.builder().build();
             Object jsonObject = mapper.readValue(openApiJson, Object.class);
 
             // Normalize the server URL to avoid contract drift caused by random ephemeral ports.

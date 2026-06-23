@@ -83,10 +83,12 @@ management:
       enabled: false
   tracing:
     sampling:
-      probability: 0.05             # 5% sampling (industry standard for production)
-  otlp:
+      probability: 0.05             # 5% sampling
+  opentelemetry:
     tracing:
-      endpoint: https://cloudtrace.googleapis.com
+      export:
+        otlp:
+          endpoint: https://cloudtrace.googleapis.com
 
 app:
   cookie:

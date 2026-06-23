@@ -1,6 +1,5 @@
 package io.carizmi.infrastructure.filter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.github.bucket4j.Bandwidth;
@@ -17,6 +16,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.lang.NonNull;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -71,7 +71,7 @@ public class RequestsRateLimitFilter extends OncePerRequestFilter {
         } else {
             response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-            new ObjectMapper().writeValue(response.getOutputStream(),
+            JsonMapper.builder().build().writeValue(response.getOutputStream(),
                     ResponseUtils.withStatusAndData(HttpStatus.TOO_MANY_REQUESTS, MessageType.ERROR,
                             TOO_MANY_REQUESTS.getMessageText()).getBody());
         }

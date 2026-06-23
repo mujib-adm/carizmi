@@ -1,7 +1,5 @@
 package io.carizmi.infrastructure.outbox;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.carizmi.framework.event.DomainEvent;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -10,6 +8,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Transactional event listener that persists domain events to the outbox table
@@ -53,7 +53,7 @@ public class OutboxEventListener {
             outboxEventVO.setCreatedAt(event.occurredAt());
 
             outboxEvent.save(outboxEventVO);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             logger.error("Failed to serialize domain event payload for {} [id={}]: {}",
                     event.aggregateType(), event.aggregateId(), e.getMessage(), e);
         }

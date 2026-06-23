@@ -12,7 +12,8 @@ export function usePaginatedSystemSettings(initialRequest: SystemSettingsSearchR
   const [loading, setLoading] = useState(false);
 
   // Stabilize initialRequest
-  const memoInitialRequest = useMemo(() => initialRequest, [JSON.stringify(initialRequest)]);
+  const requestString = JSON.stringify(initialRequest);
+  const memoInitialRequest = useMemo(() => initialRequest, [requestString]);
 
   const fetchSettings = useCallback(
     async (request: SystemSettingsSearchRequestDto = {}) => {

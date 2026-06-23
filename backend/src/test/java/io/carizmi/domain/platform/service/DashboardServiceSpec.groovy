@@ -1,7 +1,7 @@
 package io.carizmi.domain.platform.service
 
-import com.fasterxml.jackson.core.type.TypeReference
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.core.type.TypeReference
+import tools.jackson.databind.ObjectMapper
 import io.carizmi.domain.platform.data.dto.response.DashboardMetricsDto
 import io.carizmi.domain.platform.data.dto.response.QuarterlyCollectionDto
 import io.carizmi.domain.platform.model.DashboardSnapshotVO

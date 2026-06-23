@@ -1,13 +1,15 @@
 # Carizmi
 
-[![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk)](https://openjdk.org/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-brightgreen?logo=springboot)](https://spring.io/projects/spring-boot)
+[![Java](https://img.shields.io/badge/Java-25-orange?logo=openjdk)](https://openjdk.org/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.x-brightgreen?logo=springboot)](https://spring.io/projects/spring-boot)
 [![Build](https://img.shields.io/github/actions/workflow/status/mujib-adm/carizmi/ci-cd.yml?label=build)](https://github.com/mujib-adm/carizmi/actions)
 [![Cloud Run](https://img.shields.io/badge/deployment-Google%20Cloud%20Run-4285F4?logo=googlecloud)](https://cloud.google.com/run)
 [![Architecture](https://img.shields.io/badge/Architecture-CQRS%20%2B%20EDA-purple)](./docs/ARCHITECTURE.md)
 [![Observability](https://img.shields.io/badge/Observability-OpenTelemetry-blueviolet)](./docs/MONITORING.md)
 [![Security](https://img.shields.io/badge/security-OWASP%20Checks-success)](https://owasp.org/)
 [![Coverage](https://codecov.io/gh/mujib-adm/carizmi/graph/badge.svg)](https://codecov.io/gh/mujib-adm/carizmi)
+
+> **Note:** The application framework has been upgraded from **Java 21 to Java 25** and from **Spring Boot 3.x to Spring Boot 4.x**. Documentation updates are currently in progress and will be revised to reflect the framework migration, associated configuration changes, and any related implementation updates.
 
 Production-grade open-source community management platform built with Java 21, Spring Boot 3, CQRS architecture, event-driven workflows, and cloud-native infrastructure.
 

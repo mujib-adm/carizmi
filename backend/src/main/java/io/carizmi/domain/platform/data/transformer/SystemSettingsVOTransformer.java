@@ -16,7 +16,7 @@ public class SystemSettingsVOTransformer implements Transformer<SystemSettingsDt
         vo.setSettingKey(dto.getSettingKey());
         vo.setSettingValue(dto.getSettingValue());
         vo.setEffectiveDate(dto.getEffectiveDate());
-        vo.setActive(dto.isActive());
+        vo.setActive(Boolean.TRUE.equals(dto.getActive()));
         return vo;
     }
 
@@ -26,7 +26,7 @@ public class SystemSettingsVOTransformer implements Transformer<SystemSettingsDt
         existingVO.setSettingKey(dto.getSettingKey());
         existingVO.setSettingValue(dto.getSettingValue());
         existingVO.setEffectiveDate(dto.getEffectiveDate());
-        existingVO.setActive(dto.isActive());
+        existingVO.setActive(Boolean.TRUE.equals(dto.getActive()));
         return existingVO;
     }
 }

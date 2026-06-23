@@ -35,7 +35,7 @@ class UserResponseDtoTransformerSpec extends BaseSpecification {
         result.firstName == vo.firstName
         result.lastName == vo.lastName
         result.role == vo.role.name()
-        result.isActive() == vo.isActive()
+        result.getActive() == vo.isActive()
         noExceptionThrown()
     }
 

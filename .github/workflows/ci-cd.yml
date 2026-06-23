@@ -25,7 +25,7 @@ concurrency:
 permissions: {}
 
 env:
-  JAVA_VERSION: '21'
+  JAVA_VERSION: '25'
   NODE_VERSION: '24'
   GAR_LOCATION: us-central1
   GAR_REPO: carizmi-repo

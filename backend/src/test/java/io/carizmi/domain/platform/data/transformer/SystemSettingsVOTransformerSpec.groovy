@@ -32,7 +32,7 @@ class SystemSettingsVOTransformerSpec extends BaseSpecification {
         result.settingKey == dto.settingKey
         result.settingValue == dto.settingValue
         result.effectiveDate == dto.effectiveDate
-        result.isActive() == dto.isActive()
+        result.isActive() == dto.getActive()
         noExceptionThrown()
     }
 
@@ -72,7 +72,7 @@ class SystemSettingsVOTransformerSpec extends BaseSpecification {
         result.settingKey == dto.settingKey
         result.settingValue == dto.settingValue
         result.effectiveDate == dto.effectiveDate
-        result.isActive() == dto.isActive()
+        result.isActive() == dto.getActive()
         noExceptionThrown()
     }
 

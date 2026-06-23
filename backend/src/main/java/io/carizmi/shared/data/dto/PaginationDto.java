@@ -14,9 +14,9 @@ import org.springframework.lang.NonNull;
 @Schema(description = "Pagination parameters")
 public class PaginationDto {
     @Schema(description = "Page number (0-based)", defaultValue = "0", example = "0")
-    private int page = 0;
+    private Integer page = 0;
     @Schema(description = "Page size", defaultValue = "10", example = "10")
-    private int size = 10;
+    private Integer size = 10;
     @Schema(description = "Sort field name", example = "firstName")
     private String sortField;
     @Schema(description = "Sort direction", example = "asc")
@@ -30,6 +30,8 @@ public class PaginationDto {
             Sort.Direction direction = sortOrder == SortOrder.desc ? Sort.Direction.DESC : Sort.Direction.ASC;
             sort = Sort.by(direction, sortField);
         }
-        return PageRequest.of(Math.max(0, page), Math.max(1, Math.min(size, 100)), sort);
+        int safePage = page == null ? 0 : page;
+        int safeSize = size == null ? 10 : size;
+        return PageRequest.of(Math.max(0, safePage), Math.max(1, Math.min(safeSize, 100)), sort);
     }
 }

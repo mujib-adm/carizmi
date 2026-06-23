@@ -23,7 +23,7 @@ import java.util.Set;
  * It detects duplicate @DomainLogicFor annotations for the same VO class during compilation.
  */
 @SupportedAnnotationTypes("io.carizmi.framework.annotation.DomainLogicFor")
-@SupportedSourceVersion(SourceVersion.RELEASE_21)
+@SupportedSourceVersion(SourceVersion.RELEASE_25)
 public class DomainLogicProcessor extends AbstractProcessor {
 
     // Map to track VO -> BL mapping within the current compilation context

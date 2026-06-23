@@ -30,10 +30,12 @@ export function SystemSettingsProvider({ children }: { children: React.ReactNode
 
   useEffect(() => {
     if (isAuthenticated) {
-      fetchSettings();
+      Promise.resolve().then(() => fetchSettings());
     } else {
-      setSettings([]);
-      setIsLoading(false);
+      Promise.resolve().then(() => {
+        setSettings([]);
+        setIsLoading(false);
+      });
     }
   }, [isAuthenticated]);
 

@@ -17,5 +17,5 @@ public class SystemSettingsDto {
     private String settingKey;
     private String settingValue;
     private LocalDate effectiveDate;
-    private boolean active;
+    private Boolean active;
 }
