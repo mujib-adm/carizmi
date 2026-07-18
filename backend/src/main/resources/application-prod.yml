@@ -22,8 +22,8 @@ spring:
     username: ${DB_USER}
     password: ${DB_PASS}
     hikari:
-      minimum-idle: 2
-      maximum-pool-size: 30
+      minimum-idle: 0
+      maximum-pool-size: 4
       idle-timeout: 30000
       connection-timeout: 5000
       pool-name: ${APP_NAME:Carizmi}ProdPool
