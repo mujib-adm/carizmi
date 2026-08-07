@@ -19,7 +19,7 @@ export default function App() {
         <ReferenceProvider>
           <SystemSettingsProvider>
             <Layout className="app-wrapper">
-              <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+              <BrowserRouter>
                 <NotificationProvider>
                   <AppHeader />
                   <Layout className="main-layout">
