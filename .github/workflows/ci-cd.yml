@@ -494,6 +494,8 @@ jobs:
             DB_URL=${{ vars.PROD_DB_URL }}
             DB_USER=${{ vars.PROD_DB_USER }}
             REDIS_HOST=${{ vars.PROD_REDIS_HOST }}
+            REDIS_PORT=${{ vars.PROD_REDIS_PORT }}
+            REDIS_SSL_ENABLED=true
             ADMIN_DEFAULT_FIRSTNAME=${{ vars.ADMIN_DEFAULT_FIRSTNAME }}
             ADMIN_DEFAULT_LASTNAME=${{ vars.ADMIN_DEFAULT_LASTNAME }}
             ADMIN_DEFAULT_EMAIL=${{ vars.ADMIN_DEFAULT_EMAIL }}
@@ -506,6 +508,7 @@ jobs:
             DB_PASS=DB_PASSWORD:latest
             JWT_SECRET=JWT_SECRET:latest
             ADMIN_DEFAULT_PASSWORD=ADMIN_DEFAULT_PASSWORD:latest
+            REDIS_PASSWORD=REDIS_PASSWORD:latest
           flags: >
             --network=default
             --subnet=default
