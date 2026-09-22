@@ -1852,6 +1852,13 @@
           "year" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "unpaidQuarters" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
           }
         }
       },

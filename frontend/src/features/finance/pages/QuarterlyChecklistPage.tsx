@@ -1,5 +1,5 @@
 import { FileSearchOutlined } from '@ant-design/icons';
-import { Card, Grid, Table, Typography } from 'antd';
+import { Card, Checkbox, Form, Grid, Table, Tooltip, Typography } from 'antd';
 import { ColumnsType } from 'antd/es/table';
 import { useState } from 'react';
 import { checklistApi } from '../../../api/generated/checklist/checklist';
@@ -48,17 +48,31 @@ export default function QuarterlyChecklistPage() {
   const screens = useBreakpoint();
   const isMobile = !screens.md;
 
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth(); // 0 to 11
+  const currentQuarter = Math.floor(currentMonth / 3) + 1; // 1 to 4
+
+  const selectedYear = filters.year ?? currentYear;
+
+  const isQuarterFuture = (q: number) => {
+    if (selectedYear > currentYear) return true;
+    if (selectedYear === currentYear) return q > currentQuarter;
+    return false;
+  };
+
   const fetchChecklist = async (request: ChecklistSearchRequestDto = {}) => {
     setLoading(true);
     resetMessages();
-    setData(null);
-    setMeta(null);
     try {
-      const resp = await checklistApi.getQuarterlyChecklist({ ...filters, ...request });
+      const mergedRequest = { ...filters, ...request };
+      const resp = await checklistApi.getQuarterlyChecklist(mergedRequest);
       setData(resp.responseData ?? null);
       setMeta(resp.meta ?? null);
     } catch (err: any) {
       handleError(err);
+      setData(null);
+      setMeta(null);
     } finally {
       setLoading(false);
     }
@@ -66,6 +80,40 @@ export default function QuarterlyChecklistPage() {
 
   const handleSearch = () => {
     fetchChecklist({ page: 0, size: meta?.pageSize ?? 10 });
+  };
+
+  const handleQuarterToggle = (q: number, checked: boolean) => {
+    const current = filters.unpaidQuarters ?? [];
+    const updated = checked
+      ? [...current, q].sort((a, b) => a - b)
+      : current.filter((item) => item !== q);
+
+    setFilters((prev) => ({
+      ...prev,
+      unpaidQuarters: updated.length > 0 ? updated : undefined,
+    }));
+  };
+
+  const handleClearQuarterFilters = () => {
+    setFilters((prev) => ({
+      ...prev,
+      unpaidQuarters: undefined,
+    }));
+  };
+
+  const handleFilterChange = (updated: ChecklistSearchRequestDto) => {
+    const newYear = updated.year ?? currentYear;
+    const isFutureForNewYear = (q: number) => {
+      if (newYear > currentYear) return true;
+      if (newYear === currentYear) return q > currentQuarter;
+      return false;
+    };
+    // Auto-uncheck quarters that become future when year changes
+    const cleanedQuarters = (filters.unpaidQuarters ?? []).filter((q) => !isFutureForNewYear(q));
+    setFilters({
+      ...updated,
+      unpaidQuarters: cleanedQuarters.length > 0 ? cleanedQuarters : undefined,
+    });
   };
 
   const summary = data?.summary;
@@ -126,10 +174,64 @@ export default function QuarterlyChecklistPage() {
       <SearchFilterBar
         config={checklistSearchFiltersConfig as any}
         filters={filters}
-        onChange={setFilters}
+        onChange={handleFilterChange}
         onSearch={handleSearch}
         onAdd={undefined}
-      />
+      >
+        <Form.Item
+          label={
+            <span style={{ fontWeight: 600, color: 'var(--otherColor2)' }}>
+              Quarters (Unpaid)
+            </span>
+          }
+          style={{ marginBottom: 8, marginRight: 16 }}
+        >
+          <div className={styles.quarterCheckboxGroup}>
+            {[1, 2, 3, 4].map((q) => {
+              const isFuture = isQuarterFuture(q);
+              const isChecked = !isFuture && (filters.unpaidQuarters?.includes(q) ?? false);
+              const content = (
+                <label
+                  key={q}
+                  className={`${styles.quarterCheckboxItem} ${
+                    isChecked ? styles.quarterCheckboxChecked : ''
+                  } ${isFuture ? styles.quarterCheckboxDisabled : ''}`}
+                >
+                  <Checkbox
+                    checked={isChecked}
+                    disabled={isFuture}
+                    onChange={(e) => handleQuarterToggle(q, e.target.checked)}
+                    style={{ marginRight: 6 }}
+                  />
+                  <span>Q{q}</span>
+                  {isFuture && (
+                    <span style={{ fontSize: '0.75rem', marginLeft: 4, opacity: 0.65 }}>(Future)</span>
+                  )}
+                </label>
+              );
+
+              return isFuture ? (
+                <Tooltip key={q} title={`Quarter ${q} of ${selectedYear} is in the future`}>
+                  {content}
+                </Tooltip>
+              ) : (
+                content
+              );
+            })}
+
+            {filters.unpaidQuarters && filters.unpaidQuarters.length > 0 && (
+              <button
+                type="button"
+                className={styles.clearQuartersBtn}
+                onClick={handleClearQuarterFilters}
+                title="Clear selected quarters"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </Form.Item>
+      </SearchFilterBar>
 
       {globalMessages && <MessageBanner messages={globalMessages} />}
 
@@ -168,14 +270,9 @@ export default function QuarterlyChecklistPage() {
                         '—'
                       ) : (
                         <span className={styles.quarterSummary}>
-                          <span className={styles.summaryPaid}>
-                            <span className={styles.summaryIcon}>✅</span>
-                            <span>{qs.paidCount}</span>
-                          </span>
-                          <span className={styles.summaryUnpaid}>
-                            <span className={styles.summaryIcon}>❌</span>
-                            <span>{qs.unpaidCount}</span>
-                          </span>
+                          <span className={styles.summaryPaid}>{qs.paidCount}</span>
+                          <span className={styles.summaryDivider}>/</span>
+                          <span className={styles.summaryUnpaid}>{qs.unpaidCount}</span>
                         </span>
                       )}
                     </Table.Summary.Cell>

@@ -572,4 +572,124 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         capturedPageable.sort == Sort.by(FieldConstants.FIRST_NAME, FieldConstants.LAST_NAME)
         noExceptionThrown()
     }
+
+    def "test getQuarterlyChecklist - filtered by unpaidQuarters returns only matching members"() {
+        given: "3 members: m1 paid all quarters, m2 unpaid Q1, m3 unpaid Q2"
+        int year = LocalDate.now().getYear() - 1
+
+        MemberVO m1 = createMember(1, "Alice", "Smith", LocalDate.of(year - 1, 1, 1))
+        MemberVO m2 = createMember(2, "Bob", "Jones", LocalDate.of(year - 1, 1, 1))
+        MemberVO m3 = createMember(3, "Charlie", "Brown", LocalDate.of(year - 1, 1, 1))
+
+        Page<MemberVO> allMembersPage = createPage([m1, m2, m3], 0, Integer.MAX_VALUE)
+
+        List<PaymentSummary> summaries = [
+                createSummary(1, year, 1, new BigDecimal("60")),
+                createSummary(1, year, 2, new BigDecimal("60")),
+                createSummary(1, year, 3, new BigDecimal("60")),
+                createSummary(1, year, 4, new BigDecimal("60")),
+                // m2: paid Q2, Q3, Q4; unpaid Q1
+                createSummary(2, year, 2, new BigDecimal("60")),
+                createSummary(2, year, 3, new BigDecimal("60")),
+                createSummary(2, year, 4, new BigDecimal("60")),
+                // m3: paid Q1, Q3, Q4; unpaid Q2
+                createSummary(3, year, 1, new BigDecimal("60")),
+                createSummary(3, year, 3, new BigDecimal("60")),
+                createSummary(3, year, 4, new BigDecimal("60"))
+        ]
+
+        Pageable capturedPageable
+        ChecklistSearchRequestDto request = searchRequest(year, 0, 10)
+        request.setUnpaidQuarters([1])
+
+        when: "Filtering by Q1 unpaid"
+        SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(request)
+
+        then: "The expected calls are made with DB-level sort"
+        1 * member.findActiveMembers(_ as Pageable) >> { Pageable p -> capturedPageable = p; allMembersPage }
+        1 * payment.findMembersPaymentSummaries([1, 2, 3], ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> summaries
+        1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
+        0 * member.findActiveMemberJoinDates()
+        0 * payment.findPaymentSummaries(_, _)
+        0 * _
+
+        and: "Only m2 (Bob) is returned"
+        QuarterlyChecklistDto result = checklistResult.data()
+        result.rows.size() == 1
+        result.rows[0].memberID == 2
+        result.rows[0].memberName == "Bob Jones"
+        result.rows[0].quarters[0].status == QuarterCellStatus.UNPAID
+        checklistResult.meta().totalRecords == 1
+        checklistResult.meta().totalPages == 1
+
+        and: "Summary reflects only the filtered member"
+        result.summary != null
+        result.summary.totalPaid == new BigDecimal("180")
+        result.summary.totalBalance == new BigDecimal("60")
+
+        and: "DB sorting is requested"
+        capturedPageable != null
+        capturedPageable.sort == Sort.by(FieldConstants.FIRST_NAME, FieldConstants.LAST_NAME)
+        noExceptionThrown()
+    }
+
+    def "test getQuarterlyChecklist - filtered by multiple unpaidQuarters"() {
+        given: "4 members: m1 paid all, m2 unpaid Q1 only, m3 unpaid Q2 only, m4 unpaid in both Q1 and Q2"
+        int year = LocalDate.now().getYear() - 1
+
+        MemberVO m1 = createMember(1, "Alice", "Smith", LocalDate.of(year - 1, 1, 1))
+        MemberVO m2 = createMember(2, "Bob", "Jones", LocalDate.of(year - 1, 1, 1))
+        MemberVO m3 = createMember(3, "Charlie", "Brown", LocalDate.of(year - 1, 1, 1))
+        MemberVO m4 = createMember(4, "David", "Miller", LocalDate.of(year - 1, 1, 1))
+
+        // createPage sorts Alice, Bob, Charlie, David
+        Page<MemberVO> allMembersPage = createPage([m1, m2, m3, m4], 0, Integer.MAX_VALUE)
+
+        List<PaymentSummary> summaries = [
+                // m1: paid all quarters
+                createSummary(1, year, 1, new BigDecimal("60")),
+                createSummary(1, year, 2, new BigDecimal("60")),
+                createSummary(1, year, 3, new BigDecimal("60")),
+                createSummary(1, year, 4, new BigDecimal("60")),
+                // m2: unpaid Q1 only (paid Q2, Q3, Q4)
+                createSummary(2, year, 2, new BigDecimal("60")),
+                createSummary(2, year, 3, new BigDecimal("60")),
+                createSummary(2, year, 4, new BigDecimal("60")),
+                // m3: unpaid Q2 only (paid Q1, Q3, Q4)
+                createSummary(3, year, 1, new BigDecimal("60")),
+                createSummary(3, year, 3, new BigDecimal("60")),
+                createSummary(3, year, 4, new BigDecimal("60")),
+                // m4: unpaid in BOTH Q1 and Q2 (paid Q3, Q4)
+                createSummary(4, year, 3, new BigDecimal("60")),
+                createSummary(4, year, 4, new BigDecimal("60"))
+        ]
+
+        ChecklistSearchRequestDto request = searchRequest(year, 0, 10)
+        request.setUnpaidQuarters([1, 2])
+
+        when: "Filtering by Q1 AND Q2 unpaid"
+        SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(request)
+
+        then:
+        1 * member.findActiveMembers(_ as Pageable) >> allMembersPage
+        1 * payment.findMembersPaymentSummaries([1, 2, 3, 4], ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> summaries
+        1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
+        0 * _
+
+        and: "ONLY m4 (David) is returned because only m4 is UNPAID in BOTH Q1 and Q2"
+        QuarterlyChecklistDto result = checklistResult.data()
+        result.rows.size() == 1
+        result.rows[0].memberID == 4
+        result.rows[0].memberName == "David Miller"
+        result.rows[0].quarters[0].status == QuarterCellStatus.UNPAID
+        result.rows[0].quarters[1].status == QuarterCellStatus.UNPAID
+        checklistResult.meta().totalRecords == 1
+        checklistResult.meta().totalPages == 1
+
+        and: "Summary reflects only the matching member (m4)"
+        result.summary != null
+        result.summary.totalPaid == new BigDecimal("120") // 60 from Q3 + 60 from Q4
+        result.summary.totalBalance == new BigDecimal("120") // 60 for Q1 + 60 for Q2
+        noExceptionThrown()
+    }
 }
