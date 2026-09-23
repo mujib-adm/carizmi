@@ -18,10 +18,13 @@ import io.carizmi.shared.data.dto.PaymentSummary;
 import io.carizmi.domain.finance.data.dto.response.QuarterCellDto;
 import io.carizmi.domain.finance.data.dto.response.QuarterSummaryDto;
 import io.carizmi.domain.finance.data.dto.response.QuarterlyChecklistDto;
+import io.carizmi.domain.membership.data.dto.MemberDto;
+import io.carizmi.framework.exception.RecordNotFoundException;
 import io.carizmi.framework.data.response.PaginationMeta;
 import io.carizmi.framework.data.response.SinglePagedResult;
 import io.carizmi.domain.finance.service.QuarterlyFeeChecklistService;
 import io.carizmi.shared.util.QuarterUtils;
+import io.carizmi.shared.util.PhoneUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -58,6 +61,18 @@ public class QuarterlyFeeChecklistServiceImpl implements QuarterlyFeeChecklistSe
         // For past years, all 4 quarters are assessable; for current year, only up to currentQuarter
         int assessableQuarter = (year < currentYear) ? 4 : (year == currentYear) ? currentQuarter : 0;
 
+        /* --- 1. Narrowest: specific memberID filter --- */
+        if (request.getMemberID() != null) {
+            return getSingleMemberQuarterlyChecklist(request.getMemberID(), year, quarterlyFeeAmount, currentYear, currentQuarter, assessableQuarter);
+        }
+
+        /* --- 2. Next: unpaidQuarters filter --- */
+        List<Integer> unpaidQuarters = request.getUnpaidQuarters();
+        if (unpaidQuarters != null && !unpaidQuarters.isEmpty()) {
+            return getFilteredQuarterlyChecklist(request, year, quarterlyFeeAmount, currentYear, currentQuarter, assessableQuarter, unpaidQuarters);
+        }
+
+        /* --- 3. Default: Get all active members checklist --- */
         // 1. Fetch paginated active members, sorted by name at the DB level
         Pageable requestedPageable = request.toPageable();
         Pageable pageable = PageRequest.of(requestedPageable.getPageNumber(), requestedPageable.getPageSize(),
@@ -91,6 +106,177 @@ public class QuarterlyFeeChecklistServiceImpl implements QuarterlyFeeChecklistSe
         PaginationMeta meta = PaginationMeta.of(memberPage.getNumber(), memberPage.getSize(),
                 memberPage.getTotalElements(), memberPage.getTotalPages());
         return SinglePagedResult.of(checklistDto, meta);
+    }
+
+    /**
+     * Handles checklist retrieval when a specific memberID filter is provided (narrowest filter).
+     * If the member is not found or inactive, returns an empty checklist result.
+     */
+    private SinglePagedResult<QuarterlyChecklistDto> getSingleMemberQuarterlyChecklist(
+            Integer memberID,
+            int year,
+            BigDecimal quarterlyFeeAmount,
+            int currentYear,
+            int currentQuarter,
+            int assessableQuarter) {
+
+        MemberDto memberDto = null;
+        try {
+            memberDto = member.getMember(memberID);
+        } catch (RecordNotFoundException e) {
+            logger.warn("Member with ID {} not found", memberID);
+        }
+
+        if (memberDto == null || !ReferenceConstants.MEMBER_STATUS.ACTIVE.equals(memberDto.getStatus())) {
+            ChecklistSummaryDto emptySummary = computeFilteredSummary(Collections.emptyList(), assessableQuarter);
+            QuarterlyChecklistDto checklistDto = QuarterlyChecklistDto.builder()
+                    .year(year)
+                    .currentQuarter(assessableQuarter)
+                    .quarterlyFeeAmount(quarterlyFeeAmount)
+                    .rows(Collections.emptyList())
+                    .summary(emptySummary)
+                    .build();
+            return SinglePagedResult.of(checklistDto, PaginationMeta.of(0, 10, 0, 0));
+        }
+
+        MemberVO memberVO = new MemberVO();
+        memberVO.setMemberID(memberDto.getMemberID());
+        memberVO.setFirstName(memberDto.getFirstName());
+        memberVO.setLastName(memberDto.getLastName());
+        memberVO.setPhone(memberDto.getPhone());
+        memberVO.setJoinDate(memberDto.getJoinDate());
+        memberVO.setStatus(memberDto.getStatus());
+
+        List<MemberVO> memberList = List.of(memberVO);
+        List<PaymentSummary> summaries = payment.findMembersPaymentSummaries(
+                List.of(memberID), ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year);
+        Map<Integer, Map<Integer, BigDecimal>> paymentMap = buildPaymentMap(summaries);
+
+        List<MemberQuarterlyRowDto> rows = buildRows(memberList, paymentMap, quarterlyFeeAmount, year, currentYear, currentQuarter);
+        ChecklistSummaryDto summary = computeFilteredSummary(rows, assessableQuarter);
+
+        QuarterlyChecklistDto checklistDto = QuarterlyChecklistDto.builder()
+                .year(year)
+                .currentQuarter(assessableQuarter)
+                .quarterlyFeeAmount(quarterlyFeeAmount)
+                .rows(List.copyOf(rows))
+                .summary(summary)
+                .build();
+
+        PaginationMeta meta = PaginationMeta.of(0, 10, 1, 1);
+        return SinglePagedResult.of(checklistDto, meta);
+    }
+
+    /**
+     * Handles checklist retrieval when unpaid quarters filter is active.
+     * Members are fetched with DB-level sorting, rows are built, filtered by unpaid quarters, and then paginated.
+     */
+    private SinglePagedResult<QuarterlyChecklistDto> getFilteredQuarterlyChecklist(
+            ChecklistSearchRequestDto request,
+            int year,
+            BigDecimal quarterlyFeeAmount,
+            int currentYear,
+            int currentQuarter,
+            int assessableQuarter,
+            List<Integer> unpaidQuarters) {
+
+        // 1. Fetch ALL active members sorted at DB level
+        Pageable sortedUnpaged = PageRequest.of(0, Integer.MAX_VALUE,
+                Sort.by(FieldConstants.FIRST_NAME, FieldConstants.LAST_NAME));
+        Page<MemberVO> memberPage = member.findActiveMembers(sortedUnpaged);
+        List<MemberVO> allActiveMembers = memberPage.getContent();
+
+        // 2. Fetch payment summaries for all active members
+        List<Integer> memberIds = allActiveMembers.stream().map(MemberVO::getMemberID).toList();
+        List<PaymentSummary> summaries = memberIds.isEmpty()
+                ? Collections.emptyList()
+                : payment.findMembersPaymentSummaries(memberIds, ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year);
+
+        // 3. Build payment lookup
+        Map<Integer, Map<Integer, BigDecimal>> paymentMap = buildPaymentMap(summaries);
+
+        // 4. Build rows for ALL active members (already sorted at DB level)
+        List<MemberQuarterlyRowDto> allRows = buildRows(allActiveMembers, paymentMap, quarterlyFeeAmount, year, currentYear, currentQuarter);
+
+        // 5. Filter rows: keep members who are UNPAID in ALL of the specified unpaidQuarters (AND condition)
+        List<MemberQuarterlyRowDto> filteredRows = allRows.stream()
+                .filter(row -> row.getQuarters() != null && unpaidQuarters.stream()
+                        .allMatch(q -> row.getQuarters().stream()
+                                .anyMatch(cell -> cell.getQuarter() == q && cell.getStatus() == QuarterCellStatus.UNPAID)))
+                .toList();
+
+        // 6. Paginate filtered rows
+        Pageable requestedPageable = request.toPageable();
+        int page = requestedPageable.getPageNumber();
+        int size = requestedPageable.getPageSize();
+        int totalElements = filteredRows.size();
+        int totalPages = (size <= 0) ? 0 : (int) Math.ceil((double) totalElements / (double) size);
+
+        int start = Math.min(page * size, totalElements);
+        int end = Math.min(start + size, totalElements);
+        List<MemberQuarterlyRowDto> pageRows = filteredRows.subList(start, end);
+
+        // 7. Compute summary from filtered results
+        ChecklistSummaryDto summary = computeFilteredSummary(filteredRows, assessableQuarter);
+
+        QuarterlyChecklistDto checklistDto = QuarterlyChecklistDto.builder()
+                .year(year)
+                .currentQuarter(assessableQuarter)
+                .quarterlyFeeAmount(quarterlyFeeAmount)
+                .rows(List.copyOf(pageRows))
+                .summary(summary)
+                .build();
+
+        PaginationMeta meta = PaginationMeta.of(page, size, totalElements, totalPages);
+        return SinglePagedResult.of(checklistDto, meta);
+    }
+
+    /**
+     * Computes summary across the filtered list of rows.
+     */
+    private ChecklistSummaryDto computeFilteredSummary(List<MemberQuarterlyRowDto> filteredRows, int assessableQuarter) {
+        BigDecimal grandTotalPaid = BigDecimal.ZERO;
+        BigDecimal grandTotalBalance = BigDecimal.ZERO;
+        int[] paidCounts = new int[4];
+        int[] unpaidCounts = new int[4];
+
+        for (MemberQuarterlyRowDto row : filteredRows) {
+            if (row.getTotalPaid() != null) {
+                grandTotalPaid = grandTotalPaid.add(row.getTotalPaid());
+            }
+            if (row.getBalance() != null) {
+                grandTotalBalance = grandTotalBalance.add(row.getBalance());
+            }
+            if (row.getQuarters() != null) {
+                for (QuarterCellDto cell : row.getQuarters()) {
+                    int q = cell.getQuarter();
+                    if (q >= 1 && q <= 4) {
+                        if (cell.getStatus() == QuarterCellStatus.PAID) {
+                            paidCounts[q - 1]++;
+                        } else if (cell.getStatus() == QuarterCellStatus.UNPAID) {
+                            unpaidCounts[q - 1]++;
+                        }
+                    }
+                }
+            }
+        }
+
+        List<QuarterSummaryDto> quarterSummaries = new ArrayList<>();
+        for (int q = 1; q <= 4; q++) {
+            boolean isFuture = q > assessableQuarter;
+            quarterSummaries.add(QuarterSummaryDto.builder()
+                    .quarter(q)
+                    .paidCount(isFuture ? 0 : paidCounts[q - 1])
+                    .unpaidCount(isFuture ? 0 : unpaidCounts[q - 1])
+                    .future(isFuture)
+                    .build());
+        }
+
+        return ChecklistSummaryDto.builder()
+                .totalPaid(grandTotalPaid)
+                .totalBalance(grandTotalBalance)
+                .quarterSummaries(quarterSummaries)
+                .build();
     }
 
     /**
@@ -145,9 +331,14 @@ public class QuarterlyFeeChecklistServiceImpl implements QuarterlyFeeChecklistSe
                         .build());
             }
 
+            String formattedPhone = (m.getPhone() != null && !m.getPhone().isBlank())
+                    ? PhoneUtils.format(m.getPhone())
+                    : null;
+
             rows.add(MemberQuarterlyRowDto.builder()
                     .memberID(m.getMemberID())
                     .memberName(m.getFirstName() + " " + m.getLastName())
+                    .phone(formattedPhone)
                     .quarters(quarterCells)
                     .totalPaid(totalPaid)
                     .balance(computeBalance(eligibleQuarters, totalPaid, quarterlyFeeAmount))

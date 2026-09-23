@@ -1852,6 +1852,17 @@
           "year" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "memberID" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "unpaidQuarters" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
           }
         }
       },
@@ -1926,6 +1937,9 @@
             "format" : "int32"
           },
           "memberName" : {
+            "type" : "string"
+          },
+          "phone" : {
             "type" : "string"
           },
           "quarters" : {

@@ -21,6 +21,7 @@ type SearchFilterBarProps = {
   onChange: (updated: Record<string, any>) => void;
   onSearch: () => void;
   onAdd?: () => void;
+  children?: React.ReactNode;
 };
 
 export default function SearchFilterBar({
@@ -29,6 +30,7 @@ export default function SearchFilterBar({
   onChange,
   onSearch,
   onAdd,
+  children,
 }: SearchFilterBarProps) {
   const [form] = Form.useForm();
   const screens = useBreakpoint();
@@ -184,6 +186,7 @@ export default function SearchFilterBar({
                 )}
               </Form.Item>
             ))}
+            {children}
           </Form>
         </div>
       </div>
@@ -231,6 +234,8 @@ export default function SearchFilterBar({
             {field.type === 'dateRange' && <RangePicker allowClear style={{ borderRadius: 6 }} />}
           </Form.Item>
         ))}
+
+        {children}
 
         {/* Search Button next to filters */}
         <Form.Item style={{ marginBottom: 8 }}>

@@ -6,7 +6,6 @@ import io.carizmi.shared.constants.FieldConstants
 import io.carizmi.domain.finance.constants.QuarterCellStatus
 import io.carizmi.shared.constants.ReferenceConstants
 import io.carizmi.domain.membership.service.Member
-import io.carizmi.domain.finance.service.Payment
 import io.carizmi.domain.platform.service.SystemSetting
 import io.carizmi.domain.membership.model.MemberVO
 import io.carizmi.domain.finance.data.dto.request.ChecklistSearchRequestDto
@@ -15,6 +14,8 @@ import io.carizmi.shared.data.dto.MemberJoinDateProjection
 import io.carizmi.domain.finance.data.dto.response.MemberQuarterlyRowDto
 import io.carizmi.shared.data.dto.PaymentSummary
 import io.carizmi.domain.finance.data.dto.response.QuarterlyChecklistDto
+import io.carizmi.domain.membership.data.dto.MemberDto
+import io.carizmi.framework.exception.RecordNotFoundException
 import io.carizmi.framework.data.response.SinglePagedResult
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
@@ -41,14 +42,26 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
 
     // --- Helper methods ---
 
-    private MemberVO createMember(Integer id, String firstName, String lastName, LocalDate joinDate) {
+    private MemberVO createMember(Integer id, String firstName, String lastName, LocalDate joinDate, String phone = "6125550100") {
         MemberVO memberVO = new MemberVO()
         memberVO.setMemberID(id)
         memberVO.setFirstName(firstName)
         memberVO.setLastName(lastName)
+        memberVO.setPhone(phone)
         memberVO.setJoinDate(joinDate)
         memberVO.setStatus(ReferenceConstants.MEMBER_STATUS.ACTIVE)
         return memberVO
+    }
+
+    private MemberDto createMemberDto(Integer id, String firstName, String lastName, LocalDate joinDate, String status = ReferenceConstants.MEMBER_STATUS.ACTIVE, String phone = "6125550100") {
+        MemberDto dto = new MemberDto()
+        dto.setMemberID(id)
+        dto.setFirstName(firstName)
+        dto.setLastName(lastName)
+        dto.setPhone(phone)
+        dto.setJoinDate(joinDate)
+        dto.setStatus(status)
+        return dto
     }
 
     private PaymentSummary createSummary(Integer memberID, Integer year, Integer quarter, BigDecimal totalPaid) {
@@ -124,6 +137,7 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         MemberQuarterlyRowDto row = result.rows[0]
         row.memberID == 1
         row.memberName == "First1 Last1"
+        row.phone == "612-555-0100"
 
         // Assessable quarters should be PAID
         (0..<currentQuarter).each { idx ->
@@ -571,5 +585,283 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         capturedPageable.pageSize == 2
         capturedPageable.sort == Sort.by(FieldConstants.FIRST_NAME, FieldConstants.LAST_NAME)
         noExceptionThrown()
+    }
+
+    def "test getQuarterlyChecklist - filtered by unpaidQuarters returns only matching members"() {
+        given: "3 members: m1 paid all quarters, m2 unpaid Q1, m3 unpaid Q2"
+        int year = LocalDate.now().getYear() - 1
+
+        MemberVO m1 = createMember(1, "Alice", "Smith", LocalDate.of(year - 1, 1, 1))
+        MemberVO m2 = createMember(2, "Bob", "Jones", LocalDate.of(year - 1, 1, 1))
+        MemberVO m3 = createMember(3, "Charlie", "Brown", LocalDate.of(year - 1, 1, 1))
+
+        Page<MemberVO> allMembersPage = createPage([m1, m2, m3], 0, Integer.MAX_VALUE)
+
+        List<PaymentSummary> summaries = [
+                createSummary(1, year, 1, new BigDecimal("60")),
+                createSummary(1, year, 2, new BigDecimal("60")),
+                createSummary(1, year, 3, new BigDecimal("60")),
+                createSummary(1, year, 4, new BigDecimal("60")),
+                // m2: paid Q2, Q3, Q4; unpaid Q1
+                createSummary(2, year, 2, new BigDecimal("60")),
+                createSummary(2, year, 3, new BigDecimal("60")),
+                createSummary(2, year, 4, new BigDecimal("60")),
+                // m3: paid Q1, Q3, Q4; unpaid Q2
+                createSummary(3, year, 1, new BigDecimal("60")),
+                createSummary(3, year, 3, new BigDecimal("60")),
+                createSummary(3, year, 4, new BigDecimal("60"))
+        ]
+
+        Pageable capturedPageable
+        ChecklistSearchRequestDto request = searchRequest(year, 0, 10)
+        request.setUnpaidQuarters([1])
+
+        when: "Filtering by Q1 unpaid"
+        SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(request)
+
+        then: "The expected calls are made with DB-level sort"
+        1 * member.findActiveMembers(_ as Pageable) >> { Pageable p -> capturedPageable = p; allMembersPage }
+        1 * payment.findMembersPaymentSummaries([1, 2, 3], ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> summaries
+        1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
+        0 * _
+
+        and: "Only m2 (Bob) is returned"
+        QuarterlyChecklistDto result = checklistResult.data()
+        result.rows.size() == 1
+        result.rows[0].memberID == 2
+        result.rows[0].memberName == "Bob Jones"
+        result.rows[0].quarters[0].status == QuarterCellStatus.UNPAID
+        checklistResult.meta().totalRecords == 1
+        checklistResult.meta().totalPages == 1
+
+        and: "Summary reflects only the filtered member"
+        result.summary != null
+        result.summary.totalPaid == new BigDecimal("180")
+        result.summary.totalBalance == new BigDecimal("60")
+
+        and: "DB sorting is requested"
+        capturedPageable != null
+        capturedPageable.sort == Sort.by(FieldConstants.FIRST_NAME, FieldConstants.LAST_NAME)
+        noExceptionThrown()
+    }
+
+    def "test getQuarterlyChecklist - filtered by multiple unpaidQuarters"() {
+        given: "4 members: m1 paid all, m2 unpaid Q1 only, m3 unpaid Q2 only, m4 unpaid in both Q1 and Q2"
+        int year = LocalDate.now().getYear() - 1
+
+        MemberVO m1 = createMember(1, "Alice", "Smith", LocalDate.of(year - 1, 1, 1))
+        MemberVO m2 = createMember(2, "Bob", "Jones", LocalDate.of(year - 1, 1, 1))
+        MemberVO m3 = createMember(3, "Charlie", "Brown", LocalDate.of(year - 1, 1, 1))
+        MemberVO m4 = createMember(4, "David", "Miller", LocalDate.of(year - 1, 1, 1))
+
+        // createPage sorts Alice, Bob, Charlie, David
+        Page<MemberVO> allMembersPage = createPage([m1, m2, m3, m4], 0, Integer.MAX_VALUE)
+
+        List<PaymentSummary> summaries = [
+                // m1: paid all quarters
+                createSummary(1, year, 1, new BigDecimal("60")),
+                createSummary(1, year, 2, new BigDecimal("60")),
+                createSummary(1, year, 3, new BigDecimal("60")),
+                createSummary(1, year, 4, new BigDecimal("60")),
+                // m2: unpaid Q1 only (paid Q2, Q3, Q4)
+                createSummary(2, year, 2, new BigDecimal("60")),
+                createSummary(2, year, 3, new BigDecimal("60")),
+                createSummary(2, year, 4, new BigDecimal("60")),
+                // m3: unpaid Q2 only (paid Q1, Q3, Q4)
+                createSummary(3, year, 1, new BigDecimal("60")),
+                createSummary(3, year, 3, new BigDecimal("60")),
+                createSummary(3, year, 4, new BigDecimal("60")),
+                // m4: unpaid in BOTH Q1 and Q2 (paid Q3, Q4)
+                createSummary(4, year, 3, new BigDecimal("60")),
+                createSummary(4, year, 4, new BigDecimal("60"))
+        ]
+
+        ChecklistSearchRequestDto request = searchRequest(year, 0, 10)
+        request.setUnpaidQuarters([1, 2])
+
+        when: "Filtering by Q1 AND Q2 unpaid"
+        SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(request)
+
+        then:
+        1 * member.findActiveMembers(_ as Pageable) >> allMembersPage
+        1 * payment.findMembersPaymentSummaries([1, 2, 3, 4], ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> summaries
+        1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
+        0 * _
+
+        and: "ONLY m4 (David) is returned because only m4 is UNPAID in BOTH Q1 and Q2"
+        QuarterlyChecklistDto result = checklistResult.data()
+        result.rows.size() == 1
+        result.rows[0].memberID == 4
+        result.rows[0].memberName == "David Miller"
+        result.rows[0].quarters[0].status == QuarterCellStatus.UNPAID
+        result.rows[0].quarters[1].status == QuarterCellStatus.UNPAID
+        checklistResult.meta().totalRecords == 1
+        checklistResult.meta().totalPages == 1
+
+        and: "Summary reflects only the matching member (m4)"
+        result.summary != null
+        result.summary.totalPaid == new BigDecimal("120") // 60 from Q3 + 60 from Q4
+        result.summary.totalBalance == new BigDecimal("120") // 60 for Q1 + 60 for Q2
+        noExceptionThrown()
+    }
+
+    def "test getQuarterlyChecklist - filtered by memberID - member exists and active"() {
+        given: "a specific member who is active and paid Q1"
+        int year = LocalDate.now().getYear() - 1
+        int memberID = 10
+
+        MemberDto memberDto = createMemberDto(memberID, "John", "Doe", LocalDate.of(year - 1, 1, 1))
+        List<PaymentSummary> summaries = [
+                createSummary(memberID, year, 1, new BigDecimal("60"))
+        ]
+
+        ChecklistSearchRequestDto request = searchRequest(year, 0, 10)
+        request.setMemberID(memberID)
+
+        when: "Retrieving checklist by memberID"
+        SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(request)
+
+        then: "Member is fetched via member.getMember(memberID) and payments scoped to member 10"
+        1 * member.getMember(memberID) >> memberDto
+        1 * payment.findMembersPaymentSummaries([memberID], ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> summaries
+        1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
+        0 * _
+
+        and: "Single record returned for John Doe"
+        QuarterlyChecklistDto result = checklistResult.data()
+        result.rows.size() == 1
+        result.rows[0].memberID == memberID
+        result.rows[0].memberName == "John Doe"
+        result.rows[0].quarters[0].status == QuarterCellStatus.PAID
+        result.rows[0].quarters[1].status == QuarterCellStatus.UNPAID
+        result.rows[0].quarters[2].status == QuarterCellStatus.UNPAID
+        result.rows[0].quarters[3].status == QuarterCellStatus.UNPAID
+        result.rows[0].totalPaid == new BigDecimal("60")
+        result.rows[0].balance == new BigDecimal("180")
+        checklistResult.meta().totalRecords == 1
+        checklistResult.meta().totalPages == 1
+        checklistResult.meta().page == 0
+
+        and: "Summary reflects only the single member"
+        result.summary != null
+        result.summary.totalPaid == new BigDecimal("60")
+        result.summary.totalBalance == new BigDecimal("180")
+        result.summary.quarterSummaries[0].paidCount == 1
+        result.summary.quarterSummaries[0].unpaidCount == 0
+        result.summary.quarterSummaries[1].paidCount == 0
+        result.summary.quarterSummaries[1].unpaidCount == 1
+        noExceptionThrown()
+    }
+
+    def "test getQuarterlyChecklist - filtered by memberID - member not found"() {
+        given: "a memberID that does not exist"
+        int year = LocalDate.now().getYear() - 1
+        int memberID = 999
+        ChecklistSearchRequestDto request = searchRequest(year, 0, 10)
+        request.setMemberID(memberID)
+
+        when: "Retrieving checklist for non-existent member"
+        SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(request)
+
+        then: "RecordNotFoundException is handled and returns empty checklist"
+        1 * member.getMember(memberID) >> { throw new RecordNotFoundException("Record not found") }
+        1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
+        0 * _
+
+        and: "Empty rows and zeroed meta/summary returned"
+        QuarterlyChecklistDto result = checklistResult.data()
+        result.rows.isEmpty()
+        checklistResult.meta().totalRecords == 0
+        checklistResult.meta().totalPages == 0
+        result.summary != null
+        result.summary.totalPaid == BigDecimal.ZERO
+        result.summary.totalBalance == BigDecimal.ZERO
+        noExceptionThrown()
+    }
+
+    def "test getQuarterlyChecklist - filtered by memberID - member inactive"() {
+        given: "a member with inactive status (e.g. 02)"
+        int year = LocalDate.now().getYear() - 1
+        int memberID = 20
+        MemberDto inactiveMember = createMemberDto(memberID, "Jane", "Inactive", LocalDate.of(year - 1, 1, 1), "02")
+        ChecklistSearchRequestDto request = searchRequest(year, 0, 10)
+        request.setMemberID(memberID)
+
+        when: "Retrieving checklist for inactive member"
+        SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(request)
+
+        then: "Returns empty checklist because checklist only includes active members"
+        1 * member.getMember(memberID) >> inactiveMember
+        1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
+        0 * _
+
+        and: "Empty rows and zeroed meta returned"
+        QuarterlyChecklistDto result = checklistResult.data()
+        result.rows.isEmpty()
+        checklistResult.meta().totalRecords == 0
+        checklistResult.meta().totalPages == 0
+        noExceptionThrown()
+    }
+
+    def "test getQuarterlyChecklist - execution hierarchy: memberID takes precedence over unpaidQuarters"() {
+        given: "both memberID and unpaidQuarters provided in the request"
+        int year = LocalDate.now().getYear() - 1
+        int memberID = 10
+        MemberDto memberDto = createMemberDto(memberID, "John", "Doe", LocalDate.of(year - 1, 1, 1))
+
+        ChecklistSearchRequestDto request = searchRequest(year, 0, 10)
+        request.setMemberID(memberID)
+        request.setUnpaidQuarters([1, 2])
+
+        when: "Retrieving checklist"
+        SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(request)
+
+        then: "Narrowest filter (memberID) executes; unpaidQuarters bulk fetch is skipped"
+        1 * member.getMember(memberID) >> memberDto
+        1 * payment.findMembersPaymentSummaries([memberID], ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> []
+        1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
+        0 * _
+
+        and: "Returns single member record with formatted phone"
+        QuarterlyChecklistDto result = checklistResult.data()
+        result.rows.size() == 1
+        result.rows[0].memberID == memberID
+        result.rows[0].phone == "612-555-0100"
+        checklistResult.meta().totalRecords == 1
+        noExceptionThrown()
+    }
+
+    def "test getQuarterlyChecklist - phone formatting across diverse DB formats"() {
+        given: "members with various phone number formats in DB and null"
+        int year = LocalDate.now().getYear() - 1
+        MemberVO m1 = createMember(1, "A", "One", LocalDate.of(year, 1, 1), "6125550101")
+        MemberVO m2 = createMember(2, "B", "Two", LocalDate.of(year, 1, 1), "(612) 555-0102")
+        MemberVO m3 = createMember(3, "C", "Three", LocalDate.of(year, 1, 1), "612.555.0103")
+        MemberVO m4 = createMember(4, "D", "Four", LocalDate.of(year, 1, 1), "+1-612-555-0104")
+        MemberVO m5 = createMember(5, "E", "Five", LocalDate.of(year, 1, 1), null)
+        MemberVO m6 = createMember(6, "F", "Six", LocalDate.of(year, 1, 1), "   ")
+
+        Page<MemberVO> page = createPage([m1, m2, m3, m4, m5, m6], 0, 10)
+        List<MemberJoinDateProjection> joinDates = (1..6).collect { createJoinDateProjection(it, LocalDate.of(year, 1, 1)) }
+
+        when: "Retrieving checklist"
+        SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(searchRequest(year, 0, 10))
+
+        then:
+        1 * member.findActiveMembers(_ as Pageable) >> page
+        1 * payment.findMembersPaymentSummaries([1, 2, 3, 4, 5, 6], ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> []
+        1 * member.findActiveMemberJoinDates() >> joinDates
+        1 * payment.findPaymentSummaries(ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> []
+        1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
+        0 * _
+
+        and: "All valid phones are centralized into XXX-XXX-XXXX and blank/null are null"
+        List<MemberQuarterlyRowDto> rows = checklistResult.data().rows
+        rows.find { it.memberID == 1 }.phone == "612-555-0101"
+        rows.find { it.memberID == 2 }.phone == "612-555-0102"
+        rows.find { it.memberID == 3 }.phone == "612-555-0103"
+        rows.find { it.memberID == 4 }.phone == "612-555-0104"
+        rows.find { it.memberID == 5 }.phone == null
+        rows.find { it.memberID == 6 }.phone == null
     }
 }

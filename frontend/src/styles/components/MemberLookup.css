@@ -117,3 +117,50 @@
 .member-tag {
   margin: 0 !important;
 }
+
+/* Compact mode for Filter bars */
+.member-lookup-compact {
+  width: auto;
+  position: relative;
+}
+
+.member-lookup-prefix-icon-compact {
+  left: 9px;
+  font-size: 13px;
+}
+
+.member-lookup-select-compact .ant-select-selector {
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  padding-left: 26px !important;
+  height: 32px !important;
+}
+
+.member-lookup-select-compact .ant-select-selection-search-input {
+  padding-left: 6px !important;
+}
+
+.member-lookup-select-compact .ant-select-selection-item {
+  padding-left: 6px !important;
+  font-size: 13px;
+}
+
+.member-lookup-select-compact .member-lookup-placeholder {
+  margin-left: 6px;
+  font-size: 13px;
+}
+
+/* Option Render - Compact mode */
+.member-option-container-compact {
+  justify-content: flex-start;
+}
+
+.member-option-container-compact .member-name {
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.member-option-container-compact .member-details {
+  font-size: 11px;
+  line-height: 1.2;
+}

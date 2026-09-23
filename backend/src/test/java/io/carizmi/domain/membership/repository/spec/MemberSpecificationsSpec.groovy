@@ -303,6 +303,12 @@ class MemberSpecificationsSpec extends BaseSpecification {
             inspection.values.contains(ReferenceConstants.MEMBER_STATUS.ACTIVE)
             inspection.filters.containsAll(expectedFilters)
             inspection.values.containsAll(expectedValues)
+            if (expectedFilters.isEmpty()) {
+                !inspection.filters.contains(FieldConstants.FIRST_NAME)
+                !inspection.filters.contains(FieldConstants.LAST_NAME)
+                !inspection.filters.contains(FieldConstants.MEMBER_ID)
+                !inspection.filters.contains(FieldConstants.PHONE)
+            }
         } else {
             inspection.filters.isEmpty()
             inspection.values.isEmpty()
@@ -311,8 +317,20 @@ class MemberSpecificationsSpec extends BaseSpecification {
 
         where:
         query                  | expectedFilters                                       | expectedValues
-        "123"                  | [FieldConstants.MEMBER_ID]                            | [123L]
-        "10000000000000000000" | [FieldConstants.MEMBER_ID]                            | ["%10000000000000000000%"]
+        "1004"                 | [FieldConstants.MEMBER_ID]                            | [1004]
+        "10000000000000000000" | []                                                    | []
+        "123"                  | []                                                    | []
+        "Al"                   | []                                                    | []
+        "A"                    | []                                                    | []
+        "Ali1"                 | []                                                    | []
+        "John2"                | []                                                    | []
+        "12a"                  | []                                                    | []
+        "Ali"                  | [FieldConstants.FIRST_NAME, FieldConstants.LAST_NAME] | ["%ali%", "%ali%"]
+        "612-655-0830"         | [FieldConstants.PHONE]                                | ["612-655-0830", "6126550830", "(612) 655-0830"]
+        "(612) 655-0830"       | [FieldConstants.PHONE]                                | ["612-655-0830", "6126550830", "(612) 655-0830"]
+        "6126550830"           | [FieldConstants.PHONE]                                | ["612-655-0830", "6126550830", "(612) 655-0830"]
+        "612.655.0830"         | [FieldConstants.PHONE]                                | ["612-655-0830", "6126550830", "(612) 655-0830"]
+        "+1 612-655-0830"      | [FieldConstants.PHONE]                                | ["612-655-0830", "6126550830", "(612) 655-0830"]
         "John"                 | [FieldConstants.FIRST_NAME, FieldConstants.LAST_NAME] | ["%john%", "%john%"]
         "John Smith"           | [FieldConstants.FIRST_NAME, FieldConstants.LAST_NAME] | ["%john%", "%smith%"]
         "  "                   | []                                                    | []

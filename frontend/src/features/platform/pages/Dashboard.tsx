@@ -64,7 +64,7 @@ export default function Dashboard() {
       title: 'Date',
       dataIndex: 'paymentDate',
       key: 'paymentDate',
-      render: (d: string) => (d ? new Date(d).toLocaleDateString() : 'N/A'),
+      render: (d: string) => (d ? d.substring(0, 10) : 'N/A'),
     },
     {
       title: 'Member Name',

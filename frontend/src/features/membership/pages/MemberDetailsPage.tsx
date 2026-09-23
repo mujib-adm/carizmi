@@ -54,7 +54,7 @@ export default function MemberDetailsPage() {
       title: 'Date',
       dataIndex: 'dateReceived',
       key: 'dateReceived',
-      render: (d: string) => (d ? new Date(d).toLocaleDateString() : 'N/A'),
+      render: (d: string) => (d ? d.substring(0, 10) : 'N/A'),
     },
     {
       title: 'Description',
