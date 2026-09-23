@@ -378,6 +378,17 @@ jobs:
           severity: 'CRITICAL,HIGH'
           output: 'trivy-backend.txt'
 
+      - name: Display Trivy Backend Report
+        if: always()
+        run: |
+          if [ -s trivy-backend.txt ]; then
+            cat trivy-backend.txt
+            echo "### 🛡️ Trivy Backend Vulnerability Scan" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat trivy-backend.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+
       - name: Upload Trivy Backend Report
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
@@ -423,6 +434,17 @@ jobs:
           ignore-unfixed: true
           severity: 'CRITICAL,HIGH'
           output: 'trivy-frontend.txt'
+
+      - name: Display Trivy Frontend Report
+        if: always()
+        run: |
+          if [ -s trivy-frontend.txt ]; then
+            cat trivy-frontend.txt
+            echo "### 🛡️ Trivy Frontend Vulnerability Scan" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat trivy-frontend.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: Upload Trivy Frontend Report
         if: always()

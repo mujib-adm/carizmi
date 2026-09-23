@@ -23,6 +23,8 @@
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>
         <spring.boot.version>4.1.0</spring.boot.version>
+        <tomcat.version>11.0.26</tomcat.version>
+        <netty.version>4.2.18.Final</netty.version>
         <skipTests>false</skipTests>
         <skipApiGen>false</skipApiGen>
         <jacoco.line.minimum>0.60</jacoco.line.minimum>
