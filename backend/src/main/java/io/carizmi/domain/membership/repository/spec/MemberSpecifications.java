@@ -107,8 +107,8 @@ public class MemberSpecifications {
                     // Overflow beyond Integer.MAX_VALUE: cannot be a valid member_id,
                     // leaving searchPredicates empty to return disjunction (1=0) without DB scan
                 }
-            } else if (term.matches(".*[a-zA-Z].*")) {
-                // 4. Name Strategy: Fuzzy match first name and last name
+            } else if (isValidNameQuery(term)) {
+                // 4. Name Strategy: Fuzzy match first name and last name (alphabetical, min 3 chars, no numerics)
                 String lowerTerm = term.toLowerCase();
                 String pattern = "%" + lowerTerm + "%";
                 searchPredicates.add(cb.like(cb.lower(root.get(FieldConstants.FIRST_NAME)), pattern));
@@ -142,5 +142,31 @@ public class MemberSpecifications {
             // 6. Combine: Active AND ( Search1 OR Search2 ... )
             return cb.and(isActive, cb.or(searchPredicates.toArray(new Predicate[0])));
         };
+    }
+
+    /**
+     * Validates whether a search query qualifies for a fuzzy name search:
+     * - Must have a minimum length of 3 characters
+     * - Must contain NO numeric digits
+     * - Must contain alphabetic characters (and optional whitespace/name delimiters)
+     * - Linear O(n) inspection with zero regular expressions to prevent ReDoS
+     */
+    private static boolean isValidNameQuery(String str) {
+        if (str == null || str.length() < 3) {
+            return false;
+        }
+        boolean hasLetter = false;
+        for (int i = 0; i < str.length(); i++) {
+            char c = str.charAt(i);
+            if (Character.isDigit(c)) {
+                return false; // Contains numeric digit -> invalid for name search
+            }
+            if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) {
+                hasLetter = true;
+            } else if (!Character.isWhitespace(c) && c != '\'' && c != '-') {
+                return false; // Invalid non-alphabetic symbol
+            }
+        }
+        return hasLetter;
     }
 }
