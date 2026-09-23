@@ -17,5 +17,6 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 public class ChecklistSearchRequestDto extends PaginationDto {
     private Integer year;
+    private Integer memberID;
     private List<Integer> unpaidQuarters;
 }

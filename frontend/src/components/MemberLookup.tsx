@@ -8,8 +8,9 @@ import type { SelectProps } from 'antd';
 import '../styles/components/MemberLookup.css';
 
 interface MemberLookupProps extends SelectProps<number> {
-  onSelectMember?: (member: MemberLookupDto) => void;
+  onSelectMember?: (member: MemberLookupDto | null) => void;
   onError?: (error: any) => void;
+  compact?: boolean;
 }
 
 export default function MemberLookup({
@@ -17,6 +18,9 @@ export default function MemberLookup({
   onChange,
   onSelectMember,
   onError,
+  compact = false,
+  className,
+  style,
   ...rest
 }: MemberLookupProps) {
   const [data, setData] = useState<MemberLookupDto[]>([]);
@@ -59,8 +63,8 @@ export default function MemberLookup({
 
   const handleChange = (newValue: number, option: any) => {
     onChange?.(newValue);
-    if (onSelectMember && option?.member) {
-      onSelectMember(option.member);
+    if (onSelectMember) {
+      onSelectMember(option?.member ?? null);
     }
   };
 
@@ -69,22 +73,30 @@ export default function MemberLookup({
       theme={{
         components: {
           Select: {
-            controlHeight: 58,
-            fontSize: 14,
-            optionPadding: '12px 12px',
+            controlHeight: compact ? 32 : 58,
+            fontSize: compact ? 13 : 14,
+            optionPadding: compact ? '6px 12px' : '12px 12px',
           },
         },
       }}
     >
-      <div className="member-lookup-wrapper">
-        <SearchOutlined className="member-lookup-prefix-icon" />
+      <div
+        className={`member-lookup-wrapper ${compact ? 'member-lookup-compact' : ''}`}
+        style={compact ? { width: 'auto', display: 'inline-block' } : undefined}
+      >
+        <SearchOutlined
+          className={`member-lookup-prefix-icon ${compact ? 'member-lookup-prefix-icon-compact' : ''}`}
+        />
         <Select
-          className="member-lookup-select"
+          className={`member-lookup-select ${compact ? 'member-lookup-select-compact' : ''} ${className || ''}`}
+          style={{ width: compact ? 220 : '100%', ...style }}
+          popupMatchSelectWidth={compact ? false : undefined}
+          styles={compact ? { popup: { root: { minWidth: 220 } } } : undefined}
           {...rest}
           showSearch
           value={value}
           placeholder={
-            <div className="member-lookup-placeholder">Search Member (Name or ID)...</div>
+            <div className="member-lookup-placeholder">Search Member...</div>
           }
           defaultActiveFirstOption={false}
           filterOption={false}
@@ -105,6 +117,22 @@ export default function MemberLookup({
           }))}
           optionRender={(option) => {
             const d = option.data.member;
+            if (compact) {
+              return (
+                <div className="member-option-container member-option-container-compact">
+                  <div className="member-option-info">
+                    <span className="member-name">
+                      {d.firstName} {d.lastName}
+                    </span>
+                    {d.phone && (
+                      <span className="member-details">
+                        Phone: {d.phone}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            }
             return (
               <div className="member-option-container">
                 <div className="member-option-info">

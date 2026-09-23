@@ -45,8 +45,8 @@ class QuarterlyFeeChecklistControllerSpec extends BaseSpecification {
 
         ChecklistSearchRequestDto request = new ChecklistSearchRequestDto(year: year)
         List<MemberQuarterlyRowDto> rows = [
-                new MemberQuarterlyRowDto(memberID: memberID1, memberName: memberName1),
-                new MemberQuarterlyRowDto(memberID: memberID2, memberName: memberName2)
+                new MemberQuarterlyRowDto(memberID: memberID1, memberName: memberName1, phone: "612-555-0101"),
+                new MemberQuarterlyRowDto(memberID: memberID2, memberName: memberName2, phone: "612-555-0102")
         ]
         QuarterlyChecklistDto checklistDto = new QuarterlyChecklistDto(
                 year: year, currentQuarter: currentQuarter, quarterlyFeeAmount: feeAmount,
@@ -69,7 +69,9 @@ class QuarterlyFeeChecklistControllerSpec extends BaseSpecification {
         result.body.responseData.quarterlyFeeAmount == feeAmount
         result.body.responseData.rows.size() == totalRecords
         result.body.responseData.rows[0].memberName == memberName1
+        result.body.responseData.rows[0].phone == "612-555-0101"
         result.body.responseData.rows[1].memberName == memberName2
+        result.body.responseData.rows[1].phone == "612-555-0102"
         result.body.responseData.summary.totalPaid == 120.00
         result.body.responseData.summary.totalBalance == 0.00
         result.body.responseData.summary.quarterSummaries.size() == 4

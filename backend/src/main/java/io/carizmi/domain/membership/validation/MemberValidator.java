@@ -7,12 +7,13 @@ import io.carizmi.shared.constants.ReferenceConstants;
 import io.carizmi.domain.membership.model.MemberVO;
 import io.carizmi.framework.bl.AbstractDomainValidator;
 import io.carizmi.domain.platform.validation.ReferenceValidator;
+import io.carizmi.shared.util.PhoneUtils;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 public class MemberValidator extends AbstractDomainValidator<MemberVO> {
-    private static final String PHONE_REGEX = "^\\(?\\d{3}\\)?[- ]?\\d{3}[- ]?\\d{4}$";
+    private static final String PHONE_REGEX = PhoneUtils.US_PHONE_REGEX;
     private static final String EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";
     private static final String ZIP_REGEX = "^\\d{5}(-\\d{4})?$";
 

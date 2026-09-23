@@ -1853,6 +1853,10 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "memberID" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "unpaidQuarters" : {
             "type" : "array",
             "items" : {
@@ -1933,6 +1937,9 @@
             "format" : "int32"
           },
           "memberName" : {
+            "type" : "string"
+          },
+          "phone" : {
             "type" : "string"
           },
           "quarters" : {

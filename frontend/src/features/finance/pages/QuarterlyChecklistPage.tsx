@@ -12,9 +12,11 @@ import {
   QuarterlyChecklistDto,
 } from '../../../api/generated/types';
 import { MessageBanner } from '../../../components/MessageBanner';
+import MemberLookup from '../../../components/MemberLookup';
 import SearchFilterBar from '../../../components/SearchFilterBar';
 import { checklistSearchFiltersConfig } from '../config/checklistSearchFiltersConfig';
 import { useApiMessages } from '../../../hooks/useApiMessages';
+import { formatPhoneNumber } from '../../../utils/phoneUtils';
 import styles from '../../../styles/pages/QuarterlyChecklist.module.css';
 
 const { Title } = Typography;
@@ -82,6 +84,15 @@ export default function QuarterlyChecklistPage() {
     fetchChecklist({ page: 0, size: meta?.pageSize ?? 10 });
   };
 
+  const handleMemberChange = (memberID?: number) => {
+    setFilters((prev) => ({
+      ...prev,
+      memberID: memberID || undefined,
+      // Clear selected quarters when member is identified
+      unpaidQuarters: memberID ? undefined : prev.unpaidQuarters,
+    }));
+  };
+
   const handleQuarterToggle = (q: number, checked: boolean) => {
     const current = filters.unpaidQuarters ?? [];
     const updated = checked
@@ -112,6 +123,7 @@ export default function QuarterlyChecklistPage() {
     const cleanedQuarters = (filters.unpaidQuarters ?? []).filter((q) => !isFutureForNewYear(q));
     setFilters({
       ...updated,
+      memberID: filters.memberID,
       unpaidQuarters: cleanedQuarters.length > 0 ? cleanedQuarters : undefined,
     });
   };
@@ -130,6 +142,13 @@ export default function QuarterlyChecklistPage() {
       dataIndex: 'memberName',
       key: 'memberName',
       width: 160,
+    },
+    {
+      title: 'Phone',
+      dataIndex: 'phone',
+      key: 'phone',
+      width: 130,
+      render: (phone?: string) => formatPhoneNumber(phone),
     },
     ...[1, 2, 3, 4].map((q) => ({
       title: `Q${q}`,
@@ -181,6 +200,24 @@ export default function QuarterlyChecklistPage() {
         <Form.Item
           label={
             <span style={{ fontWeight: 600, color: 'var(--otherColor2)' }}>
+              Member
+            </span>
+          }
+          style={{ marginBottom: 8, marginRight: 16 }}
+        >
+          <MemberLookup
+            compact
+            allowClear
+            value={filters.memberID}
+            onChange={handleMemberChange}
+            onError={handleError}
+            style={{ width: 220 }}
+          />
+        </Form.Item>
+
+        <Form.Item
+          label={
+            <span style={{ fontWeight: 600, color: 'var(--otherColor2)' }}>
               Quarters (Unpaid)
             </span>
           }
@@ -189,29 +226,34 @@ export default function QuarterlyChecklistPage() {
           <div className={styles.quarterCheckboxGroup}>
             {[1, 2, 3, 4].map((q) => {
               const isFuture = isQuarterFuture(q);
-              const isChecked = !isFuture && (filters.unpaidQuarters?.includes(q) ?? false);
+              const isQuartersDisabled = Boolean(filters.memberID);
+              const isDisabled = isFuture || isQuartersDisabled;
+              const isChecked = !isDisabled && (filters.unpaidQuarters?.includes(q) ?? false);
               const content = (
                 <label
                   key={q}
                   className={`${styles.quarterCheckboxItem} ${
                     isChecked ? styles.quarterCheckboxChecked : ''
-                  } ${isFuture ? styles.quarterCheckboxDisabled : ''}`}
+                  } ${isDisabled ? styles.quarterCheckboxDisabled : ''}`}
                 >
                   <Checkbox
                     checked={isChecked}
-                    disabled={isFuture}
+                    disabled={isDisabled}
                     onChange={(e) => handleQuarterToggle(q, e.target.checked)}
                     style={{ marginRight: 6 }}
                   />
                   <span>Q{q}</span>
-                  {isFuture && (
-                    <span style={{ fontSize: '0.75rem', marginLeft: 4, opacity: 0.65 }}>(Future)</span>
-                  )}
                 </label>
               );
 
-              return isFuture ? (
-                <Tooltip key={q} title={`Quarter ${q} of ${selectedYear} is in the future`}>
+              const tooltipTitle = isFuture
+                ? `Quarter ${q} of ${selectedYear} is in the future`
+                : isQuartersDisabled
+                ? 'Quarters filter is not applicable when a member is selected'
+                : '';
+
+              return tooltipTitle ? (
+                <Tooltip key={q} title={tooltipTitle}>
                   {content}
                 </Tooltip>
               ) : (
@@ -261,11 +303,11 @@ export default function QuarterlyChecklistPage() {
             summary ? (
               <Table.Summary fixed>
                 <Table.Summary.Row className={styles.summaryRow}>
-                  <Table.Summary.Cell index={0} colSpan={2}>
+                  <Table.Summary.Cell index={0} colSpan={3}>
                     Total ({meta?.totalRecords ?? data?.rows?.length ?? 0} members)
                   </Table.Summary.Cell>
                   {summary.quarterSummaries?.map((qs, idx) => (
-                    <Table.Summary.Cell key={idx} index={idx + 2} align="center">
+                    <Table.Summary.Cell key={idx} index={idx + 3} align="center">
                       {qs.future ? (
                         '—'
                       ) : (
@@ -277,10 +319,10 @@ export default function QuarterlyChecklistPage() {
                       )}
                     </Table.Summary.Cell>
                   ))}
-                  <Table.Summary.Cell index={6} align="right">
+                  <Table.Summary.Cell index={7} align="right">
                     ${(summary.totalPaid ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </Table.Summary.Cell>
-                  <Table.Summary.Cell index={7} align="right">
+                  <Table.Summary.Cell index={8} align="right">
                     <span
                       className={(summary.totalBalance ?? 0) > 0 ? styles.balanceDue : styles.balanceZero}
                     >

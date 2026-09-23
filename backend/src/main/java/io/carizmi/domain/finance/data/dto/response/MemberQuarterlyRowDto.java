@@ -15,6 +15,7 @@ import java.util.List;
 public class MemberQuarterlyRowDto {
     private Integer memberID;
     private String memberName;
+    private String phone;
     private List<QuarterCellDto> quarters;
     private BigDecimal totalPaid;
     private BigDecimal balance;

@@ -10,6 +10,8 @@ import org.springframework.lang.NonNull;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import io.carizmi.shared.util.PhoneUtils;
 
 public class MemberSpecifications {
 
@@ -81,30 +83,39 @@ public class MemberSpecifications {
     public static Specification<MemberVO> lookup(String query) {
         return (root, cq, cb) -> {
             if (query == null || query.trim().isEmpty()) {
-                return null; // Or return empty predicate depending on need
+                return null;
             }
 
-            String term = query.trim().toLowerCase();
+            String term = query.trim();
             // 1. Define the Global Filter (Active Only)
             Predicate isActive = cb.equal(root.get(FieldConstants.STATUS), ReferenceConstants.MEMBER_STATUS.ACTIVE);
             List<Predicate> searchPredicates = new ArrayList<>();
-            // 2. Numeric Optimization: Exact ID match if numeric
-            if (term.matches("\\d+")) {
-                try {
-                    // Fast path: Exact ID match
-                    searchPredicates.add(cb.equal(root.get(FieldConstants.MEMBER_ID), Long.valueOf(term)));
-                } catch (NumberFormatException ignored) {
-                    // Fallback to string match if number is too large for Long
-                    searchPredicates.add(cb.like(cb.toString(root.get(FieldConstants.MEMBER_ID)), "%" + term + "%"));
+
+            // 2. Phone Strategy: If the query matches a valid 10-digit US phone number format
+            Optional<PhoneUtils.PhoneParts> phoneParts = PhoneUtils.parse(term);
+            if (phoneParts.isPresent()) {
+                PhoneUtils.PhoneParts parts = phoneParts.get();
+                // Add exact equality predicates across standard representations for optimal SQL index utilization
+                for (String candidate : parts.allFormats()) {
+                    searchPredicates.add(cb.equal(root.get(FieldConstants.PHONE), candidate));
                 }
-            } else {
-                // 3. String Search: Fuzzy match name
-                String pattern = "%" + term + "%";
+            } else if (term.matches("\\d{4,}")) {
+                // 3. Member ID Strategy: Exact ID match if numeric with 4 digits minimum
+                try {
+                    searchPredicates.add(cb.equal(root.get(FieldConstants.MEMBER_ID), Integer.valueOf(term)));
+                } catch (NumberFormatException ignored) {
+                    // Overflow beyond Integer.MAX_VALUE: cannot be a valid member_id,
+                    // leaving searchPredicates empty to return disjunction (1=0) without DB scan
+                }
+            } else if (term.matches(".*[a-zA-Z].*")) {
+                // 4. Name Strategy: Fuzzy match first name and last name
+                String lowerTerm = term.toLowerCase();
+                String pattern = "%" + lowerTerm + "%";
                 searchPredicates.add(cb.like(cb.lower(root.get(FieldConstants.FIRST_NAME)), pattern));
                 searchPredicates.add(cb.like(cb.lower(root.get(FieldConstants.LAST_NAME)), pattern));
-                // 4. Split Search: "John Smith"
-                if (term.contains(" ")) {
-                    String[] parts = term.split("\\s+");
+
+                if (lowerTerm.contains(" ")) {
+                    String[] parts = lowerTerm.split("\\s+");
                     if (parts.length >= 2) {
                         String p1 = "%" + parts[0] + "%";
                         String p2 = "%" + parts[1] + "%";
@@ -120,7 +131,15 @@ public class MemberSpecifications {
                     }
                 }
             }
-            // 5. Combine: Active AND ( Search1 OR Search2 ... )
+
+            // 5. If no search strategy matched (e.g. invalid query such as numbers with < 4 digits),
+            // return a false disjunction (SQL: status = '01' AND 1=0) to safely return zero records
+            // immediately without scanning the database.
+            if (searchPredicates.isEmpty()) {
+                return cb.and(isActive, cb.disjunction());
+            }
+
+            // 6. Combine: Active AND ( Search1 OR Search2 ... )
             return cb.and(isActive, cb.or(searchPredicates.toArray(new Predicate[0])));
         };
     }
