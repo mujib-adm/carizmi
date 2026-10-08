@@ -140,12 +140,12 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         row.phone == "612-555-0100"
 
         // Assessable quarters should be PAID
-        (0..<currentQuarter).each { idx ->
+        for (int idx = 0; idx < currentQuarter; idx++) {
             assert row.quarters[idx].status == QuarterCellStatus.PAID
         }
 
-        // Future quarters
-        (currentQuarter..<4).each { idx ->
+        // Future quarters (if any)
+        for (int idx = currentQuarter; idx < 4; idx++) {
             assert row.quarters[idx].status == QuarterCellStatus.FUTURE
         }
 
@@ -162,13 +162,13 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         summary.totalBalance == BigDecimal.ZERO
 
         // All assessable quarters should show 1 paid, 0 unpaid
-        (0..<currentQuarter).each { idx ->
+        for (int idx = 0; idx < currentQuarter; idx++) {
             assert summary.quarterSummaries[idx].paidCount == 1
             assert summary.quarterSummaries[idx].unpaidCount == 0
             assert !summary.quarterSummaries[idx].future
         }
-        // Future quarters should be marked as future
-        (currentQuarter..<4).each { idx ->
+        // Future quarters should be marked as future (if any)
+        for (int idx = currentQuarter; idx < 4; idx++) {
             assert summary.quarterSummaries[idx].future
         }
 
@@ -296,12 +296,12 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         and: "The expected result"
         QuarterlyChecklistDto result = checklistResult.data()
         MemberQuarterlyRowDto row = result.rows[0]
-        (currentQuarter..<4).each { idx ->
-            assert row.quarters[idx].status == QuarterCellStatus.FUTURE
+        for (int idx = 0; idx < currentQuarter; idx++) {
+            assert row.quarters[idx].status == QuarterCellStatus.UNPAID
+            assert !result.summary.quarterSummaries[idx].future
         }
-
-        and: "Future quarter summaries are marked as future"
-        (currentQuarter..<4).each { idx ->
+        for (int idx = currentQuarter; idx < 4; idx++) {
+            assert row.quarters[idx].status == QuarterCellStatus.FUTURE
             assert result.summary.quarterSummaries[idx].future
         }
 
@@ -394,8 +394,11 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         and: "The expected result"
         QuarterlyChecklistDto result = checklistResult.data()
         MemberQuarterlyRowDto row = result.rows[0]
-        (0..<currentQuarter).each { idx ->
+        for (int idx = 0; idx < currentQuarter; idx++) {
             assert row.quarters[idx].status == QuarterCellStatus.UNPAID
+        }
+        for (int idx = currentQuarter; idx < 4; idx++) {
+            assert row.quarters[idx].status == QuarterCellStatus.FUTURE
         }
         row.totalPaid == BigDecimal.ZERO
         row.balance == new BigDecimal("60.00").multiply(new BigDecimal(currentQuarter))
@@ -404,9 +407,13 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         ChecklistSummaryDto summary = result.summary
         summary.totalPaid == BigDecimal.ZERO
         summary.totalBalance == new BigDecimal("60.00").multiply(new BigDecimal(currentQuarter))
-        (0..<currentQuarter).each { idx ->
+        for (int idx = 0; idx < currentQuarter; idx++) {
             assert summary.quarterSummaries[idx].unpaidCount == 1
             assert summary.quarterSummaries[idx].paidCount == 0
+            assert !summary.quarterSummaries[idx].future
+        }
+        for (int idx = currentQuarter; idx < 4; idx++) {
+            assert summary.quarterSummaries[idx].future
         }
 
         noExceptionThrown()
