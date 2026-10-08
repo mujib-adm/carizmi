@@ -23,6 +23,9 @@
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>
         <spring.boot.version>4.1.0</spring.boot.version>
+        <spring-framework.version>7.0.9</spring-framework.version>
+        <jackson-bom.version>3.1.7</jackson-bom.version>
+        <jackson-2-bom.version>2.21.7</jackson-2-bom.version>
         <tomcat.version>11.0.26</tomcat.version>
         <netty.version>4.2.18.Final</netty.version>
         <skipTests>false</skipTests>
