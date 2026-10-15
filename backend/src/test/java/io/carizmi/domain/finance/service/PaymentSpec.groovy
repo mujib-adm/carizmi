@@ -10,10 +10,12 @@ import io.carizmi.domain.finance.data.dto.response.LatestPaymentDto
 import io.carizmi.domain.finance.data.dto.LatestPaymentProjection
 import io.carizmi.domain.finance.data.dto.PaymentDto
 import io.carizmi.domain.finance.data.dto.request.PaymentSearchRequestDto
+import io.carizmi.domain.finance.data.dto.response.PaymentSearchResultDto
 import io.carizmi.domain.finance.data.transformer.PaymentDtoTransformer
 import io.carizmi.domain.finance.data.transformer.PaymentVOTransformer
 import io.carizmi.domain.membership.model.MemberVO
 import io.carizmi.domain.finance.model.PaymentVO
+import io.carizmi.framework.data.response.SinglePagedResult
 import io.carizmi.framework.data.response.PagedResult
 import io.carizmi.framework.exception.DuplicateRecordException
 import io.carizmi.framework.exception.ValidationException
@@ -410,14 +412,14 @@ class PaymentSpec extends BaseSpecification {
         Page<PaymentVO> mockPage = Mock(Page)
         JpaSpecification capturedSpec
 
-        PaymentSearchRequestDto request = new PaymentSearchRequestDto(memberID: memberID, feeType: feeType, year: yearValue, quarter: quarter, dateFrom: dateFrom, dateTo: dateTo)
+        PaymentSearchRequestDto request = new PaymentSearchRequestDto(memberID: memberID, feeType: feeType, methodOfPayment: methodOfPayment, year: yearValue, quarter: quarter, dateFrom: dateFrom, dateTo: dateTo)
         request.setPage(0)
         request.setSize(10)
         request.setSortField(FieldConstants.AMOUNT)
         request.setSortOrder(SortOrder.desc)
 
         when: "The target method executed"
-        PagedResult<PaymentDto> result = paymentImpl.searchPayments(request)
+        SinglePagedResult<PaymentSearchResultDto> result = paymentImpl.searchPayments(request)
 
         then: "The expected calls are made"
         1 * paymentRepo.findAll(_ as JpaSpecification, _ as PageRequest) >> { JpaSpecification spec, PageRequest page -> capturedSpec = spec; mockPage }
@@ -434,20 +436,89 @@ class PaymentSpec extends BaseSpecification {
 
         and: "The expected result"
         result != null
+        result.data().payments == []
+        result.data().summary.totalAmount == BigDecimal.ZERO
         noExceptionThrown()
         capturedSpec != null
         Map<String, List> inspection = inspectSpecification(capturedSpec)
         if (hasFilters) {
-            inspection.filters.containsAll([TableConstants.MEMBER_TABLE, FieldConstants.MEMBER_ID, FieldConstants.FEE_TYPE, FieldConstants.YEAR, FieldConstants.QUARTER, FieldConstants.DATE_RECEIVED])
-            inspection.values.containsAll([memberID, feeType, currentYear, quarter, dateFrom, dateTo])
+            inspection.filters.containsAll([TableConstants.MEMBER_TABLE, FieldConstants.MEMBER_ID, FieldConstants.FEE_TYPE, FieldConstants.METHOD_OF_PAYMENT, FieldConstants.YEAR, FieldConstants.QUARTER, FieldConstants.DATE_RECEIVED])
+            inspection.values.containsAll([memberID, feeType, methodOfPayment, currentYear, quarter, dateFrom, dateTo])
         } else {
             inspection.filters.isEmpty()
         }
 
         where:
-        desc          | memberID | feeType | hasYearVal | quarter | dateFrom        | dateTo          || hasFilters
-        "All filters" | 1        | "FEE"   | true       | 1       | LocalDate.now() | LocalDate.now() || true
-        "No filters"  | null     | null    | false      | null    | null            | null            || false
+        desc          | memberID | feeType | methodOfPayment | hasYearVal | quarter | dateFrom        | dateTo          || hasFilters
+        "All filters" | 1        | "FEE"   | "01"            | true       | 1       | LocalDate.now() | LocalDate.now() || true
+        "No filters"  | null     | null    | null            | false      | null    | null            | null            || false
+    }
+
+    def "test - searchPayments: Should calculate total amount for single-page results from payments list"() {
+        given: "A search request and page with 2 payments"
+        BigDecimal feeAmount = new BigDecimal("60.00")
+        PaymentSearchRequestDto request = new PaymentSearchRequestDto()
+        request.setPage(0)
+        request.setSize(10)
+
+        Page<PaymentVO> mockPage = Mock(Page)
+        PaymentVO vo1 = new PaymentVO(amount: feeAmount)
+        PaymentVO vo2 = new PaymentVO(amount: feeAmount)
+        PaymentDto dto1 = new PaymentDto(paymentID: 1, amount: feeAmount)
+        PaymentDto dto2 = new PaymentDto(paymentID: 2, amount: feeAmount)
+
+        when: "searchPayments is executed"
+        SinglePagedResult<PaymentSearchResultDto> result = paymentImpl.searchPayments(request)
+
+        then: "Repository and transformer are invoked"
+        1 * paymentRepo.findAll(_ as JpaSpecification, _ as PageRequest) >> mockPage
+        1 * mockPage.toList() >> [vo1, vo2]
+        1 * dtoTransformer.transformList([vo1, vo2]) >> [dto1, dto2]
+        _ * mockPage.getNumber() >> 0
+        _ * mockPage.getSize() >> 10
+        _ * mockPage.getTotalElements() >> 2
+        _ * mockPage.getTotalPages() >> 1
+        0 * _
+
+        and: "Total amount is calculated as sum of payments on the page"
+        result.data().payments.size() == 2
+        result.data().summary.totalAmount == new BigDecimal(feeAmount * 2)
+        result.meta().totalRecords == 2
+    }
+
+    def "test - searchPayments: Should calculate total amount for multi-page results via repository sumAmountByFilters"() {
+        given: "A search request and page indicating multiple pages"
+        BigDecimal feeAmount = new BigDecimal("60.00")
+        BigDecimal total = new BigDecimal("1200.00")
+        PaymentSearchRequestDto request = new PaymentSearchRequestDto()
+        request.setPage(0)
+        request.setSize(10)
+
+        Page<PaymentVO> mockPage = Mock(Page)
+        PaymentVO vo1 = new PaymentVO(amount: feeAmount)
+        PaymentVO vo2 = new PaymentVO(amount: feeAmount)
+        PaymentDto dto1 = new PaymentDto(paymentID: 1, amount: feeAmount)
+        PaymentDto dto2 = new PaymentDto(paymentID: 2, amount: feeAmount)
+
+        when: "searchPayments is executed"
+        SinglePagedResult<PaymentSearchResultDto> result = paymentImpl.searchPayments(request)
+
+        then: "Repository findAll and sumAmountByFilters are invoked"
+        1 * paymentRepo.findAll(_ as JpaSpecification, _ as PageRequest) >> mockPage
+        1 * mockPage.toList() >> [vo1, vo2]
+        1 * dtoTransformer.transformList([vo1, vo2]) >> [dto1, dto2]
+        _ * mockPage.getNumber() >> 0
+        _ * mockPage.getSize() >> 10
+        _ * mockPage.getTotalElements() >> 25
+        _ * mockPage.getTotalPages() >> 3
+        1 * paymentRepo.sumAmountByFilters(null, null, null, null, null, null, null) >> total
+        0 * _
+
+        and: "Result contains current page payments and multi-page total amount"
+        result.data().payments.size() == 2
+        result.data().summary.totalAmount == total
+        result.meta().totalRecords == 25
+        result.meta().totalPages == 3
     }
 
     def "test - findPaymentsForMemberQuarter: Should delegate to repo with criteria"() {

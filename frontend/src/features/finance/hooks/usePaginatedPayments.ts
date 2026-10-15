@@ -1,9 +1,15 @@
 import { useCallback, useMemo, useState } from 'react';
 import { paymentsApi } from '../../../api/generated/payments/payments';
-import { PaginationMeta, PaymentDto, PaymentSearchRequestDto } from '../../../api/generated/types';
+import {
+  PaginationMeta,
+  PaymentDto,
+  PaymentSearchRequestDto,
+  PaymentSummaryDto,
+} from '../../../api/generated/types';
 
 export function usePaginatedPayments(initialRequest: PaymentSearchRequestDto = {}) {
   const [payments, setPayments] = useState<PaymentDto[]>([]);
+  const [summary, setSummary] = useState<PaymentSummaryDto | null>(null);
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -17,7 +23,8 @@ export function usePaginatedPayments(initialRequest: PaymentSearchRequestDto = {
       try {
         const mergedRequest = { ...memoInitialRequest, ...request };
         const resp = await paymentsApi.searchPayments(mergedRequest);
-        setPayments(resp.responseData ?? []);
+        setPayments(resp.responseData?.payments ?? []);
+        setSummary(resp.responseData?.summary ?? null);
         setMeta(resp.meta ?? null);
       } finally {
         setLoading(false);
@@ -26,5 +33,5 @@ export function usePaginatedPayments(initialRequest: PaymentSearchRequestDto = {
     [memoInitialRequest]
   );
 
-  return { payments, meta, loading, fetchPayments, setPayments };
+  return { payments, summary, meta, loading, fetchPayments, setPayments, setSummary };
 }

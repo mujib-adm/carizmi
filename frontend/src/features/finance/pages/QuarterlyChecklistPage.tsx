@@ -211,7 +211,7 @@ export default function QuarterlyChecklistPage() {
             value={filters.memberID}
             onChange={handleMemberChange}
             onError={handleError}
-            style={{ width: 220 }}
+            style={{ width: 200 }}
           />
         </Form.Item>
 

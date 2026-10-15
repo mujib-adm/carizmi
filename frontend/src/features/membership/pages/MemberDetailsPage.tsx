@@ -38,7 +38,7 @@ export default function MemberDetailsPage() {
           membersApi.getMemberSummary(memberID),
         ]);
         setMember(memberData.responseData || null);
-        setPayments(paymentData.responseData || []);
+        setPayments(paymentData.responseData?.payments || []);
         setSummary(summaryData.responseData || null);
       } catch (e: any) {
         handleError(e);

@@ -3,9 +3,10 @@ package io.carizmi.domain.finance.service;
 import io.carizmi.domain.finance.data.dto.response.LatestPaymentDto;
 import io.carizmi.domain.finance.data.dto.PaymentDto;
 import io.carizmi.domain.finance.data.dto.request.PaymentSearchRequestDto;
+import io.carizmi.domain.finance.data.dto.response.PaymentSearchResultDto;
 import io.carizmi.domain.finance.model.PaymentVO;
 import io.carizmi.framework.bl.BusinessLogic;
-import io.carizmi.framework.data.response.PagedResult;
+import io.carizmi.framework.data.response.SinglePagedResult;
 import org.springframework.lang.NonNull;
 
 import java.math.BigDecimal;
@@ -25,7 +26,7 @@ public interface Payment extends BusinessLogic<PaymentVO> {
 
     PaymentDto getPayment(@NonNull Integer paymentID);
 
-    PagedResult<PaymentDto> searchPayments(PaymentSearchRequestDto request);
+    SinglePagedResult<PaymentSearchResultDto> searchPayments(PaymentSearchRequestDto request);
 
     List<LatestPaymentDto> getLatestPayments(int limit);
 

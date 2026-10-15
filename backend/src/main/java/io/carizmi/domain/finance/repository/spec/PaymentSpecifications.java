@@ -21,6 +21,11 @@ public class PaymentSpecifications {
     }
 
     @NonNull
+    public static Specification<PaymentVO> hasMethodOfPayment(String methodOfPayment) {
+        return (root, query, cb) -> methodOfPayment == null ? null : cb.equal(root.get(FieldConstants.METHOD_OF_PAYMENT), methodOfPayment);
+    }
+
+    @NonNull
     public static Specification<PaymentVO> hasYear(Integer year) {
         return (root, query, cb) -> year == null ? null : cb.equal(root.get(FieldConstants.YEAR), year);
     }

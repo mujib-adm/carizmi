@@ -1,0 +1,16 @@
+/* ──────────────────────────────────────────────────────────
+   Payment Page Styles
+   ────────────────────────────────────────────────────────── */
+
+/* Summary row */
+.summaryRow {
+  background-color: rgba(30, 86, 49, 0.06) !important;
+  font-weight: 700;
+}
+
+.summaryRow td {
+  font-weight: 700 !important;
+  font-size: 1rem !important;
+  border-top: 1px solid rgba(30, 86, 49, 0.18) !important;
+  padding: 6px 8px !important;
+}

@@ -312,7 +312,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/GlobalResponseListPaymentDto"
+                  "$ref" : "#/components/schemas/GlobalResponsePaymentSearchResultDto"
                 }
               }
             }
@@ -1517,6 +1517,9 @@
           "feeType" : {
             "type" : "string"
           },
+          "methodOfPayment" : {
+            "type" : "string"
+          },
           "year" : {
             "type" : "integer",
             "format" : "int32"
@@ -1535,7 +1538,7 @@
           }
         }
       },
-      "GlobalResponseListPaymentDto" : {
+      "GlobalResponsePaymentSearchResultDto" : {
         "type" : "object",
         "default" : null,
         "description" : "Unified API response envelope",
@@ -1570,17 +1573,36 @@
             }
           },
           "responseData" : {
-            "type" : "array",
+            "$ref" : "#/components/schemas/PaymentSearchResultDto",
             "default" : "",
-            "description" : "Response payload",
-            "items" : {
-              "$ref" : "#/components/schemas/PaymentDto"
-            }
+            "description" : "Response payload"
           },
           "meta" : {
             "$ref" : "#/components/schemas/PaginationMeta",
             "default" : "",
             "description" : "Pagination metadata"
+          }
+        }
+      },
+      "PaymentSearchResultDto" : {
+        "type" : "object",
+        "properties" : {
+          "payments" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PaymentDto"
+            }
+          },
+          "summary" : {
+            "$ref" : "#/components/schemas/PaymentSummaryDto"
+          }
+        }
+      },
+      "PaymentSummaryDto" : {
+        "type" : "object",
+        "properties" : {
+          "totalAmount" : {
+            "type" : "number"
           }
         }
       },

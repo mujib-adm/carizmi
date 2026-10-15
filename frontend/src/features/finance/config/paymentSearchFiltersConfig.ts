@@ -1,23 +1,22 @@
-const feeTypes = [
-  { value: 'Membership Fee', label: 'Membership Fee' },
-  { value: 'Registration Fee', label: 'Registration Fee' },
-];
 
 export const paymentSearchFiltersConfig = [
-  {
-    name: 'memberID',
-    label: 'Member ID',
-    type: 'number',
-  },
   {
     name: 'feeType',
     label: 'Fee Type',
     type: 'select',
-    options: feeTypes,
+    width: 150,
+    options: [],
+  },
+  {
+    name: 'methodOfPayment',
+    label: 'Pay Method',
+    type: 'select',
+    width: 140,
+    options: [],
   },
   {
     name: 'dateRange',
-    label: 'Date',
+    label: 'Date Range',
     type: 'dateRange',
   },
 ];

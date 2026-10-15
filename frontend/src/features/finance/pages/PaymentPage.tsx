@@ -1,10 +1,11 @@
 import { DeleteOutlined, DollarOutlined, EditOutlined } from '@ant-design/icons';
-import { Button, Card, Grid, Modal, Space, Table, Typography } from 'antd';
+import { Button, Card, Form, Grid, Modal, Space, Table, Typography } from 'antd';
 import { ColumnsType } from 'antd/es/table';
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { paymentsApi } from '../../../api/generated/payments/payments';
 import { MessageBanner } from '../../../components/MessageBanner';
+import MemberLookup from '../../../components/MemberLookup';
 import PaymentModal from '../modals/PaymentModal';
 import SearchFilterBar from '../../../components/SearchFilterBar';
 import { paymentSearchFiltersConfig } from '../config/paymentSearchFiltersConfig';
@@ -20,13 +21,14 @@ import { useReference } from '../../../hooks/useReference';
 import { useApiMessages } from '../../../hooks/useApiMessages';
 import { usePaginatedPayments } from '../hooks/usePaginatedPayments';
 import { useAuthorization } from '../../../hooks/useAuthorization';
+import styles from '../../../styles/pages/PaymentPage.module.css';
 
 const { Title } = Typography;
 const { useBreakpoint } = Grid;
 
 export default function PaymentPage() {
   const notify = useNotification();
-  const { payments, meta, loading, fetchPayments, setPayments } = usePaginatedPayments();
+  const { payments, summary, meta, loading, fetchPayments, setPayments } = usePaginatedPayments();
   const { globalMessages, handleResponse, handleError, resetMessages } = useApiMessages<any>();
 
   // search filters
@@ -66,6 +68,13 @@ export default function PaymentPage() {
     } catch (e: any) {
       handleError(e);
     }
+  };
+
+  const handleMemberChange = (memberID?: number) => {
+    setFilters((prev) => ({
+      ...prev,
+      memberID: memberID || undefined,
+    }));
   };
 
   const openAdd = () => {
@@ -162,15 +171,9 @@ export default function PaymentPage() {
       responsive: ['md'],
       render: (code: string) => toDisplay(ReferenceConstants.FEE_TYPE.NAME, code),
     },
-    {
-      title: 'Amount',
-      dataIndex: 'amount',
-      key: 'amount',
-      render: (val: number) => `$${val?.toFixed(2) ?? '0.00'}`,
-    },
     { title: 'Date', dataIndex: 'dateReceived', key: 'dateReceived' },
     {
-      title: 'Method',
+      title: 'Pay Method',
       dataIndex: 'methodOfPayment',
       key: 'methodOfPayment',
       responsive: ['md'],
@@ -182,6 +185,12 @@ export default function PaymentPage() {
       responsive: ['md'],
       render: (_, record) =>
         record.year && record.quarter ? `${record.year}-Q${record.quarter}` : '',
+    },
+    {
+      title: 'Amount',
+      dataIndex: 'amount',
+      key: 'amount',
+      render: (val: number) => `$${val?.toFixed(2) ?? '0.00'}`,
     },
     ...(canWrite
       ? [
@@ -199,15 +208,18 @@ export default function PaymentPage() {
       : []),
   ];
 
-  // Dynamic search config for fee types (Reference data)
+  // Dynamic search config for fee types and payment methods (Reference data)
   const searchConfig = useMemo(() => {
     return paymentSearchFiltersConfig.map((filter) => {
       if (filter.name === 'feeType') {
         return { ...filter, options: feeTypes };
       }
+      if (filter.name === 'methodOfPayment') {
+        return { ...filter, options: paymentMethods };
+      }
       return filter;
     });
-  }, [feeTypes]);
+  }, [feeTypes, paymentMethods]);
 
   return (
     <div>
@@ -223,7 +235,26 @@ export default function PaymentPage() {
         onChange={setFilters}
         onSearch={handleSearch}
         onAdd={canWrite ? openAdd : undefined}
-      />
+        childrenPosition="start"
+      >
+        <Form.Item
+          label={
+            <span style={{ fontWeight: 600, color: 'var(--otherColor2)' }}>
+              Member
+            </span>
+          }
+          style={{ marginBottom: 8, marginRight: 16 }}
+        >
+          <MemberLookup
+            compact
+            allowClear
+            value={filters.memberID}
+            onChange={handleMemberChange}
+            onError={handleError}
+            style={{ width: 200 }}
+          />
+        </Form.Item>
+      </SearchFilterBar>
 
       {globalMessages && <MessageBanner messages={globalMessages} />}
 
@@ -256,6 +287,21 @@ export default function PaymentPage() {
                 sortOrder === 'ascend' ? 'asc' : sortOrder === 'descend' ? 'desc' : undefined,
             }).catch(handleError);
           }}
+          summary={() =>
+            summary ? (
+              <Table.Summary fixed>
+                <Table.Summary.Row className={styles.summaryRow}>
+                  <Table.Summary.Cell index={0} colSpan={isMobile ? 2 : 5}>
+                    Total ({meta?.totalRecords ?? payments.length ?? 0} payments)
+                  </Table.Summary.Cell>
+                  <Table.Summary.Cell index={isMobile ? 2 : 5}>
+                    ${(summary.totalAmount ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </Table.Summary.Cell>
+                  {canWrite && <Table.Summary.Cell index={isMobile ? 3 : 6} />}
+                </Table.Summary.Row>
+              </Table.Summary>
+            ) : undefined
+          }
         />
       </Card>
 

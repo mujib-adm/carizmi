@@ -38,6 +38,22 @@ public interface PaymentRepository extends JpaRepository<PaymentVO, Integer>, Jp
     @Query("select coalesce(sum(p.amount), 0) from PaymentVO p where p.member.memberID = :memberID and p.year = :year and p.quarter = :quarter")
     BigDecimal sumAmountByMemberIDAndYearAndQuarter(@Param("memberID") Integer memberID, @Param("year") Integer year, @Param("quarter") Integer quarter);
 
+    @Query("select coalesce(sum(p.amount), 0) from PaymentVO p" +
+            " where (:memberID is null or p.member.memberID = :memberID)" +
+            " and (:feeType is null or p.feeType = :feeType)" +
+            " and (:methodOfPayment is null or p.methodOfPayment = :methodOfPayment)" +
+            " and (:year is null or p.year = :year)" +
+            " and (:quarter is null or p.quarter = :quarter)" +
+            " and (:dateFrom is null or p.dateReceived >= :dateFrom)" +
+            " and (:dateTo is null or p.dateReceived <= :dateTo)")
+    BigDecimal sumAmountByFilters(@Param("memberID") Integer memberID,
+                                  @Param("feeType") String feeType,
+                                  @Param("methodOfPayment") String methodOfPayment,
+                                  @Param("year") Integer year,
+                                  @Param("quarter") Integer quarter,
+                                  @Param("dateFrom") LocalDate dateFrom,
+                                  @Param("dateTo") LocalDate dateTo);
+
     @Query("select p.year as year, p.quarter as quarter, sum(p.amount) as totalPaid from PaymentVO p where p.member.memberID = :memberID and p.feeType = :feeType group by p.year, p.quarter")
     List<PaymentSummary> findMemberPaymentSummaries(@Param("memberID") Integer memberID, @Param("feeType") String feeType);
 

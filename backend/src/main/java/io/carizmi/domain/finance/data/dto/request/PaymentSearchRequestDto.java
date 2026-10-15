@@ -19,6 +19,7 @@ import java.time.LocalDate;
 public class PaymentSearchRequestDto extends PaginationDto {
     private Integer memberID;
     private String feeType;
+    private String methodOfPayment;
     private Integer year;
     private Integer quarter;
     private LocalDate dateFrom;
