@@ -312,4 +312,54 @@ class SystemSettingSpec extends BaseSpecification {
         "0"   | _
         "-5"  | _
     }
+
+    def "test - getRegistrationFeeAmount: Success"() {
+        given: "A valid REGISTRATION_FEE setting"
+        SystemSettingsVO vo = new SystemSettingsVO(settingValue: "50")
+
+        when: "The target method executed"
+        BigDecimal result = systemSetting.getRegistrationFeeAmount()
+
+        then: "The expected calls are made"
+        1 * settingsRepo.findOne(_ as JpaSpecification) >> Optional.of(vo)
+        0 * _
+
+        and: "The expected result"
+        result == new BigDecimal("50")
+        noExceptionThrown()
+    }
+
+    def "test - getRegistrationFeeAmount: Should throw IllegalStateException when setting not found"() {
+        when: "The target method executed"
+        systemSetting.getRegistrationFeeAmount()
+
+        then: "The expected calls are made"
+        1 * settingsRepo.findOne(_ as JpaSpecification) >> Optional.empty()
+        0 * _
+
+        and: "The expected result"
+        IllegalStateException ex = thrown(IllegalStateException)
+        ex.message.contains("Required system setting not found")
+    }
+
+    def "test - getRegistrationFeeAmount: Should throw IllegalStateException when value is zero or negative"() {
+        given: "A REGISTRATION_FEE setting with invalid value"
+        SystemSettingsVO vo = new SystemSettingsVO(settingValue: value)
+
+        when: "The target method executed"
+        systemSetting.getRegistrationFeeAmount()
+
+        then: "The expected calls are made"
+        1 * settingsRepo.findOne(_ as JpaSpecification) >> Optional.of(vo)
+        0 * _
+
+        and: "The expected result"
+        IllegalStateException ex = thrown(IllegalStateException)
+        ex.message.contains("Invalid REGISTRATION_FEE value")
+
+        where:
+        value | _
+        "0"   | _
+        "-10" | _
+    }
 }

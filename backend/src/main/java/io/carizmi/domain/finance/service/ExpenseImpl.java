@@ -1,29 +1,30 @@
 package io.carizmi.domain.finance.service;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import io.carizmi.domain.finance.data.dto.ExpenseDto;
+import io.carizmi.domain.finance.data.dto.projection.ExpenseCategoryTotalProjection;
 import io.carizmi.domain.finance.data.dto.request.ExpenseSearchRequestDto;
 import io.carizmi.domain.finance.data.transformer.ExpenseDtoTransformer;
 import io.carizmi.domain.finance.data.transformer.ExpenseVOTransformer;
 import io.carizmi.domain.finance.model.ExpenseVO;
-import io.carizmi.framework.data.response.PagedResult;
-import io.carizmi.framework.data.response.PaginationMeta;
-import io.carizmi.framework.exception.RecordNotFoundException;
 import io.carizmi.domain.finance.repository.ExpenseRepository;
 import io.carizmi.domain.finance.repository.spec.ExpenseSpecifications;
 import io.carizmi.domain.finance.validation.ExpenseValidator;
+import io.carizmi.framework.data.response.PagedResult;
+import io.carizmi.framework.data.response.PaginationMeta;
+import io.carizmi.framework.exception.RecordNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 import static io.carizmi.shared.message.ValidationMessages.RECORD_NOT_FOUND;
 
@@ -121,7 +122,7 @@ public final class ExpenseImpl extends ExpenseAbstractBL implements Expense {
 
     @Override
     @Transactional(readOnly = true)
-    public BigDecimal sumAmountByDateOfExpenseBefore(LocalDate date) {
-        return getRepo().sumAmountByDateOfExpenseBefore(date);
+    public List<ExpenseCategoryTotalProjection> findExpenseCategoryTotalsBetween(LocalDate start, LocalDate end) {
+        return getRepo().findExpenseCategoryTotalsBetween(start, end);
     }
 }

@@ -25,4 +25,6 @@ public interface SystemSetting extends BusinessLogic<SystemSettingsVO> {
     Optional<SystemSettingsVO> findByNameAndKey(String settingName, String key);
 
     BigDecimal getQuarterlyFeeAmount();
+
+    BigDecimal getRegistrationFeeAmount();
 }

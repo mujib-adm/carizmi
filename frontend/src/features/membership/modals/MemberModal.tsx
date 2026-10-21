@@ -7,6 +7,7 @@ import { useApiMessages } from '../../../hooks/useApiMessages';
 import styles from '../../../styles/modals/MemberModal.module.css';
 import { AntdFormItem } from '../../../components/AntdFormItem';
 import { MessageBanner } from '../../../components/MessageBanner';
+import { formatPhoneInput, formatPhoneNumber } from '../../../utils/phoneUtils';
 
 type Props = {
   open: boolean;
@@ -32,6 +33,7 @@ export function MemberModal({ open, onCancel, onSubmit, initial, statusOptions }
       if (initial) {
         form.setFieldsValue({
           ...initial,
+          phone: formatPhoneNumber(initial.phone, ''),
           joinDate: initial.joinDate ? dayjs(initial.joinDate) : null,
         });
       } else {
@@ -110,6 +112,8 @@ export function MemberModal({ open, onCancel, onSubmit, initial, statusOptions }
               type="tel"
               rules={[{ required: true, message: 'Phone is required' }]}
               placeholder="Phone"
+              normalize={formatPhoneInput}
+              inputProps={{ maxLength: 12 }}
             />
           </Col>
           <Col xs={24} sm={12}>

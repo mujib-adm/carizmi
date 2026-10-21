@@ -1,5 +1,6 @@
 package io.carizmi.domain.finance.service
 
+import io.carizmi.domain.finance.data.dto.projection.ExpenseCategoryTotalProjection
 import io.carizmi.framework.event.DomainEventPublisher
 import io.carizmi.shared.constants.FieldConstants
 import io.carizmi.domain.finance.data.dto.ExpenseDto
@@ -309,20 +310,21 @@ class ExpenseSpec extends BaseSpecification {
         noExceptionThrown()
     }
 
-    def "test - sumAmountByDateOfExpenseBefore: Should return sum"() {
-        given: "A date"
-        LocalDate date = LocalDate.now()
-        BigDecimal expectedSum = new BigDecimal("500.00")
+    def "test - findExpenseCategoryTotalsBetween: Should return list of category projections"() {
+        given: "A date range"
+        LocalDate start = LocalDate.of(2026, 1, 1)
+        LocalDate end = LocalDate.of(2026, 12, 31)
+        def proj = Mock(ExpenseCategoryTotalProjection)
 
         when: "The target method executed"
-        BigDecimal result = expenseImpl.sumAmountByDateOfExpenseBefore(date)
+        def result = expenseImpl.findExpenseCategoryTotalsBetween(start, end)
 
         then: "The expected calls are made"
-        1 * expenseRepo.sumAmountByDateOfExpenseBefore(date) >> expectedSum
+        1 * expenseRepo.findExpenseCategoryTotalsBetween(start, end) >> [proj]
         0 * _
 
         and: "The expected result"
-        result == expectedSum
+        result == [proj]
         noExceptionThrown()
     }
 }

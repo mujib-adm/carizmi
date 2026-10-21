@@ -9,6 +9,7 @@ import io.carizmi.domain.finance.service.Payment;
 import io.carizmi.domain.platform.service.SystemSetting;
 import io.carizmi.domain.platform.service.BaselineService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,8 +21,6 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class BaselineServiceImpl implements BaselineService {
     private static final Logger logger = LoggerFactory.getLogger(BaselineServiceImpl.class);
-
-    private static final int LAUNCH_YEAR = 2026;
 
     private final SystemSetting systemSetting;
     private final Payment payment;
@@ -39,51 +38,56 @@ public class BaselineServiceImpl implements BaselineService {
             return new BigDecimal(snapshot.get().getSettingValue());
         }
 
-        // 2. Fallback: Dynamic Calculation
-        logger.warn("Baseline snapshot for {} not found. Calculating dynamically.", year);
-        BigDecimal baseline;
-        if (year == LAUNCH_YEAR) {
-            baseline = BigDecimal.ZERO;
-        } else {
-            baseline = calculateRevenueAsOf(LocalDate.of(year, 1, 1));
+        // 2. Fallback: Dynamic Roll-Forward from prior year
+        logger.warn("Baseline snapshot for {} not found. Attempting dynamic roll-forward from year {}.", year, year - 1);
+
+        Optional<SystemSettingsVO> prevSnapshot = systemSetting.findBySettingKey(BaselineConstants.getYearlyBaselineKey(year - 1));
+        if (prevSnapshot.isPresent()) {
+            BigDecimal prevBaseline = new BigDecimal(prevSnapshot.get().getSettingValue());
+            LocalDate startOfPrevYear = LocalDate.of(year - 1, 1, 1);
+            LocalDate endOfPrevYear = LocalDate.of(year - 1, 12, 31);
+
+            BigDecimal payments = payment.sumAmountByDateReceivedBetween(startOfPrevYear, endOfPrevYear);
+            if (payments == null) payments = BigDecimal.ZERO;
+
+            BigDecimal expenses = expense.sumAmountByDateOfExpenseBetween(startOfPrevYear, endOfPrevYear);
+            if (expenses == null) expenses = BigDecimal.ZERO;
+
+            BigDecimal calculatedBaseline = prevBaseline.add(payments).subtract(expenses);
+            saveBaselineSnapshot(year, calculatedBaseline);
+            return calculatedBaseline;
         }
 
-        // 3. "Soft-Cache": Persist for future use
-        saveBaselineSnapshot(year, baseline);
-
-        return baseline;
+        logger.info("No prior baseline found for year {}. Defaulting to ZERO.", year);
+        return BigDecimal.ZERO;
     }
 
     @Override
     @Transactional
+    @CacheEvict(value = "systemSettings", allEntries = true)
     public void closeYear(int year) {
-        logger.info("Closing year {} and capturing final baseline.", year);
-        // Baseline for year Y+1 is revenue as of Dec 31 of year Y (exclusive of Jan 1 of Y+1)
-        BigDecimal finalRevenue = calculateRevenueAsOf(LocalDate.of(year + 1, 1, 1));
-        saveBaselineSnapshot(year + 1, finalRevenue);
-    }
+        logger.info("Closing year {} and capturing final baseline snapshot for year {}.", year, year + 1);
 
-    private BigDecimal calculateRevenueAsOf(LocalDate firstDayOfTargetYear) {
-        // Seed from System Settings
-        BigDecimal seed = getSeedAmount();
+        // 1. Beginning baseline of the closed year (e.g. YEARLY_BASELINE_2026)
+        BigDecimal beginningBalance = getBaselineForYear(year);
 
-        // Payments received BEFORE firstDayOfTargetYear
-        BigDecimal payments = payment.sumAmountByDateReceivedBefore(firstDayOfTargetYear);
-        if (payments == null)
-            payments = BigDecimal.ZERO;
+        // 2. Receipts strictly within the closed year (Jan 1 to Dec 31)
+        LocalDate startOfYear = LocalDate.of(year, 1, 1);
+        LocalDate endOfYear = LocalDate.of(year, 12, 31);
 
-        // Expenses incurred BEFORE firstDayOfTargetYear
-        BigDecimal expenses = expense.sumAmountByDateOfExpenseBefore(firstDayOfTargetYear);
-        if (expenses == null)
-            expenses = BigDecimal.ZERO;
+        BigDecimal payments = payment.sumAmountByDateReceivedBetween(startOfYear, endOfYear);
+        if (payments == null) payments = BigDecimal.ZERO;
 
-        return seed.add(payments).subtract(expenses);
-    }
+        // 3. Disbursements strictly within the closed year (Jan 1 to Dec 31)
+        BigDecimal expenses = expense.sumAmountByDateOfExpenseBetween(startOfYear, endOfYear);
+        if (expenses == null) expenses = BigDecimal.ZERO;
 
-    private BigDecimal getSeedAmount() {
-        return systemSetting.findBySettingKey(BaselineConstants.KEY_SEED)
-                .map(vo -> new BigDecimal(vo.getSettingValue()))
-                .orElse(BigDecimal.ZERO);
+        // 4. Ending Cash Balance of year Y becomes Beginning Baseline for year Y + 1
+        BigDecimal endingBalance = beginningBalance.add(payments).subtract(expenses);
+
+        // 5. Persist snapshot for year Y + 1
+        saveBaselineSnapshot(year + 1, endingBalance);
+        logger.info("Successfully closed year {}. Saved baseline for year {} with value {}.", year, year + 1, endingBalance);
     }
 
     private void saveBaselineSnapshot(int year, BigDecimal amount) {

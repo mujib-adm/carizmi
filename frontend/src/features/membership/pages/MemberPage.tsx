@@ -1,11 +1,12 @@
 import { DeleteOutlined, EditOutlined, EyeOutlined, TeamOutlined } from '@ant-design/icons';
-import { Button, Card, Grid, Modal, Space, Table, Typography } from 'antd';
+import { Button, Card, Form, Grid, Modal, Space, Table, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { membersApi } from '../../../api/generated/members/members';
 import { MemberModal } from '../modals/MemberModal';
 import { MessageBanner } from '../../../components/MessageBanner';
+import MemberLookup from '../../../components/MemberLookup';
 import SearchFilterBar from '../../../components/SearchFilterBar';
 import { memberSearchFiltersConfig } from '../config/memberSearchFiltersConfig';
 import { ReferenceConstants } from '../../../constants/ReferenceConstants';
@@ -20,6 +21,7 @@ import { useReference } from '../../../hooks/useReference';
 import { useApiMessages } from '../../../hooks/useApiMessages';
 import { usePaginatedMembers } from '../hooks/usePaginatedMembers';
 import { useAuthorization } from '../../../hooks/useAuthorization';
+import { formatPhoneNumber } from '../../../utils/phoneUtils';
 
 const { Title } = Typography;
 const { useBreakpoint } = Grid;
@@ -27,11 +29,13 @@ const { useBreakpoint } = Grid;
 export default function MemberPage() {
   const navigate = useNavigate();
   const notify = useNotification();
-  const { members, meta, loading, fetchMembers, setMembers } = usePaginatedMembers();
+  const { members, meta, loading, fetchMembers, setMembers, setMeta, setLoading } =
+    usePaginatedMembers();
   const { globalMessages, handleResponse, handleError, resetMessages } = useApiMessages<any>();
 
   // search filters
   const [filters, setFilters] = useState<MemberSearchRequestDto>({});
+  const [selectedMemberID, setSelectedMemberID] = useState<number | undefined>(undefined);
 
   // modal state
   const [modalOpenInd, setModalOpenInd] = useState(false);
@@ -51,12 +55,72 @@ export default function MemberPage() {
     [getReference]
   );
 
+  const handleMemberChange = async (memberID?: number) => {
+    setSelectedMemberID(memberID);
+    resetMessages();
+    if (memberID) {
+      setLoading(true);
+      try {
+        const resp = await membersApi.getMember(memberID);
+        if (resp.responseData) {
+          setMembers([resp.responseData]);
+          setMeta({
+            page: 0,
+            pageSize: meta?.pageSize ?? 10,
+            totalRecords: 1,
+            totalPages: 1,
+          });
+        } else {
+          setMembers([]);
+          setMeta(null);
+        }
+      } catch (e: any) {
+        handleError(e);
+        setMembers([]);
+        setMeta(null);
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      try {
+        await fetchMembers({ ...filters, page: 0, size: meta?.pageSize ?? 10 });
+      } catch (e: any) {
+        handleError(e);
+      }
+    }
+  };
+
   const handleSearch = async () => {
     resetMessages();
-    try {
-      await fetchMembers({ ...filters, page: 0, size: meta?.pageSize ?? 10 });
-    } catch (e: any) {
-      handleError(e);
+    if (selectedMemberID) {
+      setLoading(true);
+      try {
+        const resp = await membersApi.getMember(selectedMemberID);
+        if (resp.responseData) {
+          setMembers([resp.responseData]);
+          setMeta({
+            page: 0,
+            pageSize: meta?.pageSize ?? 10,
+            totalRecords: 1,
+            totalPages: 1,
+          });
+        } else {
+          setMembers([]);
+          setMeta(null);
+        }
+      } catch (e: any) {
+        handleError(e);
+        setMembers([]);
+        setMeta(null);
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      try {
+        await fetchMembers({ ...filters, page: 0, size: meta?.pageSize ?? 10 });
+      } catch (e: any) {
+        handleError(e);
+      }
     }
   };
 
@@ -95,7 +159,17 @@ export default function MemberPage() {
 
           if (resp.globalMessages?.[0]?.type === MessageType.SUCCESS) {
             notify.success({ message: 'Deleted', description: 'Member deleted successfully.' });
-            fetchMembers(filters); // Refresh
+            if (selectedMemberID === id) {
+              setSelectedMemberID(undefined);
+              fetchMembers({ page: 0, size: meta?.pageSize ?? 10 });
+            } else if (selectedMemberID) {
+              const fullMemberResp = await membersApi.getMember(selectedMemberID);
+              if (fullMemberResp.responseData) {
+                setMembers([fullMemberResp.responseData]);
+              }
+            } else {
+              fetchMembers(filters); // Refresh
+            }
           } else {
             handleResponse(resp);
           }
@@ -122,7 +196,14 @@ export default function MemberPage() {
         }
       } else if (!isAdd) {
         // For updates, we still refresh the list to ensure sorting/filtering logic
-        fetchMembers(filters);
+        if (selectedMemberID) {
+          const fullMemberResp = await membersApi.getMember(selectedMemberID);
+          if (fullMemberResp.responseData) {
+            setMembers([fullMemberResp.responseData]);
+          }
+        } else {
+          fetchMembers(filters);
+        }
       }
     } else {
       handleResponse(resp as GlobalResponse<unknown>);
@@ -136,7 +217,12 @@ export default function MemberPage() {
     { title: 'Member ID', dataIndex: 'memberID', key: 'memberID', sorter: true, width: 110 },
     { title: 'First Name', dataIndex: 'firstName', key: 'firstName', sorter: true },
     { title: 'Last Name', dataIndex: 'lastName', key: 'lastName', sorter: true },
-    { title: 'Phone', dataIndex: 'phone', key: 'phone' },
+    {
+      title: 'Phone',
+      dataIndex: 'phone',
+      key: 'phone',
+      render: (phone?: string) => formatPhoneNumber(phone),
+    },
     { title: 'Email', dataIndex: 'email', key: 'email', responsive: ['md'] },
     {
       title: 'Status',
@@ -186,7 +272,26 @@ export default function MemberPage() {
         onChange={setFilters}
         onSearch={handleSearch}
         onAdd={canWrite ? openAdd : undefined}
-      />
+        childrenPosition="start"
+      >
+        <Form.Item
+          label={
+            <span style={{ fontWeight: 600, color: 'var(--otherColor2)' }}>
+              Member
+            </span>
+          }
+          style={{ marginBottom: 8, marginRight: 16 }}
+        >
+          <MemberLookup
+            compact
+            allowClear
+            value={selectedMemberID}
+            onChange={handleMemberChange}
+            onError={handleError}
+            style={{ width: 220 }}
+          />
+        </Form.Item>
+      </SearchFilterBar>
 
       {globalMessages && <MessageBanner messages={globalMessages} />}
 
@@ -206,6 +311,9 @@ export default function MemberPage() {
             simple: isMobile,
           }}
           onChange={(pagination, _filters, sorter) => {
+            if (selectedMemberID) {
+              return;
+            }
             const sortField = Array.isArray(sorter) ? sorter[0].field : sorter.field;
             const sortOrder = Array.isArray(sorter) ? sorter[0].order : sorter.order;
 

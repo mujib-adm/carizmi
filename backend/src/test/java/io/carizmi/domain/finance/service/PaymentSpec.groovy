@@ -1,5 +1,7 @@
 package io.carizmi.domain.finance.service
 
+import io.carizmi.domain.finance.data.dto.projection.FeeTypeQuarterlyTotalProjection
+import io.carizmi.domain.finance.data.dto.projection.PaymentMethodTotalProjection
 import io.carizmi.framework.event.DomainEventPublisher
 import io.carizmi.shared.constants.ReferenceConstants
 import io.carizmi.shared.constants.FieldConstants
@@ -546,23 +548,6 @@ class PaymentSpec extends BaseSpecification {
         noExceptionThrown()
     }
 
-    def "test - sumAmountByDateReceivedBefore: Should return sum"() {
-        given: "A date"
-        LocalDate date = LocalDate.now()
-        BigDecimal expectedSum = new BigDecimal("100.00")
-
-        when: "The target method executed"
-        BigDecimal result = paymentImpl.sumAmountByDateReceivedBefore(date)
-
-        then: "The expected calls are made"
-        1 * paymentRepo.sumAmountByDateReceivedBefore(date) >> expectedSum
-        0 * _
-
-        and: "The expected result"
-        result == expectedSum
-        noExceptionThrown()
-    }
-
     def "test - findPaymentSummaries: Should return list"() {
         given: "Criteria using dynamic year"
         String feeType = "FEE"
@@ -799,6 +784,41 @@ class PaymentSpec extends BaseSpecification {
 
         and: "The expected result"
         result == BigDecimal.ZERO
+        noExceptionThrown()
+    }
+
+    def "test - findFeeTypeQuarterlyTotals: Should delegate to repo"() {
+        given: "A year"
+        Integer year = 2026
+        def mockProj = Mock(FeeTypeQuarterlyTotalProjection)
+
+        when: "The target method executed"
+        def result = paymentImpl.findFeeTypeQuarterlyTotals(year)
+
+        then: "The expected calls are made"
+        1 * paymentRepo.findFeeTypeQuarterlyTotals(year) >> [mockProj]
+        0 * _
+
+        and: "The expected result"
+        result == [mockProj]
+        noExceptionThrown()
+    }
+
+    def "test - findPaymentMethodTotalsBetween: Should delegate to repo"() {
+        given: "A date range"
+        LocalDate start = LocalDate.of(2026, 1, 1)
+        LocalDate end = LocalDate.of(2026, 12, 31)
+        def mockProj = Mock(PaymentMethodTotalProjection)
+
+        when: "The target method executed"
+        def result = paymentImpl.findPaymentMethodTotalsBetween(start, end)
+
+        then: "The expected calls are made"
+        1 * paymentRepo.findPaymentMethodTotalsBetween(start, end) >> [mockProj]
+        0 * _
+
+        and: "The expected result"
+        result == [mockProj]
         noExceptionThrown()
     }
 }

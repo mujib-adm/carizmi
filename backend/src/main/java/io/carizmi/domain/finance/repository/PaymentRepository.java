@@ -6,6 +6,8 @@ import java.util.List;
 
 import io.carizmi.domain.finance.model.PaymentVO;
 import io.carizmi.domain.finance.data.dto.LatestPaymentProjection;
+import io.carizmi.domain.finance.data.dto.projection.FeeTypeQuarterlyTotalProjection;
+import io.carizmi.domain.finance.data.dto.projection.PaymentMethodTotalProjection;
 import io.carizmi.shared.data.dto.PaymentSummary;
 import io.carizmi.shared.data.dto.QuarterlyTotalProjection;
 import org.springframework.data.domain.Pageable;
@@ -22,9 +24,6 @@ public interface PaymentRepository extends JpaRepository<PaymentVO, Integer>, Jp
             "FROM PaymentVO p JOIN p.member m " +
             "ORDER BY p.dateReceived DESC, p.paymentID DESC")
     List<LatestPaymentProjection> findLatestPayments(Pageable pageable);
-
-    @Query("select coalesce(sum(p.amount), 0) from PaymentVO p where p.dateReceived < :date")
-    BigDecimal sumAmountByDateReceivedBefore(@Param("date") LocalDate date);
 
     @Query("select coalesce(sum(p.amount), 0) from PaymentVO p where p.dateReceived >= :start and p.dateReceived <= :end")
     BigDecimal sumAmountByDateReceivedBetween(@Param("start") LocalDate start, @Param("end") LocalDate end);
@@ -65,6 +64,20 @@ public interface PaymentRepository extends JpaRepository<PaymentVO, Integer>, Jp
 
     @Query("select p.quarter as quarter, coalesce(sum(p.amount), 0) as totalCollected from PaymentVO p where p.year = :year group by p.quarter")
     List<QuarterlyTotalProjection> findQuarterlyTotals(@Param("year") Integer year);
+
+    @Query(value = """
+            SELECT
+                p.feeType AS feeType,
+                COALESCE(p.quarter, QUARTER(p.dateReceived)) AS quarter,
+                COALESCE(SUM(p.amount), 0) AS totalAmount
+            FROM payment p
+            WHERE COALESCE(p.year, YEAR(p.dateReceived)) = :year
+            GROUP BY p.feeType, COALESCE(p.quarter, QUARTER(p.dateReceived))
+            """, nativeQuery = true)
+    List<FeeTypeQuarterlyTotalProjection> findFeeTypeQuarterlyTotals(@Param("year") Integer year);
+
+    @Query("select p.methodOfPayment as methodOfPayment, coalesce(sum(p.amount), 0) as totalAmount from PaymentVO p where p.dateReceived >= :start and p.dateReceived <= :end group by p.methodOfPayment")
+    List<PaymentMethodTotalProjection> findPaymentMethodTotalsBetween(@Param("start") LocalDate start, @Param("end") LocalDate end);
 
     @Query(value = """
             SELECT COALESCE(SUM(GREATEST(0, :feeAmt - COALESCE(paid.total, 0))), 0)

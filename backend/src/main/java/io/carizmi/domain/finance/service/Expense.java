@@ -10,6 +10,8 @@ import io.carizmi.framework.data.response.PagedResult;
 import org.springframework.lang.NonNull;
 
 import java.math.BigDecimal;
+import java.util.List;
+import io.carizmi.domain.finance.data.dto.projection.ExpenseCategoryTotalProjection;
 
 public interface Expense extends BusinessLogic<ExpenseVO> {
 
@@ -25,5 +27,5 @@ public interface Expense extends BusinessLogic<ExpenseVO> {
 
     BigDecimal sumAmountByDateOfExpenseBetween(LocalDate start, LocalDate end);
 
-    BigDecimal sumAmountByDateOfExpenseBefore(LocalDate date);
+    List<ExpenseCategoryTotalProjection> findExpenseCategoryTotalsBetween(LocalDate start, LocalDate end);
 }

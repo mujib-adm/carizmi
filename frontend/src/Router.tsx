@@ -15,6 +15,7 @@ const MemberDetailsPage = lazy(() => import('./features/membership/pages/MemberD
 const MemberPage = lazy(() => import('./features/membership/pages/MemberPage'));
 const PaymentPage = lazy(() => import('./features/finance/pages/PaymentPage'));
 const QuarterlyChecklistPage = lazy(() => import('./features/finance/pages/QuarterlyChecklistPage'));
+const AnnualReportPage = lazy(() => import('./features/finance/pages/AnnualReportPage'));
 const ReferencePage = lazy(() => import('./features/platform/pages/ReferencePage'));
 const SystemSettingsPage = lazy(() => import('./features/platform/pages/SystemSettingsPage'));
 const UsersPage = lazy(() => import('./features/identity/pages/UsersPage'));
@@ -54,6 +55,7 @@ export default function Router() {
           <Route path="/payments" element={<PaymentPage />} />
           <Route path="/checklist" element={<QuarterlyChecklistPage />} />
           <Route path="/expenses" element={<ExpensePage />} />
+          <Route path="/reports" element={<AnnualReportPage />} />
           <Route path="/references" element={<ReferencePage />} />
           <Route path="/settings" element={<SystemSettingsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
