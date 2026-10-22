@@ -11,6 +11,7 @@ import io.carizmi.domain.finance.model.PaymentVO;
 import io.carizmi.domain.finance.data.dto.PaymentDto;
 import io.carizmi.domain.finance.data.dto.request.PaymentSearchRequestDto;
 import io.carizmi.domain.finance.data.dto.response.LatestPaymentDto;
+import io.carizmi.domain.finance.data.dto.projection.FeeTypeReceiptBreakdownProjection;
 import io.carizmi.domain.finance.data.dto.projection.FeeTypeQuarterlyTotalProjection;
 import io.carizmi.domain.finance.data.dto.projection.PaymentMethodTotalProjection;
 import io.carizmi.shared.data.dto.PaymentSummary;
@@ -237,6 +238,12 @@ public final class PaymentImpl extends PaymentAbstractBL implements Payment {
     @Transactional(readOnly = true)
     public List<FeeTypeQuarterlyTotalProjection> findFeeTypeQuarterlyTotals(@NonNull Integer year) {
         return getRepo().findFeeTypeQuarterlyTotals(year);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FeeTypeReceiptBreakdownProjection> findFeeTypeReceiptBreakdownsBetween(@NonNull LocalDate start, @NonNull LocalDate end) {
+        return getRepo().findFeeTypeReceiptBreakdownsBetween(start, end);
     }
 
     @Override

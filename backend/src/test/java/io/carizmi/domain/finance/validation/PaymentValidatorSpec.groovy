@@ -1,5 +1,8 @@
 package io.carizmi.domain.finance.validation
 
+import io.carizmi.domain.platform.constants.BaselineConstants
+import io.carizmi.domain.platform.model.SystemSettingsVO
+import io.carizmi.domain.platform.service.SystemSetting
 import io.carizmi.domain.platform.validation.ReferenceValidator
 
 import io.carizmi.shared.constants.FieldConstants
@@ -15,9 +18,10 @@ import java.time.LocalDate
 class PaymentValidatorSpec extends BaseSpecification {
 
     ReferenceValidator referenceValidator = Mock()
+    SystemSetting systemSetting = Mock()
 
     @Subject
-    PaymentValidator paymentValidator = new PaymentValidator(referenceValidator)
+    PaymentValidator paymentValidator = new PaymentValidator(referenceValidator, systemSetting)
 
     def "test - validate: Should pass for valid Non-Membership Payment"() {
         given: "A valid PaymentVO (e.g., REGISTRATION_FEE)"
@@ -40,6 +44,7 @@ class PaymentValidatorSpec extends BaseSpecification {
         then: "The expected calls are made"
         1 * referenceValidator.validate(vo, feeTypeField, feeTypeName, feeType)
         1 * referenceValidator.validate(vo, methodField, methodName, method)
+        1 * systemSetting.findBySettingKey(BaselineConstants.getYearlyBaselineKey(date.year + 1)) >> Optional.empty()
         0 * _
 
         and: "The expected result"
@@ -70,6 +75,7 @@ class PaymentValidatorSpec extends BaseSpecification {
         then: "The expected calls are made"
         1 * referenceValidator.validate(vo, feeTypeField, feeTypeName, feeType)
         1 * referenceValidator.validate(vo, methodField, methodName, method)
+        1 * systemSetting.findBySettingKey(BaselineConstants.getYearlyBaselineKey(date.year + 1)) >> Optional.empty()
         0 * _
 
         and: "The expected result"
@@ -112,6 +118,9 @@ class PaymentValidatorSpec extends BaseSpecification {
         if (!(field == paymentMethodField && (value == null || value == ""))) {
             1 * referenceValidator.validate(vo, paymentMethodField, methodName, field == paymentMethodField ? value : defaultMethod)
         }
+        if (vo.getDateReceived() != null) {
+            1 * systemSetting.findBySettingKey(BaselineConstants.getYearlyBaselineKey(vo.getDateReceived().year + 1)) >> Optional.empty()
+        }
         0 * _
 
         and: "The expected result"
@@ -148,6 +157,7 @@ class PaymentValidatorSpec extends BaseSpecification {
         then: "The expected calls are made"
         1 * referenceValidator.validate(vo, feeTypeField, feeTypeName, testFeeType)
         1 * referenceValidator.validate(vo, methodField, methodName, testMethod)
+        1 * systemSetting.findBySettingKey(BaselineConstants.getYearlyBaselineKey(LocalDate.now().year + 1)) >> Optional.empty()
         0 * _
 
         and: "The error is captured for member ID"
@@ -175,6 +185,7 @@ class PaymentValidatorSpec extends BaseSpecification {
         then: "The expected calls are made"
         1 * referenceValidator.validate(vo, feeTypeField, feeTypeName, feeType)
         1 * referenceValidator.validate(vo, methodField, methodName, method)
+        1 * systemSetting.findBySettingKey(BaselineConstants.getYearlyBaselineKey(LocalDate.now().year + 1)) >> Optional.empty()
         0 * _
 
         and: "The expected result"
@@ -210,6 +221,7 @@ class PaymentValidatorSpec extends BaseSpecification {
         then: "The expected calls are made"
         1 * referenceValidator.validate(vo, feeTypeField, feeTypeName, feeType)
         1 * referenceValidator.validate(vo, methodField, methodName, method)
+        1 * systemSetting.findBySettingKey(BaselineConstants.getYearlyBaselineKey(LocalDate.now().year + 1)) >> Optional.empty()
         0 * _
 
         and: "The expected result"
@@ -236,11 +248,68 @@ class PaymentValidatorSpec extends BaseSpecification {
         then: "The expected calls are made"
         1 * referenceValidator.validate(vo, feeTypeField, feeTypeName, feeType)
         1 * referenceValidator.validate(vo, methodField, methodName, method)
+        1 * systemSetting.findBySettingKey(BaselineConstants.getYearlyBaselineKey(LocalDate.now().year + 1)) >> Optional.empty()
         0 * _
 
         and: "The expected result"
         noExceptionThrown()
         vo.hasErrors()
         vo.getFieldMessages().containsKey(FieldConstants.PAYMENT_ID)
+    }
+
+    def "test - validate: Fails if dateReceived is in a closed fiscal year"() {
+        given:
+        int year = LocalDate.now().year
+        PaymentVO vo = new PaymentVO(
+                member: new MemberVO(memberID: 1),
+                feeType: ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE,
+                amount: new BigDecimal("100.00"),
+                dateReceived: LocalDate.of(year, 6, 15),
+                methodOfPayment: ReferenceConstants.PAYMENT_METHOD.CASH,
+                year: year,
+                quarter: 2
+        )
+
+        when: "Validation is executed"
+        paymentValidator.validate(vo)
+
+        then: "Error is attached to dateReceived"
+        1 * referenceValidator.validate(vo, FieldConstants.FEE_TYPE, ReferenceConstants.FEE_TYPE.NAME, ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE)
+        1 * referenceValidator.validate(vo, FieldConstants.METHOD_OF_PAYMENT, ReferenceConstants.PAYMENT_METHOD.NAME, ReferenceConstants.PAYMENT_METHOD.CASH)
+        1 * systemSetting.findBySettingKey(BaselineConstants.getYearlyBaselineKey(year + 1)) >> Optional.of(new SystemSettingsVO())
+        0 * _
+
+        and: "The expected result"
+        vo.hasErrors()
+        vo.getFieldMessages().containsKey(FieldConstants.DATE_RECEIVED)
+        noExceptionThrown()
+    }
+
+    def "test - validate: Passes if dateReceived is in an open fiscal year"() {
+        given:
+        int year = LocalDate.now().year
+        PaymentVO vo = new PaymentVO(
+                member: new MemberVO(memberID: 1),
+                feeType: ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE,
+                amount: new BigDecimal("100.00"),
+                dateReceived: LocalDate.of(year + 1, 2, 10),
+                methodOfPayment: ReferenceConstants.PAYMENT_METHOD.CASH,
+                year: year + 1,
+                quarter: 4
+        )
+
+        when: "Validation is executed"
+        paymentValidator.validate(vo)
+
+        then: "No dateReceived errors"
+        1 * referenceValidator.validate(vo, FieldConstants.FEE_TYPE, ReferenceConstants.FEE_TYPE.NAME, ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE)
+        1 * referenceValidator.validate(vo, FieldConstants.METHOD_OF_PAYMENT, ReferenceConstants.PAYMENT_METHOD.NAME, ReferenceConstants.PAYMENT_METHOD.CASH)
+        1 * systemSetting.findBySettingKey(BaselineConstants.getYearlyBaselineKey(year + 2)) >> Optional.empty()
+        0 * _
+
+        and: "The expected result"
+        !vo.hasErrors()
+        !vo.getFieldMessages().containsKey(FieldConstants.DATE_RECEIVED)
+        noExceptionThrown()
     }
 }

@@ -1,9 +1,12 @@
 package io.carizmi.domain.finance.validation;
 
 import lombok.RequiredArgsConstructor;
+import io.carizmi.domain.platform.constants.BaselineConstants;
+import io.carizmi.domain.platform.service.SystemSetting;
 import org.apache.commons.lang3.StringUtils;
 import io.carizmi.shared.constants.FieldConstants;
 import io.carizmi.shared.constants.ReferenceConstants;
+import io.carizmi.shared.message.ValidationMessages;
 import io.carizmi.domain.finance.model.ExpenseVO;
 import io.carizmi.framework.bl.AbstractDomainValidator;
 import io.carizmi.domain.platform.validation.ReferenceValidator;
@@ -14,6 +17,7 @@ import org.springframework.stereotype.Service;
 public class ExpenseValidator extends AbstractDomainValidator<ExpenseVO> {
 
     private final ReferenceValidator referenceValidator;
+    private final SystemSetting systemSetting;
 
     @Override
     public void validate(ExpenseVO vo) {
@@ -31,6 +35,14 @@ public class ExpenseValidator extends AbstractDomainValidator<ExpenseVO> {
 
     private void validateDateOfExpense(ExpenseVO vo) {
         validateRequired(vo, FieldConstants.DATE_OF_EXPENSE, vo.getDateOfExpense());
+        if (vo.getDateOfExpense() != null) {
+            int expenseYear = vo.getDateOfExpense().getYear();
+            String closingKey = BaselineConstants.getYearlyBaselineKey(expenseYear + 1);
+            if (systemSetting.findBySettingKey(closingKey).isPresent()) {
+                vo.addFieldMessage(FieldConstants.DATE_OF_EXPENSE,
+                        ValidationMessages.ERR_FISCAL_YEAR_CLOSED.addMessageArgs(String.valueOf(expenseYear)));
+            }
+        }
     }
 
     private void validateCategory(ExpenseVO vo) {

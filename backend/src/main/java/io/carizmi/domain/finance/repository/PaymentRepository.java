@@ -76,6 +76,20 @@ public interface PaymentRepository extends JpaRepository<PaymentVO, Integer>, Jp
             """, nativeQuery = true)
     List<FeeTypeQuarterlyTotalProjection> findFeeTypeQuarterlyTotals(@Param("year") Integer year);
 
+    @Query(value = """
+            SELECT
+                p.feeType AS feeType,
+                p.year AS obligationYear,
+                QUARTER(p.dateReceived) AS receivedQuarter,
+                COALESCE(p.quarter, QUARTER(p.dateReceived)) AS feeQuarter,
+                COALESCE(SUM(p.amount), 0) AS totalAmount
+            FROM payment p
+            WHERE p.dateReceived >= :start AND p.dateReceived <= :end
+            GROUP BY p.feeType, p.year, QUARTER(p.dateReceived), COALESCE(p.quarter, QUARTER(p.dateReceived))
+            """, nativeQuery = true)
+    List<io.carizmi.domain.finance.data.dto.projection.FeeTypeReceiptBreakdownProjection> findFeeTypeReceiptBreakdownsBetween(
+            @Param("start") LocalDate start, @Param("end") LocalDate end);
+
     @Query("select p.methodOfPayment as methodOfPayment, coalesce(sum(p.amount), 0) as totalAmount from PaymentVO p where p.dateReceived >= :start and p.dateReceived <= :end group by p.methodOfPayment")
     List<PaymentMethodTotalProjection> findPaymentMethodTotalsBetween(@Param("start") LocalDate start, @Param("end") LocalDate end);
 

@@ -2,6 +2,7 @@ package io.carizmi.domain.finance.service;
 
 import io.carizmi.domain.finance.data.dto.response.LatestPaymentDto;
 import io.carizmi.domain.finance.data.dto.PaymentDto;
+import io.carizmi.domain.finance.data.dto.projection.FeeTypeReceiptBreakdownProjection;
 import io.carizmi.domain.finance.data.dto.projection.FeeTypeQuarterlyTotalProjection;
 import io.carizmi.domain.finance.data.dto.projection.PaymentMethodTotalProjection;
 import io.carizmi.domain.finance.data.dto.request.PaymentSearchRequestDto;
@@ -49,6 +50,8 @@ public interface Payment extends BusinessLogic<PaymentVO> {
     List<QuarterlyTotalProjection> findQuarterlyTotals(@NonNull Integer year);
 
     List<FeeTypeQuarterlyTotalProjection> findFeeTypeQuarterlyTotals(@NonNull Integer year);
+
+    List<FeeTypeReceiptBreakdownProjection> findFeeTypeReceiptBreakdownsBetween(@NonNull LocalDate start, @NonNull LocalDate end);
 
     List<PaymentMethodTotalProjection> findPaymentMethodTotalsBetween(@NonNull LocalDate start, @NonNull LocalDate end);
 

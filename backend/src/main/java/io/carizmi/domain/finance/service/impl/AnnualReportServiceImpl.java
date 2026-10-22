@@ -1,7 +1,7 @@
 package io.carizmi.domain.finance.service.impl;
 
 import io.carizmi.domain.finance.data.dto.projection.ExpenseCategoryTotalProjection;
-import io.carizmi.domain.finance.data.dto.projection.FeeTypeQuarterlyTotalProjection;
+import io.carizmi.domain.finance.data.dto.projection.FeeTypeReceiptBreakdownProjection;
 import io.carizmi.domain.finance.data.dto.projection.PaymentMethodTotalProjection;
 import io.carizmi.domain.finance.data.dto.response.AnnualCombinedComplianceDto;
 import io.carizmi.domain.finance.data.dto.response.AnnualComplianceSummaryDto;
@@ -81,17 +81,39 @@ public class AnnualReportServiceImpl implements AnnualReportService {
                 new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO});
         feeQuarterMap.put(ReferenceConstants.FEE_TYPE.REGISTRATION_FEE,
                 new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO});
-
-        List<FeeTypeQuarterlyTotalProjection> feeProjections = payment.findFeeTypeQuarterlyTotals(reportYear);
+        List<FeeTypeReceiptBreakdownProjection> feeProjections = payment.findFeeTypeReceiptBreakdownsBetween(startOfYear, endOfYear);
         if (feeProjections != null) {
-            for (FeeTypeQuarterlyTotalProjection proj : feeProjections) {
-                String feeType = proj.getFeeType() != null ? proj.getFeeType() : "OTHER";
-                int q = proj.getQuarter() != null ? proj.getQuarter() : 1;
-                if (q >= 1 && q <= 4) {
-                    feeQuarterMap.putIfAbsent(feeType,
+            for (FeeTypeReceiptBreakdownProjection proj : feeProjections) {
+                String rawFeeType = proj.getFeeType() != null ? proj.getFeeType() : "OTHER";
+                Integer obYear = proj.getObligationYear();
+                int receivedQ = proj.getReceivedQuarter() != null ? proj.getReceivedQuarter() : 1;
+                int feeQ = proj.getFeeQuarter() != null ? proj.getFeeQuarter() : receivedQ;
+                BigDecimal amount = proj.getTotalAmount() != null ? proj.getTotalAmount() : BigDecimal.ZERO;
+
+                String displayKey;
+                int targetQuarter;
+
+                if (ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE.equals(rawFeeType)) {
+                    if (obYear == null || obYear == reportYear) {
+                        displayKey = ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE;
+                        targetQuarter = (feeQ >= 1 && feeQ <= 4) ? feeQ : receivedQ;
+                    } else if (obYear < reportYear) {
+                        displayKey = "Prior Year Arrears";
+                        targetQuarter = receivedQ;
+                    } else {
+                        displayKey = "Prepaid Dues";
+                        targetQuarter = receivedQ;
+                    }
+                } else {
+                    displayKey = rawFeeType;
+                    targetQuarter = receivedQ;
+                }
+
+                if (targetQuarter >= 1 && targetQuarter <= 4) {
+                    feeQuarterMap.putIfAbsent(displayKey,
                             new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO});
-                    BigDecimal amount = proj.getTotalAmount() != null ? proj.getTotalAmount() : BigDecimal.ZERO;
-                    feeQuarterMap.get(feeType)[q - 1] = amount;
+                    BigDecimal[] quarters = feeQuarterMap.get(displayKey);
+                    quarters[targetQuarter - 1] = quarters[targetQuarter - 1].add(amount);
                 }
             }
         }

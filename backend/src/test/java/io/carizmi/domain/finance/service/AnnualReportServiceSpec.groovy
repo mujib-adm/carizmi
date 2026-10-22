@@ -1,7 +1,7 @@
 package io.carizmi.domain.finance.service
 
 import io.carizmi.domain.finance.data.dto.projection.ExpenseCategoryTotalProjection
-import io.carizmi.domain.finance.data.dto.projection.FeeTypeQuarterlyTotalProjection
+import io.carizmi.domain.finance.data.dto.projection.FeeTypeReceiptBreakdownProjection
 import io.carizmi.domain.finance.data.dto.projection.PaymentMethodTotalProjection
 import io.carizmi.domain.finance.data.dto.response.AnnualFeeTypeReceiptDto
 import io.carizmi.domain.finance.data.dto.response.AnnualFinancialReportDto
@@ -42,14 +42,18 @@ class AnnualReportServiceSpec extends BaseSpecification {
         BigDecimal quarterlyFeeAmt = new BigDecimal("60.00")
         BigDecimal registrationFeeAmt = new BigDecimal("50.00")
 
-        FeeTypeQuarterlyTotalProjection feeProj1 = Stub(FeeTypeQuarterlyTotalProjection) {
+        FeeTypeReceiptBreakdownProjection feeProj1 = Stub(FeeTypeReceiptBreakdownProjection) {
             getFeeType() >> ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE
-            getQuarter() >> 1
+            getObligationYear() >> year
+            getReceivedQuarter() >> 1
+            getFeeQuarter() >> 1
             getTotalAmount() >> new BigDecimal("5200.00")
         }
-        FeeTypeQuarterlyTotalProjection feeProj2 = Stub(FeeTypeQuarterlyTotalProjection) {
+        FeeTypeReceiptBreakdownProjection feeProj2 = Stub(FeeTypeReceiptBreakdownProjection) {
             getFeeType() >> ReferenceConstants.FEE_TYPE.REGISTRATION_FEE
-            getQuarter() >> 2
+            getObligationYear() >> year
+            getReceivedQuarter() >> 2
+            getFeeQuarter() >> 2
             getTotalAmount() >> new BigDecimal("50.00")
         }
 
@@ -80,7 +84,7 @@ class AnnualReportServiceSpec extends BaseSpecification {
         1 * baselineService.getBaselineForYear(year) >> beginningBalance
         1 * payment.sumAmountByDateReceivedBetween(startOfYear, endOfYear) >> totalReceipts
         1 * expense.sumAmountByDateOfExpenseBetween(startOfYear, endOfYear) >> totalDisbursements
-        1 * payment.findFeeTypeQuarterlyTotals(year) >> [feeProj1, feeProj2]
+        1 * payment.findFeeTypeReceiptBreakdownsBetween(startOfYear, endOfYear) >> [feeProj1, feeProj2]
         1 * payment.findPaymentMethodTotalsBetween(startOfYear, endOfYear) >> [methodProj1]
         1 * expense.findExpenseCategoryTotalsBetween(startOfYear, endOfYear) >> [expenseProj1]
         1 * member.countActiveMembers() >> 100L
@@ -174,7 +178,7 @@ class AnnualReportServiceSpec extends BaseSpecification {
         1 * baselineService.getBaselineForYear(currentYear) >> BigDecimal.ZERO
         1 * payment.sumAmountByDateReceivedBetween(startOfYear, endOfYear) >> BigDecimal.ZERO
         1 * expense.sumAmountByDateOfExpenseBetween(startOfYear, endOfYear) >> BigDecimal.ZERO
-        1 * payment.findFeeTypeQuarterlyTotals(currentYear) >> []
+        1 * payment.findFeeTypeReceiptBreakdownsBetween(startOfYear, endOfYear) >> []
         1 * payment.findPaymentMethodTotalsBetween(startOfYear, endOfYear) >> []
         1 * expense.findExpenseCategoryTotalsBetween(startOfYear, endOfYear) >> []
         1 * member.countActiveMembers() >> 0L
@@ -209,7 +213,7 @@ class AnnualReportServiceSpec extends BaseSpecification {
         1 * baselineService.getBaselineForYear(pastYear) >> null
         1 * payment.sumAmountByDateReceivedBetween(startOfYear, endOfYear) >> null
         1 * expense.sumAmountByDateOfExpenseBetween(startOfYear, endOfYear) >> null
-        1 * payment.findFeeTypeQuarterlyTotals(pastYear) >> null
+        1 * payment.findFeeTypeReceiptBreakdownsBetween(startOfYear, endOfYear) >> null
         1 * payment.findPaymentMethodTotalsBetween(startOfYear, endOfYear) >> null
         1 * expense.findExpenseCategoryTotalsBetween(startOfYear, endOfYear) >> null
         1 * member.countActiveMembers() >> 5L
@@ -237,19 +241,25 @@ class AnnualReportServiceSpec extends BaseSpecification {
         LocalDate startOfYear = LocalDate.of(year, 1, 1)
         LocalDate endOfYear = LocalDate.of(year, 12, 31)
 
-        FeeTypeQuarterlyTotalProjection projCustom = Stub(FeeTypeQuarterlyTotalProjection) {
+        FeeTypeReceiptBreakdownProjection projCustom = Stub(FeeTypeReceiptBreakdownProjection) {
             getFeeType() >> "DONATION"
-            getQuarter() >> 3
+            getObligationYear() >> year
+            getReceivedQuarter() >> 3
+            getFeeQuarter() >> 3
             getTotalAmount() >> new BigDecimal("300.00")
         }
-        FeeTypeQuarterlyTotalProjection projInvalidQuarter = Stub(FeeTypeQuarterlyTotalProjection) {
+        FeeTypeReceiptBreakdownProjection projInvalidQuarter = Stub(FeeTypeReceiptBreakdownProjection) {
             getFeeType() >> "OTHER"
-            getQuarter() >> 5 // out of range
+            getObligationYear() >> year
+            getReceivedQuarter() >> 5 // out of range
+            getFeeQuarter() >> 5
             getTotalAmount() >> new BigDecimal("100.00")
         }
-        FeeTypeQuarterlyTotalProjection projNullQuarter = Stub(FeeTypeQuarterlyTotalProjection) {
+        FeeTypeReceiptBreakdownProjection projNullQuarter = Stub(FeeTypeReceiptBreakdownProjection) {
             getFeeType() >> null
-            getQuarter() >> null
+            getObligationYear() >> null
+            getReceivedQuarter() >> null
+            getFeeQuarter() >> null
             getTotalAmount() >> null
         }
 
@@ -260,7 +270,7 @@ class AnnualReportServiceSpec extends BaseSpecification {
         1 * baselineService.getBaselineForYear(year) >> BigDecimal.ZERO
         1 * payment.sumAmountByDateReceivedBetween(startOfYear, endOfYear) >> new BigDecimal("300.00")
         1 * expense.sumAmountByDateOfExpenseBetween(startOfYear, endOfYear) >> BigDecimal.ZERO
-        1 * payment.findFeeTypeQuarterlyTotals(year) >> [projCustom, projInvalidQuarter, projNullQuarter]
+        1 * payment.findFeeTypeReceiptBreakdownsBetween(startOfYear, endOfYear) >> [projCustom, projInvalidQuarter, projNullQuarter]
         1 * payment.findPaymentMethodTotalsBetween(startOfYear, endOfYear) >> []
         1 * expense.findExpenseCategoryTotalsBetween(startOfYear, endOfYear) >> []
         1 * member.countActiveMembers() >> 0L
@@ -283,9 +293,11 @@ class AnnualReportServiceSpec extends BaseSpecification {
         LocalDate startOfYear = LocalDate.of(year, 1, 1)
         LocalDate endOfYear = LocalDate.of(year, 12, 31)
 
-        FeeTypeQuarterlyTotalProjection feeProj = Stub(FeeTypeQuarterlyTotalProjection) {
+        FeeTypeReceiptBreakdownProjection feeProj = Stub(FeeTypeReceiptBreakdownProjection) {
             getFeeType() >> ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE
-            getQuarter() >> 1
+            getObligationYear() >> year
+            getReceivedQuarter() >> 1
+            getFeeQuarter() >> 1
             getTotalAmount() >> new BigDecimal("10000.00")
         }
 
@@ -300,7 +312,7 @@ class AnnualReportServiceSpec extends BaseSpecification {
         1 * baselineService.getBaselineForYear(year) >> BigDecimal.ZERO
         1 * payment.sumAmountByDateReceivedBetween(startOfYear, endOfYear) >> new BigDecimal("10000.00")
         1 * expense.sumAmountByDateOfExpenseBetween(startOfYear, endOfYear) >> BigDecimal.ZERO
-        1 * payment.findFeeTypeQuarterlyTotals(year) >> [feeProj]
+        1 * payment.findFeeTypeReceiptBreakdownsBetween(startOfYear, endOfYear) >> [feeProj]
         1 * payment.findPaymentMethodTotalsBetween(startOfYear, endOfYear) >> []
         1 * expense.findExpenseCategoryTotalsBetween(startOfYear, endOfYear) >> []
         1 * member.countActiveMembers() >> 1L
@@ -321,9 +333,11 @@ class AnnualReportServiceSpec extends BaseSpecification {
         LocalDate startOfYear = LocalDate.of(year, 1, 1)
         LocalDate endOfYear = LocalDate.of(year, 12, 31)
 
-        FeeTypeQuarterlyTotalProjection regFeeProj = Stub(FeeTypeQuarterlyTotalProjection) {
+        FeeTypeReceiptBreakdownProjection regFeeProj = Stub(FeeTypeReceiptBreakdownProjection) {
             getFeeType() >> ReferenceConstants.FEE_TYPE.REGISTRATION_FEE
-            getQuarter() >> 1
+            getObligationYear() >> year
+            getReceivedQuarter() >> 1
+            getFeeQuarter() >> 1
             getTotalAmount() >> new BigDecimal("100.00")
         }
 
@@ -334,7 +348,7 @@ class AnnualReportServiceSpec extends BaseSpecification {
         1 * baselineService.getBaselineForYear(year) >> BigDecimal.ZERO
         1 * payment.sumAmountByDateReceivedBetween(startOfYear, endOfYear) >> new BigDecimal("100.00")
         1 * expense.sumAmountByDateOfExpenseBetween(startOfYear, endOfYear) >> BigDecimal.ZERO
-        1 * payment.findFeeTypeQuarterlyTotals(year) >> [regFeeProj]
+        1 * payment.findFeeTypeReceiptBreakdownsBetween(startOfYear, endOfYear) >> [regFeeProj]
         1 * payment.findPaymentMethodTotalsBetween(startOfYear, endOfYear) >> []
         1 * expense.findExpenseCategoryTotalsBetween(startOfYear, endOfYear) >> []
         1 * member.countActiveMembers() >> 0L
@@ -349,5 +363,77 @@ class AnnualReportServiceSpec extends BaseSpecification {
         report.complianceSummary.registrationFeeSummary.actualRegistrationFeesCollected == new BigDecimal("100.00")
         report.complianceSummary.registrationFeeSummary.collectionEfficiencyRate == 100.0
         report.complianceSummary.registrationFeeSummary.totalOverdueRegistrationFees == BigDecimal.ZERO
+    }
+
+    def "test - getAnnualReport: Option 1 Cash-Basis Inflow isolates Prior Year Arrears into dedicated row"() {
+        given: "Fiscal year where late (year - 1) dues and advance (year + 1) dues are received"
+        int year = LocalDate.now().year
+        LocalDate startOfYear = LocalDate.of(year, 1, 1)
+        LocalDate endOfYear = LocalDate.of(year, 12, 31)
+
+        // (year) Current Year Membership Fee: $1,000 received in Q1 for Q1
+        FeeTypeReceiptBreakdownProjection currentProj = Stub(FeeTypeReceiptBreakdownProjection) {
+            getFeeType() >> ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE
+            getObligationYear() >> year
+            getReceivedQuarter() >> 1
+            getFeeQuarter() >> 1
+            getTotalAmount() >> new BigDecimal("1000.00")
+        }
+        // (year - 1) Late Arrears: $200 received in (year) Q2 for (year - 1) Q4
+        FeeTypeReceiptBreakdownProjection arrearsProj = Stub(FeeTypeReceiptBreakdownProjection) {
+            getFeeType() >> ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE
+            getObligationYear() >> year - 1
+            getReceivedQuarter() >> 2
+            getFeeQuarter() >> 4
+            getTotalAmount() >> new BigDecimal("200.00")
+        }
+        // (year + 1) Advance Dues: $100 received in (year) Q4 for (year + 1) Q1
+        FeeTypeReceiptBreakdownProjection advanceProj = Stub(FeeTypeReceiptBreakdownProjection) {
+            getFeeType() >> ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE
+            getObligationYear() >> year + 1
+            getReceivedQuarter() >> 4
+            getFeeQuarter() >> 1
+            getTotalAmount() >> new BigDecimal("100.00")
+        }
+
+        BigDecimal totalCashReceipts = new BigDecimal("1300.00")
+
+        when: "getAnnualReport is generated for (year)"
+        AnnualFinancialReportDto report = reportService.getAnnualReport(year)
+
+        then: "Repository interactions"
+        1 * baselineService.getBaselineForYear(year) >> BigDecimal.ZERO
+        1 * payment.sumAmountByDateReceivedBetween(startOfYear, endOfYear) >> totalCashReceipts
+        1 * expense.sumAmountByDateOfExpenseBetween(startOfYear, endOfYear) >> BigDecimal.ZERO
+        1 * payment.findFeeTypeReceiptBreakdownsBetween(startOfYear, endOfYear) >> [currentProj, arrearsProj, advanceProj]
+        1 * payment.findPaymentMethodTotalsBetween(startOfYear, endOfYear) >> []
+        1 * expense.findExpenseCategoryTotalsBetween(startOfYear, endOfYear) >> []
+        1 * member.countActiveMembers() >> 0L
+        1 * systemSetting.getQuarterlyFeeAmount() >> BigDecimal.ZERO
+        1 * member.findActiveMemberJoinDates() >> []
+        1 * systemSetting.getRegistrationFeeAmount() >> BigDecimal.ZERO
+        0 * _
+
+        and: "Section 2 table isolates current year, prior year arrears, and prepaid dues"
+        AnnualFeeTypeReceiptDto currentMembership = report.receiptsByFeeType.find { it.feeType == ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE }
+        AnnualFeeTypeReceiptDto arrearsRow = report.receiptsByFeeType.find { it.feeType == "Prior Year Arrears" }
+        AnnualFeeTypeReceiptDto advanceRow = report.receiptsByFeeType.find { it.feeType == "Prepaid Dues" }
+
+        currentMembership != null
+        currentMembership.q1 == new BigDecimal("1000.00")
+        currentMembership.total == new BigDecimal("1000.00")
+
+        arrearsRow != null
+        arrearsRow.q2 == new BigDecimal("200.00")
+        arrearsRow.total == new BigDecimal("200.00")
+
+        advanceRow != null
+        advanceRow.q4 == new BigDecimal("100.00")
+        advanceRow.total == new BigDecimal("100.00")
+
+        and: "Sum of Section 2 rows exactly equals totalReceipts (100% Cash-Basis reconciliation)"
+        BigDecimal sumSection2 = currentMembership.total + arrearsRow.total + advanceRow.total
+        sumSection2 == totalCashReceipts
+        report.totalReceipts == totalCashReceipts
     }
 }

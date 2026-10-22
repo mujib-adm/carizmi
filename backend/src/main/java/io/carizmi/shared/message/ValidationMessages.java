@@ -25,5 +25,6 @@ public final class ValidationMessages {
     public static final ErrorMessage ERR_PAYMENT_ALREADY_EXISTS = new ErrorMessage("ERR0019", "Payment for {0}-Q{1} already exists.");
     public static final ErrorMessage ERR_LAST_ADMIN_ROLE = new ErrorMessage("ERR0020", "Cannot update role for the last active ADMIN.");
     public static final ErrorMessage ERR_LAST_ADMIN_DEACTIVATE = new ErrorMessage("ERR0021", "Cannot deactivate the last active ADMIN.");
+    public static final ErrorMessage ERR_FISCAL_YEAR_CLOSED = new ErrorMessage("ERR0022", "Fiscal year {0} is closed. Backdating transactions into a closed fiscal year is prohibited.");
 
 }

@@ -1,9 +1,12 @@
 package io.carizmi.domain.finance.validation;
 
 import lombok.RequiredArgsConstructor;
+import io.carizmi.domain.platform.constants.BaselineConstants;
+import io.carizmi.domain.platform.service.SystemSetting;
 import org.apache.commons.lang3.StringUtils;
 import io.carizmi.shared.constants.FieldConstants;
 import io.carizmi.shared.constants.ReferenceConstants;
+import io.carizmi.shared.message.ValidationMessages;
 import io.carizmi.domain.finance.model.PaymentVO;
 import io.carizmi.framework.bl.AbstractDomainValidator;
 import io.carizmi.domain.platform.validation.ReferenceValidator;
@@ -14,6 +17,7 @@ import org.springframework.stereotype.Service;
 public class PaymentValidator extends AbstractDomainValidator<PaymentVO> {
 
     private final ReferenceValidator referenceValidator;
+    private final SystemSetting systemSetting;
 
     @Override
     public void validate(PaymentVO vo) {
@@ -53,6 +57,14 @@ public class PaymentValidator extends AbstractDomainValidator<PaymentVO> {
 
     private void validateDateReceived(PaymentVO vo) {
         validateRequired(vo, FieldConstants.DATE_RECEIVED, vo.getDateReceived());
+        if (vo.getDateReceived() != null) {
+            int receiptYear = vo.getDateReceived().getYear();
+            String closingKey = BaselineConstants.getYearlyBaselineKey(receiptYear + 1);
+            if (systemSetting.findBySettingKey(closingKey).isPresent()) {
+                vo.addFieldMessage(FieldConstants.DATE_RECEIVED,
+                        ValidationMessages.ERR_FISCAL_YEAR_CLOSED.addMessageArgs(String.valueOf(receiptYear)));
+            }
+        }
     }
 
     private void validateMethodOfPayment(PaymentVO vo) {

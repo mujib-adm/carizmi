@@ -1,9 +1,10 @@
 import { Col, Divider, Form, Modal, Row } from 'antd';
 import dayjs from 'dayjs';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { ReferenceConstants } from '../../../constants/ReferenceConstants';
 import { SystemSettingConstants } from '../../../constants/SystemSettingsConstants.ts';
 import { PaymentDto } from '../../../api/generated/types';
+import { useFiscalYears } from '../../../hooks/useFiscalYears';
 import { useSystemSettings } from '../../../hooks/useSystemSettings';
 import { useApiMessages } from '../../../hooks/useApiMessages';
 import { AntdFormItem } from '../../../components/AntdFormItem';
@@ -29,6 +30,17 @@ export default function PaymentModal({
 }: PaymentModalProps) {
   const [form] = Form.useForm();
   const { getNumericSetting } = useSystemSettings();
+  const { inauguralYear, currentYear } = useFiscalYears();
+
+  const feeYearOptions = useMemo(() => {
+    const years: { value: number; label: string }[] = [];
+    const maxYear = (currentYear || dayjs().year()) + 1;
+    const startYear = inauguralYear || 2026;
+    for (let y = maxYear; y >= startYear; y--) {
+      years.push({ value: y, label: `${y}` });
+    }
+    return years;
+  }, [currentYear, inauguralYear]);
 
   const { globalMessages, handleError, resetMessages } = useApiMessages(undefined, (field, msg) => {
     form.setFields([{ name: field, errors: [msg] }]);
@@ -162,10 +174,7 @@ export default function PaymentModal({
                     type="select"
                     rules={[{ required: true }]}
                     initialValue={dayjs().year()}
-                    options={[0, 1, 2].map((i) => {
-                      const y = dayjs().year() - 1 + i;
-                      return { value: y, label: y };
-                    })}
+                    options={feeYearOptions}
                   />
                 </Col>
                 <Col xs={24} sm={12}>
