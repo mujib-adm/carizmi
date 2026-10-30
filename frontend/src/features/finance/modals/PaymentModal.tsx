@@ -50,7 +50,6 @@ export default function PaymentModal({
   useEffect(() => {
     if (open) {
       resetMessages();
-      setSelectedMember(null);
       if (initialValues) {
         form.setFieldsValue({
           ...initialValues,
@@ -102,11 +101,15 @@ export default function PaymentModal({
     <Modal
       open={open}
       className="modern-modal"
-      onCancel={onCancel}
+      onCancel={() => {
+        setSelectedMember(null);
+        onCancel();
+      }}
       onOk={handleOk}
       okText="Save"
       title={title}
       destroyOnHidden
+      afterClose={() => setSelectedMember(null)}
       centered
       width="90vw"
       style={{ maxWidth: 500 }}
