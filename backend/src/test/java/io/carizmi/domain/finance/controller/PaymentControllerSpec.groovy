@@ -4,8 +4,10 @@ import io.carizmi.domain.finance.service.Payment
 import io.carizmi.domain.finance.data.dto.PaymentDto
 import io.carizmi.domain.finance.data.dto.request.PaymentSearchRequestDto
 import io.carizmi.domain.finance.data.dto.response.LatestPaymentDto
+import io.carizmi.domain.finance.data.dto.response.PaymentSearchResultDto
+import io.carizmi.domain.finance.data.dto.response.PaymentSummaryDto
 import io.carizmi.framework.data.response.GlobalResponse
-import io.carizmi.framework.data.response.PagedResult
+import io.carizmi.framework.data.response.SinglePagedResult
 import io.carizmi.framework.data.response.PaginationMeta
 import io.carizmi.testbase.BaseSpecification
 import org.springframework.http.HttpStatus
@@ -89,21 +91,25 @@ class PaymentControllerSpec extends BaseSpecification {
     def "test - searchPayments: Should delegate to payment service and wrap result"() {
         given: "A search request"
         PaymentSearchRequestDto request = new PaymentSearchRequestDto()
-        List<PaymentDto> dtoList = [new PaymentDto(paymentID: 1)]
+        List<PaymentDto> dtoList = [new PaymentDto(paymentID: 1, amount: new BigDecimal("60.00"))]
+        PaymentSummaryDto summaryDto = new PaymentSummaryDto(totalAmount: new BigDecimal("60.00"))
+        PaymentSearchResultDto searchResultDto = new PaymentSearchResultDto(payments: dtoList, summary: summaryDto)
         PaginationMeta meta = PaginationMeta.of(0, 10, 1, 1)
-        PagedResult<PaymentDto> pagedResult = PagedResult.of(dtoList, meta)
+        SinglePagedResult<PaymentSearchResultDto> singlePagedResult = SinglePagedResult.of(searchResultDto, meta)
 
         when: "The target method executed"
-        ResponseEntity<GlobalResponse<List<PaymentDto>>> result = paymentController.searchPayments(request)
+        ResponseEntity<GlobalResponse<PaymentSearchResultDto>> result = paymentController.searchPayments(request)
 
         then: "The expected calls are made"
-        1 * paymentService.searchPayments(request) >> pagedResult
+        1 * paymentService.searchPayments(request) >> singlePagedResult
         0 * _
 
         and: "The expected result"
         result.statusCode == HttpStatus.OK
-        result.body.responseData.size() == 1
-        result.body.responseData[0].paymentID == 1
+        result.body.responseData.payments.size() == 1
+        result.body.responseData.payments[0].paymentID == 1
+        result.body.responseData.summary.totalAmount == new BigDecimal("60.00")
+        result.body.meta.totalRecords == 1
         noExceptionThrown()
     }
 

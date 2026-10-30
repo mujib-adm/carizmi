@@ -7,8 +7,9 @@ import lombok.RequiredArgsConstructor;
 import io.carizmi.domain.finance.data.dto.response.LatestPaymentDto;
 import io.carizmi.domain.finance.data.dto.PaymentDto;
 import io.carizmi.domain.finance.data.dto.request.PaymentSearchRequestDto;
+import io.carizmi.domain.finance.data.dto.response.PaymentSearchResultDto;
 import io.carizmi.framework.data.response.GlobalResponse;
-import io.carizmi.framework.data.response.PagedResult;
+import io.carizmi.framework.data.response.SinglePagedResult;
 import io.carizmi.framework.util.ResponseUtils;
 import io.carizmi.domain.finance.service.Payment;
 import io.carizmi.infrastructure.security.annotation.IsAuthenticated;
@@ -71,10 +72,10 @@ public class PaymentController {
     @PostMapping("/search")
     @Operation(summary = "Search payments")
     @IsAuthenticated
-    public ResponseEntity<GlobalResponse<List<PaymentDto>>> searchPayments(
+    public ResponseEntity<GlobalResponse<PaymentSearchResultDto>> searchPayments(
             @RequestBody PaymentSearchRequestDto request) {
-        PagedResult<PaymentDto> result = payment.searchPayments(request);
-        return ResponseUtils.okWithDataPageable(result.items(), result.meta());
+        SinglePagedResult<PaymentSearchResultDto> result = payment.searchPayments(request);
+        return ResponseUtils.okWithDataPageable(result.data(), result.meta());
     }
 
     @GetMapping("/latest")

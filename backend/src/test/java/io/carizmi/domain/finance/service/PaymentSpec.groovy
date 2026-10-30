@@ -1,5 +1,7 @@
 package io.carizmi.domain.finance.service
 
+import io.carizmi.domain.finance.data.dto.projection.FeeTypeQuarterlyTotalProjection
+import io.carizmi.domain.finance.data.dto.projection.PaymentMethodTotalProjection
 import io.carizmi.framework.event.DomainEventPublisher
 import io.carizmi.shared.constants.ReferenceConstants
 import io.carizmi.shared.constants.FieldConstants
@@ -10,14 +12,17 @@ import io.carizmi.domain.finance.data.dto.response.LatestPaymentDto
 import io.carizmi.domain.finance.data.dto.LatestPaymentProjection
 import io.carizmi.domain.finance.data.dto.PaymentDto
 import io.carizmi.domain.finance.data.dto.request.PaymentSearchRequestDto
+import io.carizmi.domain.finance.data.dto.response.PaymentSearchResultDto
 import io.carizmi.domain.finance.data.transformer.PaymentDtoTransformer
 import io.carizmi.domain.finance.data.transformer.PaymentVOTransformer
 import io.carizmi.domain.membership.model.MemberVO
 import io.carizmi.domain.finance.model.PaymentVO
+import io.carizmi.framework.data.response.SinglePagedResult
 import io.carizmi.framework.data.response.PagedResult
 import io.carizmi.framework.exception.DuplicateRecordException
 import io.carizmi.framework.exception.ValidationException
 import io.carizmi.framework.exception.RecordNotFoundException
+import io.carizmi.shared.message.ValidationMessages
 import io.carizmi.framework.util.MySQLConstraintResolver
 import io.carizmi.domain.finance.repository.PaymentRepository
 import io.carizmi.domain.finance.validation.PaymentValidator
@@ -137,6 +142,52 @@ class PaymentSpec extends BaseSpecification {
         noExceptionThrown()
     }
 
+    def "test - addPayment: Success - Registration Fee publishes DomainEvent via framework"() {
+        given: "A registration fee payment request"
+        Integer memberId = 99
+        Integer paymentId = 15
+        LocalDate dateReceived = LocalDate.of(2026, 4, 15)
+        String feeType = ReferenceConstants.FEE_TYPE.REGISTRATION_FEE
+        PaymentDto request = new PaymentDto(memberID: memberId, feeType: feeType, dateReceived: dateReceived)
+        PaymentVO vo = new PaymentVO(paymentID: paymentId, member: new MemberVO(memberID: memberId), feeType: feeType, dateReceived: dateReceived)
+
+        when: "addPayment is executed"
+        Integer result = paymentImpl.addPayment(request)
+
+        then: "Registration fee is validated, saved, and DomainEvent is published"
+        1 * voTransformer.transform(request) >> vo
+        1 * validator.validate(vo)
+        1 * paymentRepo.exists(_ as JpaSpecification) >> false
+        1 * paymentRepo.save(vo) >> vo
+        1 * domainEventPublisher.publish("CREATED", vo, paymentId)
+        0 * _
+
+        and:
+        result == paymentId
+        noExceptionThrown()
+    }
+
+    def "test - addPayment: Duplicate Registration Fee triggers validation error"() {
+        given: "A member who already has a registration fee recorded"
+        Integer memberId = 99
+        String feeType = ReferenceConstants.FEE_TYPE.REGISTRATION_FEE
+        PaymentDto request = new PaymentDto(memberID: memberId, feeType: feeType)
+        PaymentVO vo = new PaymentVO(member: new MemberVO(memberID: memberId), feeType: feeType)
+
+        when: "addPayment is executed"
+        paymentImpl.addPayment(request)
+
+        then: "Duplicate is detected and ValidationException is thrown"
+        1 * voTransformer.transform(request) >> vo
+        1 * validator.validate(vo)
+        1 * paymentRepo.exists(_ as JpaSpecification) >> true
+        0 * _
+
+        and:
+        vo.hasErrors()
+        thrown(ValidationException)
+    }
+
     def "test - addPayment: Duplicate Handling"() {
         given: "A duplicate payment scenario"
         PaymentVO vo = new PaymentVO()
@@ -237,15 +288,58 @@ class PaymentSpec extends BaseSpecification {
         paymentImpl.updatePayment(new PaymentDto(paymentID: paymentId))
 
         then: "The expected calls are made"
-        1 * paymentRepo.findById(1) >> Optional.of(vo)
+        1 * paymentRepo.findById(paymentId) >> Optional.of(vo)
         1 * voTransformer.transformForUpdate(_, _) >> vo
         1 * validator.validateForUpdate(_)
         1 * paymentRepo.save(vo) >> vo
         1 * domainEventPublisher.publish("UPDATED", vo, _)
-        0 * _
-
         and: "The expected result"
         noExceptionThrown()
+    }
+
+    def "test - updatePayment: Success - Registration Fee publishes DomainEvent via framework"() {
+        given: "An existing registration fee payment update request"
+        Integer paymentId = 1
+        Integer memberId = 99
+        LocalDate newDate = LocalDate.of(2026, 7, 10)
+        PaymentDto dto = new PaymentDto(paymentID: paymentId, memberID: memberId, feeType: ReferenceConstants.FEE_TYPE.REGISTRATION_FEE, dateReceived: newDate)
+        PaymentVO existingVO = new PaymentVO(paymentID: paymentId, member: new MemberVO(memberID: memberId), feeType: ReferenceConstants.FEE_TYPE.REGISTRATION_FEE, dateReceived: LocalDate.of(2026, 4, 1))
+        PaymentVO updatedVO = new PaymentVO(paymentID: paymentId, member: new MemberVO(memberID: memberId), feeType: ReferenceConstants.FEE_TYPE.REGISTRATION_FEE, dateReceived: newDate)
+
+        when: "updatePayment is executed"
+        paymentImpl.updatePayment(dto)
+
+        then: "Payment updated and DomainEvent published with UPDATED"
+        1 * paymentRepo.findById(paymentId) >> Optional.of(existingVO)
+        1 * voTransformer.transformForUpdate(dto, existingVO) >> updatedVO
+        1 * validator.validateForUpdate(updatedVO)
+        1 * paymentRepo.exists(_ as JpaSpecification) >> false
+        1 * paymentRepo.save(updatedVO) >> updatedVO
+        1 * domainEventPublisher.publish("UPDATED", updatedVO, paymentId)
+        0 * _
+
+        and:
+        noExceptionThrown()
+    }
+
+    def "test - updatePayment: Blocked if existing record in closed fiscal year"() {
+        given: "An existing payment in a closed year"
+        Integer paymentId = 1
+        PaymentDto dto = new PaymentDto(paymentID: paymentId)
+        PaymentVO existingVO = new PaymentVO(paymentID: paymentId, feeType: "Other")
+        PaymentVO updatedVO = new PaymentVO(paymentID: paymentId, feeType: "Other")
+
+        when: "The target method executed"
+        paymentImpl.updatePayment(dto)
+
+        then: "Validator marks error and exception is thrown"
+        1 * paymentRepo.findById(1) >> Optional.of(existingVO)
+        1 * voTransformer.transformForUpdate(dto, existingVO) >> updatedVO
+        1 * validator.validateForUpdate(updatedVO) >> { PaymentVO p -> p.addFieldMessage("dateReceived", ValidationMessages.ERR_TRANSACTION_CLOSED_YEAR_MUTATION) }
+        0 * _
+
+        and:
+        thrown(ValidationException)
     }
 
     def "test - updatePayment: DB Error"() {
@@ -258,7 +352,7 @@ class PaymentSpec extends BaseSpecification {
         paymentImpl.updatePayment(dto)
 
         then: "The expected calls are made"
-        1 * paymentRepo.findById(1) >> Optional.of(vo)
+        1 * paymentRepo.findById(id) >> Optional.of(vo)
         1 * voTransformer.transformForUpdate(dto, vo) >> vo
         1 * validator.validateForUpdate(vo)
         1 * paymentRepo.save(vo) >> { throw new DataAccessException("error", new RuntimeException("root")) {} }
@@ -277,7 +371,7 @@ class PaymentSpec extends BaseSpecification {
         paymentImpl.updatePayment(new PaymentDto(paymentID: paymentId))
 
         then: "The expected calls are made"
-        1 * paymentRepo.findById(99) >> Optional.empty()
+        1 * paymentRepo.findById(paymentId) >> Optional.empty()
         0 * _
 
         and: "The expected result"
@@ -326,13 +420,31 @@ class PaymentSpec extends BaseSpecification {
         paymentImpl.deletePayment(paymentId)
 
         then: "The expected calls are made"
-        1 * paymentRepo.findById(1) >> Optional.of(vo)
+        1 * paymentRepo.findById(paymentId) >> Optional.of(vo)
+        1 * validator.validateForDelete(vo)
         1 * paymentRepo.delete(vo)
         1 * domainEventPublisher.publish("DELETED", vo, _)
         0 * _
 
         and: "The expected result"
         noExceptionThrown()
+    }
+
+    def "test - deletePayment: Blocked if in closed fiscal year"() {
+        given: "An existing payment in a closed year"
+        Integer paymentId = 1
+        PaymentVO vo = new PaymentVO()
+
+        when: "The target method executed"
+        paymentImpl.deletePayment(paymentId)
+
+        then: "Validator marks error and exception is thrown"
+        1 * paymentRepo.findById(paymentId) >> Optional.of(vo)
+        1 * validator.validateForDelete(vo) >> { PaymentVO p -> p.addFieldMessage("dateReceived", ValidationMessages.ERR_TRANSACTION_CLOSED_YEAR_DELETE) }
+        0 * _
+
+        and:
+        thrown(ValidationException)
     }
 
     def "test - deletePayment: DB Error"() {
@@ -344,7 +456,8 @@ class PaymentSpec extends BaseSpecification {
         paymentImpl.deletePayment(id)
 
         then: "The expected calls are made"
-        1 * paymentRepo.findById(1) >> Optional.of(vo)
+        1 * paymentRepo.findById(id) >> Optional.of(vo)
+        1 * validator.validateForDelete(vo)
         1 * paymentRepo.delete(vo) >> { throw new DataAccessException("error", new RuntimeException("root")) {} }
         0 * _
 
@@ -361,11 +474,34 @@ class PaymentSpec extends BaseSpecification {
         paymentImpl.deletePayment(paymentId)
 
         then: "The expected calls are made"
-        1 * paymentRepo.findById(99) >> Optional.empty()
+        1 * paymentRepo.findById(paymentId) >> Optional.empty()
         0 * _
 
         and: "The expected result"
         thrown(RecordNotFoundException)
+    }
+
+    def "test - hasPaymentsForMember: Returns correct boolean based on repository"() {
+        given: "A target member ID"
+        Integer memberId = 123
+        JpaSpecification capturedSpec = null
+
+        when: "hasPaymentsForMember is called"
+        boolean hasPayments = paymentImpl.hasPaymentsForMember(memberId)
+
+        then: "Repository method is queried"
+        1 * paymentRepo.exists(_ as JpaSpecification) >> { JpaSpecification spec -> capturedSpec = spec; expected }
+        0 * _
+
+        and:
+        hasPayments == expected
+        capturedSpec != null
+        Map<String, List> inspection = inspectSpecification(capturedSpec)
+        inspection.filters.containsAll([TableConstants.MEMBER_TABLE, FieldConstants.MEMBER_ID])
+        inspection.values.contains(memberId)
+
+        where:
+        expected << [true, false]
     }
 
     def "test - getPayment: Success"() {
@@ -378,7 +514,7 @@ class PaymentSpec extends BaseSpecification {
         PaymentDto result = paymentImpl.getPayment(paymentId)
 
         then: "The expected calls are made"
-        1 * paymentRepo.findById(1) >> Optional.of(vo)
+        1 * paymentRepo.findById(paymentId) >> Optional.of(vo)
         1 * dtoTransformer.transform(vo) >> dto
         0 * _
 
@@ -395,7 +531,7 @@ class PaymentSpec extends BaseSpecification {
         paymentImpl.getPayment(paymentId)
 
         then: "The expected calls are made"
-        1 * paymentRepo.findById(99) >> Optional.empty()
+        1 * paymentRepo.findById(paymentId) >> Optional.empty()
         0 * _
 
         and: "The expected result"
@@ -410,14 +546,14 @@ class PaymentSpec extends BaseSpecification {
         Page<PaymentVO> mockPage = Mock(Page)
         JpaSpecification capturedSpec
 
-        PaymentSearchRequestDto request = new PaymentSearchRequestDto(memberID: memberID, feeType: feeType, year: yearValue, quarter: quarter, dateFrom: dateFrom, dateTo: dateTo)
+        PaymentSearchRequestDto request = new PaymentSearchRequestDto(memberID: memberID, feeType: feeType, methodOfPayment: methodOfPayment, year: yearValue, quarter: quarter, dateFrom: dateFrom, dateTo: dateTo)
         request.setPage(0)
         request.setSize(10)
         request.setSortField(FieldConstants.AMOUNT)
         request.setSortOrder(SortOrder.desc)
 
         when: "The target method executed"
-        PagedResult<PaymentDto> result = paymentImpl.searchPayments(request)
+        SinglePagedResult<PaymentSearchResultDto> result = paymentImpl.searchPayments(request)
 
         then: "The expected calls are made"
         1 * paymentRepo.findAll(_ as JpaSpecification, _ as PageRequest) >> { JpaSpecification spec, PageRequest page -> capturedSpec = spec; mockPage }
@@ -434,20 +570,89 @@ class PaymentSpec extends BaseSpecification {
 
         and: "The expected result"
         result != null
+        result.data().payments == []
+        result.data().summary.totalAmount == BigDecimal.ZERO
         noExceptionThrown()
         capturedSpec != null
         Map<String, List> inspection = inspectSpecification(capturedSpec)
         if (hasFilters) {
-            inspection.filters.containsAll([TableConstants.MEMBER_TABLE, FieldConstants.MEMBER_ID, FieldConstants.FEE_TYPE, FieldConstants.YEAR, FieldConstants.QUARTER, FieldConstants.DATE_RECEIVED])
-            inspection.values.containsAll([memberID, feeType, currentYear, quarter, dateFrom, dateTo])
+            inspection.filters.containsAll([TableConstants.MEMBER_TABLE, FieldConstants.MEMBER_ID, FieldConstants.FEE_TYPE, FieldConstants.METHOD_OF_PAYMENT, FieldConstants.YEAR, FieldConstants.QUARTER, FieldConstants.DATE_RECEIVED])
+            inspection.values.containsAll([memberID, feeType, methodOfPayment, currentYear, quarter, dateFrom, dateTo])
         } else {
             inspection.filters.isEmpty()
         }
 
         where:
-        desc          | memberID | feeType | hasYearVal | quarter | dateFrom        | dateTo          || hasFilters
-        "All filters" | 1        | "FEE"   | true       | 1       | LocalDate.now() | LocalDate.now() || true
-        "No filters"  | null     | null    | false      | null    | null            | null            || false
+        desc          | memberID | feeType | methodOfPayment | hasYearVal | quarter | dateFrom        | dateTo          || hasFilters
+        "All filters" | 1        | "FEE"   | "01"            | true       | 1       | LocalDate.now() | LocalDate.now() || true
+        "No filters"  | null     | null    | null            | false      | null    | null            | null            || false
+    }
+
+    def "test - searchPayments: Should calculate total amount for single-page results from payments list"() {
+        given: "A search request and page with 2 payments"
+        BigDecimal feeAmount = new BigDecimal("60.00")
+        PaymentSearchRequestDto request = new PaymentSearchRequestDto()
+        request.setPage(0)
+        request.setSize(10)
+
+        Page<PaymentVO> mockPage = Mock(Page)
+        PaymentVO vo1 = new PaymentVO(amount: feeAmount)
+        PaymentVO vo2 = new PaymentVO(amount: feeAmount)
+        PaymentDto dto1 = new PaymentDto(paymentID: 1, amount: feeAmount)
+        PaymentDto dto2 = new PaymentDto(paymentID: 2, amount: feeAmount)
+
+        when: "searchPayments is executed"
+        SinglePagedResult<PaymentSearchResultDto> result = paymentImpl.searchPayments(request)
+
+        then: "Repository and transformer are invoked"
+        1 * paymentRepo.findAll(_ as JpaSpecification, _ as PageRequest) >> mockPage
+        1 * mockPage.toList() >> [vo1, vo2]
+        1 * dtoTransformer.transformList([vo1, vo2]) >> [dto1, dto2]
+        _ * mockPage.getNumber() >> 0
+        _ * mockPage.getSize() >> 10
+        _ * mockPage.getTotalElements() >> 2
+        _ * mockPage.getTotalPages() >> 1
+        0 * _
+
+        and: "Total amount is calculated as sum of payments on the page"
+        result.data().payments.size() == 2
+        result.data().summary.totalAmount == new BigDecimal(feeAmount * 2)
+        result.meta().totalRecords == 2
+    }
+
+    def "test - searchPayments: Should calculate total amount for multi-page results via repository sumAmountByFilters"() {
+        given: "A search request and page indicating multiple pages"
+        BigDecimal feeAmount = new BigDecimal("60.00")
+        BigDecimal total = new BigDecimal("1200.00")
+        PaymentSearchRequestDto request = new PaymentSearchRequestDto()
+        request.setPage(0)
+        request.setSize(10)
+
+        Page<PaymentVO> mockPage = Mock(Page)
+        PaymentVO vo1 = new PaymentVO(amount: feeAmount)
+        PaymentVO vo2 = new PaymentVO(amount: feeAmount)
+        PaymentDto dto1 = new PaymentDto(paymentID: 1, amount: feeAmount)
+        PaymentDto dto2 = new PaymentDto(paymentID: 2, amount: feeAmount)
+
+        when: "searchPayments is executed"
+        SinglePagedResult<PaymentSearchResultDto> result = paymentImpl.searchPayments(request)
+
+        then: "Repository findAll and sumAmountByFilters are invoked"
+        1 * paymentRepo.findAll(_ as JpaSpecification, _ as PageRequest) >> mockPage
+        1 * mockPage.toList() >> [vo1, vo2]
+        1 * dtoTransformer.transformList([vo1, vo2]) >> [dto1, dto2]
+        _ * mockPage.getNumber() >> 0
+        _ * mockPage.getSize() >> 10
+        _ * mockPage.getTotalElements() >> 25
+        _ * mockPage.getTotalPages() >> 3
+        1 * paymentRepo.sumAmountByFilters(null, null, null, null, null, null, null) >> total
+        0 * _
+
+        and: "Result contains current page payments and multi-page total amount"
+        result.data().payments.size() == 2
+        result.data().summary.totalAmount == total
+        result.meta().totalRecords == 25
+        result.meta().totalPages == 3
     }
 
     def "test - findPaymentsForMemberQuarter: Should delegate to repo with criteria"() {
@@ -472,23 +677,6 @@ class PaymentSpec extends BaseSpecification {
         Map<String, List> inspection = inspectSpecification(capturedSpec)
         inspection.filters.containsAll([FieldConstants.MEMBER_ID, FieldConstants.YEAR, FieldConstants.QUARTER, FieldConstants.FEE_TYPE])
         inspection.values.containsAll([memberID, year, quarter, feeType])
-        noExceptionThrown()
-    }
-
-    def "test - sumAmountByDateReceivedBefore: Should return sum"() {
-        given: "A date"
-        LocalDate date = LocalDate.now()
-        BigDecimal expectedSum = new BigDecimal("100.00")
-
-        when: "The target method executed"
-        BigDecimal result = paymentImpl.sumAmountByDateReceivedBefore(date)
-
-        then: "The expected calls are made"
-        1 * paymentRepo.sumAmountByDateReceivedBefore(date) >> expectedSum
-        0 * _
-
-        and: "The expected result"
-        result == expectedSum
         noExceptionThrown()
     }
 
@@ -729,5 +917,66 @@ class PaymentSpec extends BaseSpecification {
         and: "The expected result"
         result == BigDecimal.ZERO
         noExceptionThrown()
+    }
+
+    def "test - findFeeTypeQuarterlyTotals: Should delegate to repo"() {
+        given: "A year"
+        Integer year = 2026
+        def mockProj = Mock(FeeTypeQuarterlyTotalProjection)
+
+        when: "The target method executed"
+        def result = paymentImpl.findFeeTypeQuarterlyTotals(year)
+
+        then: "The expected calls are made"
+        1 * paymentRepo.findFeeTypeQuarterlyTotals(year) >> [mockProj]
+        0 * _
+
+        and: "The expected result"
+        result == [mockProj]
+        noExceptionThrown()
+    }
+
+    def "test - findPaymentMethodTotalsBetween: Should delegate to repo"() {
+        given: "A date range"
+        LocalDate start = LocalDate.of(2026, 1, 1)
+        LocalDate end = LocalDate.of(2026, 12, 31)
+        def mockProj = Mock(PaymentMethodTotalProjection)
+
+        when: "The target method executed"
+        def result = paymentImpl.findPaymentMethodTotalsBetween(start, end)
+
+        then: "The expected calls are made"
+        1 * paymentRepo.findPaymentMethodTotalsBetween(start, end) >> [mockProj]
+        0 * _
+
+        and: "The expected result"
+        result == [mockProj]
+        noExceptionThrown()
+    }
+
+    @Unroll
+    def "test - findMemberIDsByFeeTypeAndDateReceivedBetween: Should delegate to repo [size: #expectedList.size()]"() {
+        given: "Criteria parameters"
+        String feeType = ReferenceConstants.FEE_TYPE.REGISTRATION_FEE
+        LocalDate start = LocalDate.of(2026, 1, 1)
+        LocalDate end = LocalDate.of(2026, 12, 31)
+
+        when: "The target method executed"
+        List<Integer> result = paymentImpl.findMemberIDsByFeeTypeAndDateReceivedBetween(feeType, start, end)
+
+        then: "The expected calls are made"
+        1 * paymentRepo.findMemberIDsByFeeTypeAndDateReceivedBetween(feeType, start, end) >> expectedList
+        0 * _
+
+        and: "The expected result"
+        result == expectedList
+        noExceptionThrown()
+
+        where:
+        expectedList << [
+                [],
+                [101],
+                [101, 102, 105]
+        ]
     }
 }

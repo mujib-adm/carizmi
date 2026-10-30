@@ -9,10 +9,10 @@ import io.carizmi.shared.constants.ReferenceConstants;
 import io.carizmi.domain.membership.service.Member;
 import io.carizmi.domain.finance.service.Payment;
 import io.carizmi.domain.platform.service.SystemSetting;
+import io.carizmi.domain.membership.model.MemberMembershipPeriodVO;
 import io.carizmi.domain.membership.model.MemberVO;
 import io.carizmi.domain.finance.data.dto.request.ChecklistSearchRequestDto;
 import io.carizmi.domain.finance.data.dto.response.ChecklistSummaryDto;
-import io.carizmi.shared.data.dto.MemberJoinDateProjection;
 import io.carizmi.domain.finance.data.dto.response.MemberQuarterlyRowDto;
 import io.carizmi.shared.data.dto.PaymentSummary;
 import io.carizmi.domain.finance.data.dto.response.QuarterCellDto;
@@ -41,7 +41,7 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-public class QuarterlyFeeChecklistServiceImpl implements QuarterlyFeeChecklistService {
+public final class QuarterlyFeeChecklistServiceImpl implements QuarterlyFeeChecklistService {
 
     private static final Logger logger = LoggerFactory.getLogger(QuarterlyFeeChecklistServiceImpl.class);
 
@@ -73,11 +73,11 @@ public class QuarterlyFeeChecklistServiceImpl implements QuarterlyFeeChecklistSe
         }
 
         /* --- 3. Default: Get all active members checklist --- */
-        // 1. Fetch paginated active members, sorted by name at the DB level
+        // 1. Fetch paginated members active in the target year, sorted by name at DB level
         Pageable requestedPageable = request.toPageable();
         Pageable pageable = PageRequest.of(requestedPageable.getPageNumber(), requestedPageable.getPageSize(),
                 Sort.by(FieldConstants.FIRST_NAME, FieldConstants.LAST_NAME));
-        Page<MemberVO> memberPage = member.findActiveMembers(pageable);
+        Page<MemberVO> memberPage = member.findMembersActiveInYear(year, pageable);
         List<MemberVO> activeMembers = memberPage.getContent();
 
         // 2. Fetch payment summaries scoped to only the members on the current page
@@ -110,7 +110,7 @@ public class QuarterlyFeeChecklistServiceImpl implements QuarterlyFeeChecklistSe
 
     /**
      * Handles checklist retrieval when a specific memberID filter is provided (narrowest filter).
-     * If the member is not found or inactive, returns an empty checklist result.
+     * If the member is not found or was not active in the target year, returns an empty checklist result.
      */
     private SinglePagedResult<QuarterlyChecklistDto> getSingleMemberQuarterlyChecklist(
             Integer memberID,
@@ -127,7 +127,21 @@ public class QuarterlyFeeChecklistServiceImpl implements QuarterlyFeeChecklistSe
             logger.warn("Member with ID {} not found", memberID);
         }
 
-        if (memberDto == null || !ReferenceConstants.MEMBER_STATUS.ACTIVE.equals(memberDto.getStatus())) {
+        boolean wasActiveInYear = false;
+        if (memberDto != null && !ReferenceConstants.MEMBER_STATUS.PENDING.equals(memberDto.getStatus())) {
+            List<MemberMembershipPeriodVO> periods = member.findMembershipPeriods(memberID);
+            LocalDate yearStart = LocalDate.of(year, 1, 1);
+            LocalDate yearEnd = LocalDate.of(year, 12, 31);
+            if (!periods.isEmpty()) {
+                wasActiveInYear = periods.stream().anyMatch(p ->
+                        !p.getStartDate().isAfter(yearEnd) && (p.getEndDate() == null || !p.getEndDate().isBefore(yearStart)));
+            } else {
+                LocalDate joinDate = QuarterUtils.resolveJoinDate(memberDto.getJoinDate());
+                wasActiveInYear = !joinDate.isAfter(yearEnd);
+            }
+        }
+
+        if (memberDto == null || !wasActiveInYear) {
             ChecklistSummaryDto emptySummary = computeFilteredSummary(Collections.emptyList(), assessableQuarter);
             QuarterlyChecklistDto checklistDto = QuarterlyChecklistDto.builder()
                     .year(year)
@@ -180,10 +194,10 @@ public class QuarterlyFeeChecklistServiceImpl implements QuarterlyFeeChecklistSe
             int assessableQuarter,
             List<Integer> unpaidQuarters) {
 
-        // 1. Fetch ALL active members sorted at DB level
+        // 1. Fetch ALL members active in the target year sorted at DB level
         Pageable sortedUnpaged = PageRequest.of(0, Integer.MAX_VALUE,
                 Sort.by(FieldConstants.FIRST_NAME, FieldConstants.LAST_NAME));
-        Page<MemberVO> memberPage = member.findActiveMembers(sortedUnpaged);
+        Page<MemberVO> memberPage = member.findMembersActiveInYear(year, sortedUnpaged);
         List<MemberVO> allActiveMembers = memberPage.getContent();
 
         // 2. Fetch payment summaries for all active members
@@ -299,11 +313,16 @@ public class QuarterlyFeeChecklistServiceImpl implements QuarterlyFeeChecklistSe
                                                    BigDecimal quarterlyFeeAmount,
                                                    int year, int currentYear, int currentQuarter) {
         List<MemberQuarterlyRowDto> rows = new ArrayList<>();
+        List<Integer> memberIds = activeMembers.stream().map(MemberVO::getMemberID).toList();
+        Map<Integer, List<MemberMembershipPeriodVO>> periodsByMember =
+                member.findMembershipPeriodsForMembers(memberIds);
 
         for (MemberVO m : activeMembers) {
             LocalDate joinDate = QuarterUtils.resolveJoinDate(m.getJoinDate());
             int joinYear = joinDate.getYear();
             int joinQuarter = QuarterUtils.quarterOf(joinDate);
+            List<MemberMembershipPeriodVO> periods =
+                    periodsByMember.getOrDefault(m.getMemberID(), Collections.emptyList());
 
             List<QuarterCellDto> quarterCells = new ArrayList<>();
             BigDecimal totalPaid = BigDecimal.ZERO;
@@ -312,14 +331,14 @@ public class QuarterlyFeeChecklistServiceImpl implements QuarterlyFeeChecklistSe
             for (int q = 1; q <= 4; q++) {
                 BigDecimal amountPaid = BigDecimal.ZERO;
                 QuarterCellStatus status = resolveQuarterStatus(q, year, currentYear, currentQuarter,
-                        joinYear, joinQuarter, BigDecimal.ZERO, quarterlyFeeAmount);
+                        joinYear, joinQuarter, periods, BigDecimal.ZERO, quarterlyFeeAmount);
 
                 if (status == QuarterCellStatus.PAID || status == QuarterCellStatus.UNPAID) {
                     BigDecimal paid = paymentMap.getOrDefault(m.getMemberID(), Collections.emptyMap())
                             .getOrDefault(q, BigDecimal.ZERO);
                     amountPaid = paid;
                     status = resolveQuarterStatus(q, year, currentYear, currentQuarter,
-                            joinYear, joinQuarter, paid, quarterlyFeeAmount);
+                            joinYear, joinQuarter, periods, paid, quarterlyFeeAmount);
                     totalPaid = totalPaid.add(paid);
                     eligibleQuarters++;
                 }
@@ -349,13 +368,14 @@ public class QuarterlyFeeChecklistServiceImpl implements QuarterlyFeeChecklistSe
     }
 
     /**
-     * Computes the global summary across ALL active members using lightweight projections.
-     * - Fetches only memberID + joinDate (2 columns) instead of full MemberVO entities
+     * Computes the global summary across ALL members active in the target year.
      * - Reuses the existing findPaymentSummaries SQL aggregate query
      */
     private ChecklistSummaryDto computeGlobalSummary(BigDecimal quarterlyFeeAmount, int year, int currentYear, int currentQuarter, int assessableQuarter) {
-        // Lightweight projection: only memberID + joinDate
-        List<MemberJoinDateProjection> allJoinDates = member.findActiveMemberJoinDates();
+        List<MemberVO> allMembersInYear = member.findAllMembersActiveInYear(year);
+        List<Integer> allMemberIds = allMembersInYear.stream().map(MemberVO::getMemberID).toList();
+        Map<Integer, List<MemberMembershipPeriodVO>> periodsByMember =
+                member.findMembershipPeriodsForMembers(allMemberIds);
 
         // Reuse existing SQL aggregate: memberID × quarter → totalPaid
         List<PaymentSummary> allSummaries = payment.findPaymentSummaries(
@@ -369,20 +389,22 @@ public class QuarterlyFeeChecklistServiceImpl implements QuarterlyFeeChecklistSe
         int[] paidCounts = new int[4];
         int[] unpaidCounts = new int[4];
 
-        for (MemberJoinDateProjection proj : allJoinDates) {
-            LocalDate joinDate = QuarterUtils.resolveJoinDate(proj.getJoinDate());
+        for (MemberVO m : allMembersInYear) {
+            LocalDate joinDate = QuarterUtils.resolveJoinDate(m.getJoinDate());
             int joinYear = joinDate.getYear();
             int joinQuarter = QuarterUtils.quarterOf(joinDate);
+            List<MemberMembershipPeriodVO> periods =
+                    periodsByMember.getOrDefault(m.getMemberID(), Collections.emptyList());
 
             BigDecimal memberTotalPaid = BigDecimal.ZERO;
             int eligibleQuarters = 0;
 
             for (int q = 1; q <= 4; q++) {
-                BigDecimal paid = globalPaymentMap.getOrDefault(proj.getMemberID(), Collections.emptyMap())
+                BigDecimal paid = globalPaymentMap.getOrDefault(m.getMemberID(), Collections.emptyMap())
                         .getOrDefault(q, BigDecimal.ZERO);
 
                 QuarterCellStatus status = resolveQuarterStatus(q, year, currentYear, currentQuarter,
-                        joinYear, joinQuarter, paid, quarterlyFeeAmount);
+                        joinYear, joinQuarter, periods, paid, quarterlyFeeAmount);
 
                 if (status == QuarterCellStatus.PAID) {
                     paidCounts[q - 1]++;
@@ -421,19 +443,33 @@ public class QuarterlyFeeChecklistServiceImpl implements QuarterlyFeeChecklistSe
     }
 
     /**
-     * Resolves the payment status for a specific quarter based on eligibility and payment data.
+     * Resolves the payment status for a specific quarter based on eligibility, departure date, and payment data.
      */
     private QuarterCellStatus resolveQuarterStatus(int quarter, int year, int currentYear, int currentQuarter,
                                                     int joinYear, int joinQuarter,
+                                                    List<MemberMembershipPeriodVO> periods,
                                                     BigDecimal amountPaid, BigDecimal quarterlyFeeAmount) {
         if (year > currentYear || (year == currentYear && quarter > currentQuarter)) {
             return QuarterCellStatus.FUTURE;
         }
-        if (year > joinYear || (year == joinYear && quarter >= joinQuarter)) {
-            return amountPaid.compareTo(quarterlyFeeAmount) >= 0
-                    ? QuarterCellStatus.PAID : QuarterCellStatus.UNPAID;
+
+        LocalDate qStart = QuarterUtils.firstDayOfQuarter(year, quarter);
+        LocalDate qEnd = QuarterUtils.lastDayOfQuarter(year, quarter);
+
+        boolean isActiveInQuarter;
+        if (periods != null && !periods.isEmpty()) {
+            isActiveInQuarter = periods.stream().anyMatch(p ->
+                    !p.getStartDate().isAfter(qEnd) && (p.getEndDate() == null || !p.getEndDate().isBefore(qStart)));
+        } else {
+            isActiveInQuarter = (year > joinYear || (year == joinYear && quarter >= joinQuarter));
         }
-        return QuarterCellStatus.NOT_APPLICABLE;
+
+        if (!isActiveInQuarter) {
+            return QuarterCellStatus.NOT_APPLICABLE;
+        }
+
+        return amountPaid.compareTo(quarterlyFeeAmount) >= 0
+                ? QuarterCellStatus.PAID : QuarterCellStatus.UNPAID;
     }
 
     /**

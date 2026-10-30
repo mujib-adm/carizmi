@@ -12,6 +12,11 @@ public final class FieldConstants {
     public static final String EXPENSE_ID = "expenseID";
     public static final String SYSTEM_SETTINGS_ID = "systemSettingsID";
     public static final String REFERENCE_ID = "referenceID";
+    public static final String PERIOD_ID = "periodID";
+    public static final String START_DATE = "startDate";
+    public static final String END_DATE = "endDate";
+    public static final String FISCAL_YEAR = "fiscalYear";
+    public static final String REPORT_DATA = "reportData";
 
     public static final String USERNAME = "username";
     public static final String PASSWORD = "password";

@@ -11,18 +11,22 @@ import io.carizmi.domain.finance.model.PaymentVO;
 import io.carizmi.domain.finance.data.dto.PaymentDto;
 import io.carizmi.domain.finance.data.dto.request.PaymentSearchRequestDto;
 import io.carizmi.domain.finance.data.dto.response.LatestPaymentDto;
+import io.carizmi.domain.finance.data.dto.projection.FeeTypeReceiptBreakdownProjection;
+import io.carizmi.domain.finance.data.dto.projection.FeeTypeQuarterlyTotalProjection;
+import io.carizmi.domain.finance.data.dto.projection.PaymentMethodTotalProjection;
 import io.carizmi.shared.data.dto.PaymentSummary;
 import io.carizmi.shared.data.dto.QuarterlyTotalProjection;
+import io.carizmi.domain.finance.data.dto.response.PaymentSearchResultDto;
+import io.carizmi.domain.finance.data.dto.response.PaymentSummaryDto;
 import io.carizmi.domain.finance.data.transformer.PaymentDtoTransformer;
 import io.carizmi.domain.finance.data.transformer.PaymentVOTransformer;
-import io.carizmi.framework.data.response.PagedResult;
+import io.carizmi.framework.data.response.SinglePagedResult;
 import io.carizmi.framework.data.response.PaginationMeta;
 import io.carizmi.framework.exception.RecordNotFoundException;
 import io.carizmi.domain.finance.validation.PaymentValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
@@ -32,6 +36,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import static io.carizmi.shared.message.ValidationMessages.RECORD_NOT_FOUND;
 
@@ -66,6 +71,11 @@ public final class PaymentImpl extends PaymentAbstractBL implements Payment {
             validator.validate(vo);
         }
         performStatefulValidation(vo);
+    }
+
+    @Override
+    protected void performDeleteValidation(PaymentVO vo) {
+        validator.validateForDelete(vo);
     }
 
     @Override
@@ -122,13 +132,15 @@ public final class PaymentImpl extends PaymentAbstractBL implements Payment {
 
     @Override
     @Transactional(readOnly = true)
-    public PagedResult<PaymentDto> searchPayments(PaymentSearchRequestDto request) {
+    public SinglePagedResult<PaymentSearchResultDto> searchPayments(PaymentSearchRequestDto request) {
 
         List<Specification<PaymentVO>> specs = new ArrayList<>();
         if (request.getMemberID() != null)
             specs.add(PaymentSpecifications.hasMemberID(request.getMemberID()));
         if (request.getFeeType() != null)
             specs.add(PaymentSpecifications.hasFeeType(request.getFeeType()));
+        if (request.getMethodOfPayment() != null)
+            specs.add(PaymentSpecifications.hasMethodOfPayment(request.getMethodOfPayment()));
         if (request.getYear() != null)
             specs.add(PaymentSpecifications.hasYear(request.getYear()));
         if (request.getQuarter() != null)
@@ -141,7 +153,36 @@ public final class PaymentImpl extends PaymentAbstractBL implements Payment {
         PaginationMeta meta = PaginationMeta.of(result.getNumber(), result.getSize(), result.getTotalElements(),
                 result.getTotalPages());
 
-        return PagedResult.of(dtoTransformer.transformList(result.toList()), meta);
+        List<PaymentDto> payments = dtoTransformer.transformList(result.toList());
+        BigDecimal totalAmount = sumAmount(request, result, payments);
+
+        PaymentSearchResultDto searchResult = PaymentSearchResultDto.builder()
+                .payments(payments)
+                .summary(PaymentSummaryDto.builder().totalAmount(totalAmount).build())
+                .build();
+
+        return SinglePagedResult.of(searchResult, meta);
+    }
+
+    private BigDecimal sumAmount(PaymentSearchRequestDto request, Page<PaymentVO> result, List<PaymentDto> payments) {
+        if (result.getTotalElements() == 0) {
+            return BigDecimal.ZERO;
+        }
+        if (result.getTotalPages() <= 1) {
+            return payments.stream()
+                    .map(PaymentDto::getAmount)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+        }
+        return getRepo().sumAmountByFilters(
+                request.getMemberID(),
+                request.getFeeType(),
+                request.getMethodOfPayment(),
+                request.getYear(),
+                request.getQuarter(),
+                request.getDateFrom(),
+                request.getDateTo()
+        );
     }
 
     @Override
@@ -160,6 +201,12 @@ public final class PaymentImpl extends PaymentAbstractBL implements Payment {
     @Transactional(readOnly = true)
     public BigDecimal sumAmountByMemberID(@NonNull Integer memberID) {
         return getRepo().sumAmountByMemberID(memberID);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean hasPaymentsForMember(@NonNull Integer memberID) {
+        return getRepo().exists(PaymentSpecifications.hasMemberID(memberID));
     }
 
     @Override
@@ -194,14 +241,26 @@ public final class PaymentImpl extends PaymentAbstractBL implements Payment {
 
     @Override
     @Transactional(readOnly = true)
-    public BigDecimal sumAmountByDateReceivedBefore(LocalDate date) {
-        return getRepo().sumAmountByDateReceivedBefore(date);
+    public List<QuarterlyTotalProjection> findQuarterlyTotals(@NonNull Integer year) {
+        return getRepo().findQuarterlyTotals(year);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<QuarterlyTotalProjection> findQuarterlyTotals(@NonNull Integer year) {
-        return getRepo().findQuarterlyTotals(year);
+    public List<FeeTypeQuarterlyTotalProjection> findFeeTypeQuarterlyTotals(@NonNull Integer year) {
+        return getRepo().findFeeTypeQuarterlyTotals(year);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FeeTypeReceiptBreakdownProjection> findFeeTypeReceiptBreakdownsBetween(@NonNull LocalDate start, @NonNull LocalDate end) {
+        return getRepo().findFeeTypeReceiptBreakdownsBetween(start, end);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PaymentMethodTotalProjection> findPaymentMethodTotalsBetween(@NonNull LocalDate start, @NonNull LocalDate end) {
+        return getRepo().findPaymentMethodTotalsBetween(start, end);
     }
 
     @Override
@@ -212,14 +271,39 @@ public final class PaymentImpl extends PaymentAbstractBL implements Payment {
         return getRepo().calculateTotalOverdue(year, currentQuarter, feeAmt, feeType, status);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<Integer> findMemberIDsByFeeTypeAndDateReceivedBetween(@NonNull String feeType, @NonNull LocalDate start, @NonNull LocalDate end) {
+        return getRepo().findMemberIDsByFeeTypeAndDateReceivedBetween(feeType, start, end);
+    }
+
     private void performStatefulValidation(PaymentVO vo) {
         // Duplicate Check logic for payments (add & update)
+        duplicateValidation(vo);
+    }
+
+    private void duplicateValidation(PaymentVO vo) {
+        if (vo.getMember() == null || vo.getMember().getMemberID() == null) {
+            return;
+        }
         if (ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE.equals(vo.getFeeType())) {
             if (checkExists(vo.getPaymentID(), vo.getMember().getMemberID(), vo.getFeeType(), vo.getYear(), vo.getQuarter())) {
                 vo.addFieldMessage(FieldConstants.QUARTER, ValidationMessages.ERR_PAYMENT_ALREADY_EXISTS.addMessageArgs(
                         String.valueOf(vo.getYear()), vo.getQuarter()));
             }
+        } else if (ReferenceConstants.FEE_TYPE.REGISTRATION_FEE.equals(vo.getFeeType())) {
+            if (checkRegistrationFeeExists(vo.getPaymentID(), vo.getMember().getMemberID())) {
+                vo.addFieldMessage(FieldConstants.FEE_TYPE, ValidationMessages.ERR_REGISTRATION_FEE_ALREADY_EXISTS);
+            }
         }
+    }
+
+    private boolean checkRegistrationFeeExists(Integer paymentID, Integer memberID) {
+        Specification<PaymentVO> spec = Specification.allOf(
+                PaymentSpecifications.hasMemberID(memberID),
+                PaymentSpecifications.hasFeeType(ReferenceConstants.FEE_TYPE.REGISTRATION_FEE),
+                PaymentSpecifications.notPaymentId(paymentID));
+        return getRepo().exists(spec);
     }
 
     private boolean checkExists(Integer paymentID, Integer memberID, String feeType, Integer year, Integer quarter) {

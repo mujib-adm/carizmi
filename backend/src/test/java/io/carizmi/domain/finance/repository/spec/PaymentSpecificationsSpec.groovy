@@ -64,6 +64,32 @@ class PaymentSpecificationsSpec extends BaseSpecification {
     }
 
     @Unroll
+    def "test - hasMethodOfPayment: Should filter by method of payment [methodOfPayment: #methodOfPayment]"() {
+        given: "A method of payment"
+        String method = methodOfPayment
+
+        when: "The specification is created and inspected"
+        JpaSpecification<PaymentVO> spec = PaymentSpecifications.hasMethodOfPayment(method)
+        Map<String, List> inspection = inspectSpecification(spec)
+
+        then: "Strict interaction check"
+        0 * _
+
+        and: "The expected filters and values are captured"
+        if (method) {
+            inspection.filters.contains(FieldConstants.METHOD_OF_PAYMENT)
+            inspection.values.contains(method)
+        } else {
+            inspection.filters.isEmpty()
+            inspection.values.isEmpty()
+        }
+        noExceptionThrown()
+
+        where:
+        methodOfPayment << ["01", null]
+    }
+
+    @Unroll
     def "test - hasYear: Should filter by year [hasYearVal: #hasYearVal]"() {
         given: "A year using dynamic current year"
         int currentYear = LocalDate.now().year

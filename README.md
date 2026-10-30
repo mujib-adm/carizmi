@@ -9,7 +9,14 @@
 [![Security](https://img.shields.io/badge/security-OWASP%20Checks-success)](https://owasp.org/)
 [![Coverage](https://codecov.io/gh/mujib-adm/carizmi/graph/badge.svg)](https://codecov.io/gh/mujib-adm/carizmi)
 
-> **Note:** The application framework has been upgraded from **Java 21 to Java 25** and from **Spring Boot 3.x to Spring Boot 4.x**. Documentation updates are currently in progress and will be revised to reflect the framework migration, associated configuration changes, and any related implementation updates.
+<br>
+
+> [!IMPORTANT]
+> #### Framework Upgrade: Documentation Update in Progress
+>
+> The application framework has been upgraded from **Java 21 to Java 25** and from **Spring Boot 3.x to Spring Boot 4.x**. Documentation updates are currently in progress and will be revised to reflect the framework migration, associated configuration changes, and any related implementation updates.
+
+<br>
 
 Production-grade open-source community management platform built with Java 21, Spring Boot 3, CQRS architecture, event-driven workflows, and cloud-native infrastructure.
 

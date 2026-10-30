@@ -1,7 +1,7 @@
 import { FileSearchOutlined } from '@ant-design/icons';
 import { Card, Checkbox, Form, Grid, Table, Tooltip, Typography } from 'antd';
 import { ColumnsType } from 'antd/es/table';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { checklistApi } from '../../../api/generated/checklist/checklist';
 import {
   ChecklistSearchRequestDto,
@@ -14,7 +14,8 @@ import {
 import { MessageBanner } from '../../../components/MessageBanner';
 import MemberLookup from '../../../components/MemberLookup';
 import SearchFilterBar from '../../../components/SearchFilterBar';
-import { checklistSearchFiltersConfig } from '../config/checklistSearchFiltersConfig';
+import { buildChecklistSearchFiltersConfig } from '../config/checklistSearchFiltersConfig';
+import { useFiscalYears } from '../../../hooks/useFiscalYears';
 import { useApiMessages } from '../../../hooks/useApiMessages';
 import { formatPhoneNumber } from '../../../utils/phoneUtils';
 import styles from '../../../styles/pages/QuarterlyChecklist.module.css';
@@ -40,8 +41,9 @@ function renderQuarterCell(cell: QuarterCellDto | undefined) {
 }
 
 export default function QuarterlyChecklistPage() {
+  const { yearOptions, currentYear } = useFiscalYears();
   const [filters, setFilters] = useState<ChecklistSearchRequestDto>({
-    year: new Date().getFullYear(),
+    year: currentYear,
   });
   const [data, setData] = useState<QuarterlyChecklistDto | null>(null);
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
@@ -50,8 +52,12 @@ export default function QuarterlyChecklistPage() {
   const screens = useBreakpoint();
   const isMobile = !screens.md;
 
+  const filterConfig = useMemo(
+    () => buildChecklistSearchFiltersConfig(yearOptions),
+    [yearOptions]
+  );
+
   const now = new Date();
-  const currentYear = now.getFullYear();
   const currentMonth = now.getMonth(); // 0 to 11
   const currentQuarter = Math.floor(currentMonth / 3) + 1; // 1 to 4
 
@@ -186,12 +192,12 @@ export default function QuarterlyChecklistPage() {
     <div>
       <div className="page-header">
         <Title level={2} className="page-title">
-          <FileSearchOutlined /> Quarterly Fee Checklist
+          <FileSearchOutlined /> Membership Fee Checklist
         </Title>
       </div>
 
       <SearchFilterBar
-        config={checklistSearchFiltersConfig as any}
+        config={filterConfig as any}
         filters={filters}
         onChange={handleFilterChange}
         onSearch={handleSearch}
@@ -211,7 +217,7 @@ export default function QuarterlyChecklistPage() {
             value={filters.memberID}
             onChange={handleMemberChange}
             onError={handleError}
-            style={{ width: 220 }}
+            style={{ width: 200 }}
           />
         </Form.Item>
 

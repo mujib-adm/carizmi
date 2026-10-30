@@ -7,6 +7,8 @@ import io.carizmi.shared.constants.FieldConstants
 import io.carizmi.shared.constants.ReferenceConstants
 import io.carizmi.domain.finance.service.Payment
 import io.carizmi.domain.platform.service.SystemSetting
+import io.carizmi.domain.membership.service.MemberMembershipPeriod
+import io.carizmi.domain.membership.model.MemberMembershipPeriodVO
 import io.carizmi.domain.membership.repository.MemberRepository
 import io.carizmi.domain.membership.model.MemberVO
 import io.carizmi.domain.membership.data.dto.MemberDto
@@ -19,6 +21,8 @@ import io.carizmi.domain.membership.data.transformer.MemberVOTransformer
 import io.carizmi.framework.data.response.PagedResult
 import io.carizmi.framework.exception.DuplicateRecordException
 import io.carizmi.framework.exception.RecordNotFoundException
+import io.carizmi.framework.exception.ValidationException
+import io.carizmi.shared.message.ValidationMessages
 import io.carizmi.framework.util.MySQLConstraintResolver
 import io.carizmi.domain.membership.validation.MemberValidator
 import io.carizmi.testbase.BaseSpecification
@@ -45,9 +49,10 @@ class MemberSpec extends BaseSpecification {
     MemberValidator validator = Mock()
     MySQLConstraintResolver constraintResolver = Mock()
     DomainEventPublisher domainEventPublisher = Mock()
+    MemberMembershipPeriod memberMembershipPeriod = Mock()
 
     @Subject
-    MemberImpl memberImpl = new MemberImpl(memberRepo, payment, systemSetting, voTransformer, dtoTransformer, validator)
+    MemberImpl memberImpl = new MemberImpl(memberRepo, payment, systemSetting, voTransformer, dtoTransformer, validator, memberMembershipPeriod)
 
     void setup() {
         ReflectionTestUtils.setField(memberImpl, "constraintResolver", constraintResolver)
@@ -204,12 +209,30 @@ class MemberSpec extends BaseSpecification {
 
         then: "The expected calls are made"
         1 * memberRepo.findById(1) >> Optional.of(vo)
+        1 * validator.validateForDelete(vo)
         1 * memberRepo.delete(vo)
         1 * domainEventPublisher.publish("DELETED", vo, id)
         0 * _
 
         and: "The expected result"
         noExceptionThrown()
+    }
+
+    def "test - deleteMember: Blocked when member has historical standing"() {
+        given: "An existing member with historical standing"
+        Integer id = 1
+        MemberVO vo = new MemberVO(memberID: id)
+
+        when: "The target method executed"
+        memberImpl.deleteMember(id)
+
+        then: "Validator marks error and exception is thrown"
+        1 * memberRepo.findById(1) >> Optional.of(vo)
+        1 * validator.validateForDelete(vo) >> { MemberVO m -> m.addGlobalMessage(ValidationMessages.ERR_MEMBER_HISTORICAL_STANDING) }
+        0 * _
+
+        and:
+        thrown(ValidationException)
     }
 
     def "test - deleteMember: DB Error"() {
@@ -222,6 +245,7 @@ class MemberSpec extends BaseSpecification {
 
         then: "The expected calls are made"
         1 * memberRepo.findById(1) >> Optional.of(vo)
+        1 * validator.validateForDelete(vo)
         1 * memberRepo.delete(vo) >> { throw new DataAccessException("error", new RuntimeException("root")) {} }
         0 * _
 
@@ -249,15 +273,20 @@ class MemberSpec extends BaseSpecification {
     def "test - searchMembers: Applying various filter combinations [f: #f, l: #l, p: #p, s: #s]"() {
         given: "Search parameters and mock"
         Page<MemberVO> mockPage = Mock(Page)
+        JpaSpecification<MemberVO> capturedSpec = null
         MemberSearchRequestDto request = new MemberSearchRequestDto(firstName: f, lastName: l, phone: p, status: s)
         request.setPage(0)
         request.setSize(10)
 
         when: "The target method executed"
         PagedResult<MemberDto> result = memberImpl.searchMembers(request)
+        Map<String, List> inspection = inspectSpecification(capturedSpec)
 
         then: "The expected calls are made"
-        1 * memberRepo.findAll(_, _ as PageRequest) >> mockPage
+        1 * memberRepo.findAll(_ as JpaSpecification, _ as PageRequest) >> { JpaSpecification<MemberVO> spec, PageRequest pr ->
+            capturedSpec = spec
+            return mockPage
+        }
         1 * mockPage.toList() >> []
         1 * dtoTransformer.transformList(_) >> []
         // Metadata calls - use wildcards effectively but strictly
@@ -267,15 +296,21 @@ class MemberSpec extends BaseSpecification {
         _ * mockPage.getTotalPages() >> 0
         0 * _
 
-        and: "The expected result"
+        and: "The expected specification filters and result are verified"
         result != null
         result.items() == []
+        inspection.filters == expectedFilters
+        if (s) {
+            inspection.values.contains(s)
+        }
         noExceptionThrown()
 
         where:
-        f    | l    | p     | s
-        "J"  | "D"  | "123" | "ACT"
-        null | null | null  | null
+        f    | l    | p     | s                                         || expectedFilters
+        "J"  | "D"  | "123" | ReferenceConstants.MEMBER_STATUS.ACTIVE   || [FieldConstants.FIRST_NAME, FieldConstants.LAST_NAME, FieldConstants.PHONE, FieldConstants.STATUS]
+        null | null | null  | ReferenceConstants.MEMBER_STATUS.INACTIVE || [FieldConstants.STATUS]
+        null | null | null  | ReferenceConstants.MEMBER_STATUS.PENDING  || [FieldConstants.STATUS]
+        null | null | null  | null                                      || []
     }
 
     def "test - getMember: Success"() {
@@ -369,6 +404,7 @@ class MemberSpec extends BaseSpecification {
         _ * psQ1.getQuarter() >> 1
         _ * psQ1.getTotalPaid() >> paidPast
         (found ? 1 : 0) * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
+        (found ? 1 : 0) * memberMembershipPeriod.findByMemberIDOrderByStartDateAsc(id) >> []
         0 * _
 
         and: "The expected result"
@@ -478,5 +514,374 @@ class MemberSpec extends BaseSpecification {
                 [new MemberVO(memberID: 1)],
                 [new MemberVO(memberID: 1), new MemberVO(memberID: 2)]
         ]
+    }
+
+    def "test - findMembersActiveInYear: Queries repository with temporal specification and pageable"() {
+        given: "Pageable and year"
+        PageRequest pageable = PageRequest.of(0, 10)
+        Page<MemberVO> mockPage = Mock(Page)
+
+        when: "findMembersActiveInYear is called"
+        Page<MemberVO> result = memberImpl.findMembersActiveInYear(2026, pageable)
+
+        then: "Repository is queried"
+        1 * memberRepo.findAll(_ as JpaSpecification, pageable) >> mockPage
+        0 *_
+
+        and:
+        result == mockPage
+    }
+
+    def "test - findAllMembersActiveInYear: Queries repository with temporal specification"() {
+        given: "Year"
+        List<MemberVO> expected = [new MemberVO(memberID: 1)]
+
+        when: "findAllMembersActiveInYear is called"
+        List<MemberVO> result = memberImpl.findAllMembersActiveInYear(2026)
+
+        then: "Repository is queried"
+        1 * memberRepo.findAll(_ as JpaSpecification) >> expected
+        0 * _
+
+        and:
+        result == expected
+    }
+
+    def "test - addMember: member creates initial membership period"() {
+        given:
+        Integer id = 10
+        LocalDate joinDate = LocalDate.of(2026, 1, 15)
+        MemberDto requestDto = new MemberDto(firstName: "Active", lastName: "Member", status: ReferenceConstants.MEMBER_STATUS.ACTIVE, joinDate: joinDate)
+        MemberVO transformedVo = new MemberVO(firstName: "Active", lastName: "Member", status: ReferenceConstants.MEMBER_STATUS.ACTIVE, joinDate: joinDate)
+        MemberVO savedVo = new MemberVO(memberID: id, firstName: "Pending", lastName: "Member", status: ReferenceConstants.MEMBER_STATUS.PENDING, joinDate: null)
+
+        when: "addMember is executed"
+        Integer result = memberImpl.addMember(requestDto)
+
+        then: "Member is systematically saved as PENDING and no period is created"
+        1 * voTransformer.transform(_) >> transformedVo
+        1 * validator.validate(transformedVo)
+        1 * memberRepo.save({ MemberVO vo -> vo.status == ReferenceConstants.MEMBER_STATUS.PENDING && vo.joinDate == null; savedVo }) >> savedVo
+        1 * domainEventPublisher.publish("CREATED", savedVo, id)
+        0 * memberMembershipPeriod.add(_)
+        0 * _
+
+        and:
+        result == id
+    }
+
+    def "test - updateMember: Transition PENDING to ACTIVE creates membership period"() {
+        given: "A member transitioning from PENDING to ACTIVE"
+        Integer id = 20
+        LocalDate actionDate = LocalDate.of(2026, 3, 1)
+        MemberVO existingVo = new MemberVO(memberID: id, status: ReferenceConstants.MEMBER_STATUS.PENDING, joinDate: null)
+        MemberDto updateDto = new MemberDto(memberID: id, status: ReferenceConstants.MEMBER_STATUS.ACTIVE, joinDate: actionDate)
+        MemberVO updatedVo = new MemberVO(memberID: id, status: ReferenceConstants.MEMBER_STATUS.ACTIVE, joinDate: actionDate)
+
+        when: "updateMember is executed"
+        memberImpl.updateMember(updateDto)
+
+        then: "Member is updated and new open period is created"
+        1 * memberRepo.findById(id) >> Optional.of(existingVo)
+        1 * voTransformer.transformForUpdate(updateDto, existingVo) >> updatedVo
+        1 * validator.validateForUpdate(updatedVo)
+        1 * memberRepo.save(updatedVo) >> updatedVo
+        1 * domainEventPublisher.publish("UPDATED", updatedVo, id)
+        1 * memberMembershipPeriod.add({ MemberMembershipPeriodVO p ->
+            p.memberID == id && p.startDate == actionDate && p.endDate == null
+        })
+        0 * _
+
+        and:
+        noExceptionThrown()
+    }
+
+    def "test - updateMember: Transition ACTIVE to INACTIVE closes existing open period"() {
+        given: "An active member transitioning to INACTIVE"
+        Integer id = 30
+        LocalDate actionDate = LocalDate.of(2026, 6, 30)
+        MemberVO existingVo = new MemberVO(memberID: id, status: ReferenceConstants.MEMBER_STATUS.ACTIVE, joinDate: LocalDate.of(2025, 1, 1))
+        MemberDto updateDto = new MemberDto(memberID: id, status: ReferenceConstants.MEMBER_STATUS.INACTIVE, reactivationDate: actionDate)
+        MemberVO updatedVo = new MemberVO(memberID: id, status: ReferenceConstants.MEMBER_STATUS.INACTIVE, joinDate: LocalDate.of(2025, 1, 1))
+
+        MemberMembershipPeriodVO openPeriod = MemberMembershipPeriodVO.builder()
+                .periodID(100)
+                .memberID(id)
+                .startDate(LocalDate.of(2025, 1, 1))
+                .endDate(null)
+                .build()
+
+        when: "updateMember is executed"
+        memberImpl.updateMember(updateDto)
+
+        then: "Existing period is closed with actionDate"
+        1 * memberRepo.findById(id) >> Optional.of(existingVo)
+        1 * voTransformer.transformForUpdate(updateDto, existingVo) >> updatedVo
+        1 * validator.validateForUpdate(updatedVo)
+        1 * memberRepo.save(updatedVo) >> updatedVo
+        1 * domainEventPublisher.publish("UPDATED", updatedVo, id)
+        1 * memberMembershipPeriod.findFirstByMemberIDAndEndDateIsNullOrderByStartDateDesc(id) >> Optional.of(openPeriod)
+        1 * memberMembershipPeriod.update({ MemberMembershipPeriodVO p ->
+            p.periodID == 100 && p.memberID == id && p.endDate == actionDate
+        })
+        0 * _
+
+        and:
+        noExceptionThrown()
+    }
+
+    def "test - updateMember: Transition INACTIVE to ACTIVE creates new reactivation period"() {
+        given: "An inactive member reactivated"
+        Integer id = 40
+        LocalDate reactivationDate = LocalDate.of(2028, 4, 1)
+        MemberVO existingVo = new MemberVO(memberID: id, status: ReferenceConstants.MEMBER_STATUS.INACTIVE, joinDate: LocalDate.of(2026, 1, 1))
+        MemberDto updateDto = new MemberDto(memberID: id, status: ReferenceConstants.MEMBER_STATUS.ACTIVE, reactivationDate: reactivationDate)
+        MemberVO updatedVo = new MemberVO(memberID: id, status: ReferenceConstants.MEMBER_STATUS.ACTIVE, joinDate: LocalDate.of(2026, 1, 1))
+
+        when: "updateMember is executed"
+        memberImpl.updateMember(updateDto)
+
+        then: "New period is saved with reactivation start date"
+        1 * memberRepo.findById(id) >> Optional.of(existingVo)
+        1 * voTransformer.transformForUpdate(updateDto, existingVo) >> updatedVo
+        1 * validator.validateForUpdate(updatedVo)
+        1 * memberRepo.save(updatedVo) >> updatedVo
+        1 * domainEventPublisher.publish("UPDATED", updatedVo, id)
+        1 * memberMembershipPeriod.add({ MemberMembershipPeriodVO p ->
+            p.memberID == id && p.startDate == reactivationDate && p.endDate == null
+        })
+        0 * _
+
+        and:
+        noExceptionThrown()
+    }
+
+    def "test - activateMemberOnRegistrationFee: Activates PENDING member and opens period"() {
+        given: "A PENDING member and registration payment date"
+        Integer id = 50
+        LocalDate dateReceived = LocalDate.of(2026, 5, 14)
+        LocalDate quarterStart = LocalDate.of(2026, 4, 1) // Q2 start
+        MemberVO existingVo = new MemberVO(memberID: id, status: ReferenceConstants.MEMBER_STATUS.PENDING, joinDate: null)
+
+        when: "activateMemberOnRegistrationFee is executed"
+        memberImpl.activateMemberOnRegistrationFee(id, dateReceived)
+
+        then: "Member becomes ACTIVE with joinDate at quarter start and period created"
+        1 * memberRepo.findById(id) >> Optional.of(existingVo)
+        1 * validator.validateForUpdate({ MemberVO vo ->
+            vo.status == ReferenceConstants.MEMBER_STATUS.ACTIVE && vo.joinDate == quarterStart
+        })
+        1 * memberRepo.save({ MemberVO vo ->
+            vo.status == ReferenceConstants.MEMBER_STATUS.ACTIVE && vo.joinDate == quarterStart
+        }) >> existingVo
+        1 * domainEventPublisher.publish("UPDATED", existingVo, id)
+        1 * memberMembershipPeriod.add({ MemberMembershipPeriodVO p ->
+            p.memberID == id && p.startDate == quarterStart && p.endDate == null
+        })
+        0 * _
+
+        and:
+        noExceptionThrown()
+    }
+
+    def "test - updateMemberJoinDateOnRegistrationFee: Updates joinDate and shifts first period start"() {
+        given: "An ACTIVE member and updated payment date"
+        Integer id = 60
+        LocalDate newDateReceived = LocalDate.of(2026, 7, 20)
+        LocalDate newQuarterStart = LocalDate.of(2026, 7, 1) // Q3 start
+        MemberVO existingVo = new MemberVO(memberID: id, status: ReferenceConstants.MEMBER_STATUS.ACTIVE, joinDate: LocalDate.of(2026, 4, 1))
+        MemberMembershipPeriodVO firstPeriod = new MemberMembershipPeriodVO(periodID: 200, memberID: id, startDate: LocalDate.of(2026, 4, 1), endDate: null)
+
+        when: "updateMemberJoinDateOnRegistrationFee is executed"
+        memberImpl.updateMemberJoinDateOnRegistrationFee(id, newDateReceived)
+
+        then: "Member joinDate and first period startDate are updated"
+        1 * memberRepo.findById(id) >> Optional.of(existingVo)
+        1 * validator.validateForUpdate({ MemberVO vo -> vo.joinDate == newQuarterStart })
+        1 * memberRepo.save({ MemberVO vo -> vo.joinDate == newQuarterStart }) >> existingVo
+        1 * domainEventPublisher.publish("UPDATED", existingVo, id)
+        1 * memberMembershipPeriod.findByMemberIDOrderByStartDateAsc(id) >> [firstPeriod]
+        1 * memberMembershipPeriod.update({ MemberMembershipPeriodVO p ->
+            p.periodID == 200 && p.startDate == newQuarterStart
+        })
+        0 * _
+
+        and:
+        noExceptionThrown()
+    }
+
+    def "test - deactivateDelinquentMembers: Deactivates members active full year with 0 payments"() {
+        given: "Year and 2 active members: one paid, one delinquent"
+        int year = 2026
+        LocalDate yearStart = LocalDate.of(year, 1, 1)
+        LocalDate yearEnd = LocalDate.of(year, 12, 31)
+
+        MemberVO paidMember = new MemberVO(memberID: 1, status: ReferenceConstants.MEMBER_STATUS.ACTIVE)
+        MemberVO delinquentMember = new MemberVO(memberID: 2, status: ReferenceConstants.MEMBER_STATUS.ACTIVE)
+
+        MemberMembershipPeriodVO delinquentPeriod = new MemberMembershipPeriodVO(
+                periodID: 301, memberID: 2, startDate: LocalDate.of(2025, 1, 1), endDate: null)
+
+        PaymentSummary ps = Stub(PaymentSummary) {
+            getMemberID() >> 1
+        }
+
+        when: "deactivateDelinquentMembers is called"
+        int deactivated = memberImpl.deactivateDelinquentMembers(year)
+
+        then: "Only delinquent member is deactivated and period closed"
+        1 * memberRepo.findAll(_ as org.springframework.data.jpa.domain.Specification) >> [paidMember, delinquentMember]
+        1 * memberMembershipPeriod.findByMemberIDInOrderByStartDateAsc([1, 2]) >> [delinquentPeriod]
+        1 * payment.findPaymentSummaries(ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> [ps]
+        1 * memberMembershipPeriod.findFirstByMemberIDAndEndDateIsNullOrderByStartDateDesc(2) >> Optional.of(delinquentPeriod)
+        1 * memberMembershipPeriod.update({ MemberMembershipPeriodVO p ->
+            p.periodID == 301 && p.endDate == yearEnd
+        })
+        1 * validator.validateForUpdate({ MemberVO vo -> vo.memberID == 2 && vo.status == ReferenceConstants.MEMBER_STATUS.INACTIVE })
+        1 * memberRepo.save({ MemberVO vo -> vo.memberID == 2 && vo.status == ReferenceConstants.MEMBER_STATUS.INACTIVE }) >> delinquentMember
+        1 * domainEventPublisher.publish("UPDATED", delinquentMember, 2)
+        0 * _
+
+        and:
+        deactivated == 1
+    }
+
+    def "test - deactivateDelinquentMembers: Returns 0 when no active members exist"() {
+        given: "A year"
+        int year = 2026
+
+        when: "deactivateDelinquentMembers is called"
+        int deactivated = memberImpl.deactivateDelinquentMembers(year)
+
+        then: "Returns 0 immediately without querying payments or periods"
+        1 * memberRepo.findAll(_ as org.springframework.data.jpa.domain.Specification) >> []
+        0 * _
+
+        and:
+        deactivated == 0
+    }
+
+    def "test - deactivateDelinquentMembers: Does not deactivate member who joined mid-year with 0 payments"() {
+        given: "Member who joined in Q3 of the year"
+        int year = 2026
+        MemberVO midYearMember = new MemberVO(memberID: 10, status: ReferenceConstants.MEMBER_STATUS.ACTIVE)
+        MemberMembershipPeriodVO q3Period = new MemberMembershipPeriodVO(
+                periodID: 501, memberID: 10, startDate: LocalDate.of(2026, 7, 1), endDate: null)
+
+        when: "deactivateDelinquentMembers is called"
+        int deactivated = memberImpl.deactivateDelinquentMembers(year)
+
+        then: "Member is checked but NOT deactivated because they were not active all 4 quarters"
+        1 * memberRepo.findAll(_ as org.springframework.data.jpa.domain.Specification) >> [midYearMember]
+        1 * memberMembershipPeriod.findByMemberIDInOrderByStartDateAsc([10]) >> [q3Period]
+        1 * payment.findPaymentSummaries(ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> []
+        0 * _
+
+        and:
+        deactivated == 0
+    }
+
+    def "test - deactivateDelinquentMembers: Evaluates period endDate boundary (endDate == yearEnd vs endDate > yearEnd)"() {
+        given: "Two active members: Member 11 has a period closed on yearEnd (2026-12-31) and reactivated in 2027; Member 12 has a period ending after yearEnd (2027-03-31)"
+        int year = 2026
+        LocalDate yearEnd = LocalDate.of(year, 12, 31)
+        MemberVO reactivatedMember = new MemberVO(memberID: 11, status: ReferenceConstants.MEMBER_STATUS.ACTIVE)
+        MemberVO futureEndMember = new MemberVO(memberID: 12, status: ReferenceConstants.MEMBER_STATUS.ACTIVE)
+
+        MemberMembershipPeriodVO closedOnYearEndPeriod = new MemberMembershipPeriodVO(
+                periodID: 601, memberID: 11, startDate: LocalDate.of(2025, 1, 1), endDate: yearEnd)
+        MemberMembershipPeriodVO open2027Period = new MemberMembershipPeriodVO(
+                periodID: 602, memberID: 11, startDate: LocalDate.of(2027, 4, 1), endDate: null)
+        MemberMembershipPeriodVO endingAfterYearEndPeriod = new MemberMembershipPeriodVO(
+                periodID: 603, memberID: 12, startDate: LocalDate.of(2025, 1, 1), endDate: LocalDate.of(2027, 3, 31))
+
+        when: "deactivateDelinquentMembers is called for 2026"
+        int deactivated = memberImpl.deactivateDelinquentMembers(year)
+
+        then: "Member 11 (already closed on 2026-12-31) is skipped, while Member 12 (endDate > 2026-12-31) is deactivated"
+        1 * memberRepo.findAll(_ as org.springframework.data.jpa.domain.Specification) >> [reactivatedMember, futureEndMember]
+        1 * memberMembershipPeriod.findByMemberIDInOrderByStartDateAsc([11, 12]) >> [closedOnYearEndPeriod, open2027Period, endingAfterYearEndPeriod]
+        1 * payment.findPaymentSummaries(ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> []
+        1 * memberMembershipPeriod.findFirstByMemberIDAndEndDateIsNullOrderByStartDateDesc(12) >> Optional.empty()
+        1 * validator.validateForUpdate({ MemberVO vo -> vo.memberID == 12 && vo.status == ReferenceConstants.MEMBER_STATUS.INACTIVE })
+        1 * memberRepo.save({ MemberVO vo -> vo.memberID == 12 && vo.status == ReferenceConstants.MEMBER_STATUS.INACTIVE }) >> futureEndMember
+        1 * domainEventPublisher.publish("UPDATED", futureEndMember, 12)
+        0 * _
+
+        and:
+        deactivated == 1
+    }
+
+    def "test - getMemberSummary: Skips hiatus quarters when calculating overdue with multiple periods"() {
+        given: "Member active in 2024, hiatus throughout 2025, reactivated in 2026 Q2"
+        Integer id = 50
+        LocalDate fixedNow = LocalDate.of(2026, 5, 15) // 2026 Q2
+        MockedStatic<LocalDate> localDateMock = Mockito.mockStatic(LocalDate, Mockito.CALLS_REAL_METHODS)
+        localDateMock.when(LocalDate::now).thenReturn(fixedNow)
+
+        MemberVO member = new MemberVO(memberID: id, joinDate: LocalDate.of(2024, 1, 1), status: ReferenceConstants.MEMBER_STATUS.ACTIVE)
+        List<MemberMembershipPeriodVO> periods = [
+                MemberMembershipPeriodVO.builder().memberID(id).startDate(LocalDate.of(2024, 1, 1)).endDate(LocalDate.of(2024, 12, 31)).build(),
+                MemberMembershipPeriodVO.builder().memberID(id).startDate(LocalDate.of(2026, 4, 1)).endDate(null).build()
+        ]
+
+        // 2024 was paid fully (4 quarters * 60 = 240)
+        PaymentSummary s2024Q1 = [getMemberID: { id }, getYear: { 2024 }, getQuarter: { 1 }, getTotalPaid: { new BigDecimal("60") }] as PaymentSummary
+        PaymentSummary s2024Q2 = [getMemberID: { id }, getYear: { 2024 }, getQuarter: { 2 }, getTotalPaid: { new BigDecimal("60") }] as PaymentSummary
+        PaymentSummary s2024Q3 = [getMemberID: { id }, getYear: { 2024 }, getQuarter: { 3 }, getTotalPaid: { new BigDecimal("60") }] as PaymentSummary
+        PaymentSummary s2024Q4 = [getMemberID: { id }, getYear: { 2024 }, getQuarter: { 4 }, getTotalPaid: { new BigDecimal("60") }] as PaymentSummary
+
+        when: "getMemberSummary is executed"
+        MemberSummaryDto summary = memberImpl.getMemberSummary(id)
+
+        then: "Periods are loaded and hiatus year 2025 is excluded from overdue"
+        1 * memberRepo.findById(id) >> Optional.of(member)
+        1 * payment.sumAmountByMemberID(id) >> new BigDecimal("240")
+        1 * payment.sumAmountByMemberIDAndYearAndQuarter(id, 2026, 2) >> BigDecimal.ZERO
+        1 * payment.findMemberPaymentSummaries(id, ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE) >> [s2024Q1, s2024Q2, s2024Q3, s2024Q4]
+        1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
+        1 * memberMembershipPeriod.findByMemberIDOrderByStartDateAsc(id) >> periods
+        0 * _
+
+        and: "Overdue is 0 because 2024 was paid and 2025 was a hiatus gap"
+        summary.overdue == BigDecimal.ZERO
+        summary.outstanding == new BigDecimal("60") // Current Q2 outstanding
+        summary.totalPaid == new BigDecimal("240")
+
+        cleanup:
+        localDateMock.close()
+    }
+
+    def "test - period query delegation methods: countActiveMembersInDateRange, etc."() {
+        given: "Member ID and dates"
+        Integer memberID = 60
+        LocalDate qStart = LocalDate.of(2026, 4, 1)
+        LocalDate qEnd = LocalDate.of(2026, 6, 30)
+
+        when: "countActiveMembersInDateRange is called"
+        long count = memberImpl.countActiveMembersInDateRange(qStart, qEnd)
+
+        then:
+        1 * memberMembershipPeriod.findActiveMemberIDsInDateRange(qStart, qEnd) >> [1, 2, 3]
+        count == 3
+
+        when: "findMembershipPeriods is called"
+        List<MemberMembershipPeriodVO> periods = memberImpl.findMembershipPeriods(memberID)
+
+        then:
+        1 * memberMembershipPeriod.findByMemberIDOrderByStartDateAsc(memberID) >> []
+        periods.isEmpty()
+
+        when: "findMembershipPeriodsForMembers is called"
+        Map<Integer, List<MemberMembershipPeriodVO>> map = memberImpl.findMembershipPeriodsForMembers([1, 2])
+
+        then:
+        1 * memberMembershipPeriod.findByMemberIDInOrderByStartDateAsc([1, 2]) >> [
+                MemberMembershipPeriodVO.builder().memberID(1).startDate(qStart).build()
+        ]
+        0 * _
+
+        and:
+        map.containsKey(1)
     }
 }

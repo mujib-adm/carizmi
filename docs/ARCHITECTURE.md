@@ -291,6 +291,7 @@ React Page / Hook
 |-----------|----------|---------|
 | `BusinessLogic<V>` | `framework/.../bl/` | Interface defining `add`, `update`, `delete` |
 | `AbstractBusinessLogic<V,R>` | `framework/.../bl/` | Write-side lifecycle engine: hooks → validate → save → publish events |
+| `AbstractDomainEventListener` | `framework/.../event/` | Synchronous domain event engine: event listener → filter → in-transaction handler |
 | `AbstractProjector` | `framework/.../projection/` | Read-side projection engine: event listener → filter → rebuild snapshot |
 | `DomainEvent<V>` | `framework/.../event/` | Immutable record: `eventType`, `aggregateType`, `aggregateId`, `payload`, `occurredAt` |
 | `DomainEventPublisher` | `framework/.../event/` | Delegates to Spring's `ApplicationEventPublisher` for in-process event delivery |
@@ -376,6 +377,7 @@ Two ArchUnit specs run during `mvn test` to enforce architectural invariants at 
 | Value Object | Sealed Abstract BL | Implementation | Repository Owner | Publishes Events |
 |---|---|---|---|---|
 | `MemberVO` | `MemberAbstractBL` | `MemberImpl` | `MemberRepository` | ✅ |
+| `MemberMembershipPeriodVO` | `MemberMembershipPeriodAbstractBL` | `MemberMembershipPeriodImpl` | `MemberMembershipPeriodRepository` | ❌ |
 | `PaymentVO` | `PaymentAbstractBL` | `PaymentImpl` | `PaymentRepository` | ✅ |
 | `ExpenseVO` | `ExpenseAbstractBL` | `ExpenseImpl` | `ExpenseRepository` | ✅ |
 | `UserVO` | `UserAbstractBL` | `UserImpl` | `UserRepository` | ❌ |
@@ -408,6 +410,7 @@ This is enforced by `spring.aop.proxy-target-class: false`, which uses JDK inter
 | Service Interface | Final Implementation |
 |---|---|
 | `Member` | `MemberImpl` |
+| `MemberMembershipPeriod` | `MemberMembershipPeriodImpl` |
 | `Payment` | `PaymentImpl` |
 | `Expense` | `ExpenseImpl` |
 | `User` | `UserImpl` |
@@ -507,6 +510,14 @@ graph LR
 - Governs all `add()`, `update()`, and `delete()` operations
 - Enforces validation lifecycle, exception handling, and singleton registry
 - Publishes `DomainEvent` records after successful persistence (opt-in via `publishesDomainEvents()`)
+
+### Synchronous Domain Event Listeners (`AbstractDomainEventListener`)
+
+- Receives `DomainEvent` instances synchronously via `@EventListener` within the active database transaction
+- Template method pattern: `onDomainEvent()` is `final`; subclasses implement `onEvent(DomainEvent<?> event)`
+- Filters events by `supportedAggregateTypes()` — only relevant events invoke `onEvent()`
+- Guarantees transactional atomicity across bounded contexts: if the listener fails, the originating transaction rolls back
+- **Example (`MemberActivationListener`)**: Listens for `PaymentVO` creation/update. When a `REGISTRATION_FEE` payment is recorded, synchronously transitions the member from `PENDING` to `ACTIVE`, computes `joinDate`, and opens a membership period within the exact same database transaction.
 
 ### Read-Side (`AbstractProjector`)
 

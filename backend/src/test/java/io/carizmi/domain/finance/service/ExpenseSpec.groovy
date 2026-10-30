@@ -1,5 +1,6 @@
 package io.carizmi.domain.finance.service
 
+import io.carizmi.domain.finance.data.dto.projection.ExpenseCategoryTotalProjection
 import io.carizmi.framework.event.DomainEventPublisher
 import io.carizmi.shared.constants.FieldConstants
 import io.carizmi.domain.finance.data.dto.ExpenseDto
@@ -11,6 +12,8 @@ import io.carizmi.domain.finance.model.ExpenseVO
 import io.carizmi.framework.data.response.PagedResult
 import io.carizmi.framework.exception.DuplicateRecordException
 import io.carizmi.framework.exception.RecordNotFoundException
+import io.carizmi.framework.exception.ValidationException
+import io.carizmi.shared.message.ValidationMessages
 import io.carizmi.framework.util.MySQLConstraintResolver
 import io.carizmi.domain.finance.repository.ExpenseRepository
 import io.carizmi.domain.finance.validation.ExpenseValidator
@@ -123,6 +126,26 @@ class ExpenseSpec extends BaseSpecification {
         noExceptionThrown()
     }
 
+    def "test - updateExpense: Blocked if existing record in closed fiscal year"() {
+        given: "An existing expense in a closed year"
+        Integer id = 1
+        ExpenseDto dto = new ExpenseDto(expenseID: id)
+        ExpenseVO existing = new ExpenseVO(expenseID: id)
+        ExpenseVO updated = new ExpenseVO(expenseID: id)
+
+        when: "The target method executed"
+        expenseImpl.updateExpense(dto)
+
+        then: "Validator attaches error and exception thrown"
+        1 * expenseRepo.findById(1) >> Optional.of(existing)
+        1 * voTransformer.transformForUpdate(dto, existing) >> updated
+        1 * validator.validateForUpdate(updated) >> { ExpenseVO e -> e.addFieldMessage("dateOfExpense", ValidationMessages.ERR_TRANSACTION_CLOSED_YEAR_MUTATION) }
+        0 * _
+
+        and:
+        thrown(ValidationException)
+    }
+
     def "test - updateExpense: DB Error"() {
         given: "A DB error during update"
         Integer id = 1
@@ -170,12 +193,30 @@ class ExpenseSpec extends BaseSpecification {
 
         then: "The expected calls are made"
         1 * expenseRepo.findById(1) >> Optional.of(vo)
+        1 * validator.validateForDelete(vo)
         1 * expenseRepo.delete(vo)
         1 * domainEventPublisher.publish("DELETED", vo, id)
         0 * _
 
         and: "The expected result"
         noExceptionThrown()
+    }
+
+    def "test - deleteExpense: Blocked if expense in closed fiscal year"() {
+        given: "An existing expense in a closed year"
+        Integer id = 1
+        ExpenseVO vo = new ExpenseVO(expenseID: id)
+
+        when: "The target method executed"
+        expenseImpl.deleteExpense(id)
+
+        then: "Validator marks error and exception thrown"
+        1 * expenseRepo.findById(1) >> Optional.of(vo)
+        1 * validator.validateForDelete(vo) >> { ExpenseVO e -> e.addFieldMessage("dateOfExpense", ValidationMessages.ERR_TRANSACTION_CLOSED_YEAR_DELETE) }
+        0 * _
+
+        and:
+        thrown(ValidationException)
     }
 
     def "test - deleteExpense: DB Error"() {
@@ -188,6 +229,7 @@ class ExpenseSpec extends BaseSpecification {
 
         then: "The expected calls are made"
         1 * expenseRepo.findById(1) >> Optional.of(vo)
+        1 * validator.validateForDelete(vo)
         1 * expenseRepo.delete(vo) >> { throw new DataAccessException("error", new RuntimeException("root")) {} }
         0 * _
 
@@ -309,20 +351,21 @@ class ExpenseSpec extends BaseSpecification {
         noExceptionThrown()
     }
 
-    def "test - sumAmountByDateOfExpenseBefore: Should return sum"() {
-        given: "A date"
-        LocalDate date = LocalDate.now()
-        BigDecimal expectedSum = new BigDecimal("500.00")
+    def "test - findExpenseCategoryTotalsBetween: Should return list of category projections"() {
+        given: "A date range"
+        LocalDate start = LocalDate.of(2026, 1, 1)
+        LocalDate end = LocalDate.of(2026, 12, 31)
+        def proj = Mock(ExpenseCategoryTotalProjection)
 
         when: "The target method executed"
-        BigDecimal result = expenseImpl.sumAmountByDateOfExpenseBefore(date)
+        def result = expenseImpl.findExpenseCategoryTotalsBetween(start, end)
 
         then: "The expected calls are made"
-        1 * expenseRepo.sumAmountByDateOfExpenseBefore(date) >> expectedSum
+        1 * expenseRepo.findExpenseCategoryTotalsBetween(start, end) >> [proj]
         0 * _
 
         and: "The expected result"
-        result == expectedSum
+        result == [proj]
         noExceptionThrown()
     }
 }

@@ -39,6 +39,9 @@
   }, {
     "name" : "Members",
     "description" : "Member management APIs"
+  }, {
+    "name" : "Reports",
+    "description" : "Financial and organizational report APIs"
   } ],
   "paths" : {
     "/users/{id}/status" : {
@@ -262,6 +265,34 @@
         }
       }
     },
+    "/reports/annual/{year}/close" : {
+      "post" : {
+        "tags" : [ "Reports" ],
+        "summary" : "Manually trigger or retry year-end closing and snapshot freeze for a completed fiscal year",
+        "operationId" : "closeFiscalYear",
+        "parameters" : [ {
+          "name" : "year",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GlobalResponseAnnualFinancialReportDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/reference/search" : {
       "post" : {
         "tags" : [ "Reference Data" ],
@@ -312,7 +343,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/GlobalResponseListPaymentDto"
+                  "$ref" : "#/components/schemas/GlobalResponsePaymentSearchResultDto"
                 }
               }
             }
@@ -657,6 +688,34 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/GlobalResponseListSystemSettingsDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reports/annual" : {
+      "get" : {
+        "tags" : [ "Reports" ],
+        "summary" : "Generate official annual financial report",
+        "operationId" : "getAnnualReport",
+        "parameters" : [ {
+          "name" : "year",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GlobalResponseAnnualFinancialReportDto"
                 }
               }
             }
@@ -1244,6 +1303,10 @@
             "type" : "string",
             "format" : "date"
           },
+          "reactivationDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
           "address1" : {
             "type" : "string"
           },
@@ -1365,6 +1428,297 @@
             "items" : {
               "$ref" : "#/components/schemas/SystemSettingsDto"
             }
+          },
+          "meta" : {
+            "$ref" : "#/components/schemas/PaginationMeta",
+            "default" : "",
+            "description" : "Pagination metadata"
+          }
+        }
+      },
+      "AnnualCombinedComplianceDto" : {
+        "type" : "object",
+        "properties" : {
+          "totalExpectedAmount" : {
+            "type" : "number"
+          },
+          "totalActualCollected" : {
+            "type" : "number"
+          },
+          "overallCollectionEfficiencyRate" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "totalOverdueAmount" : {
+            "type" : "number"
+          }
+        }
+      },
+      "AnnualComplianceSummaryDto" : {
+        "type" : "object",
+        "properties" : {
+          "activeMembersCount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "quarterlyFeeRate" : {
+            "type" : "number"
+          },
+          "annualExpectedDues" : {
+            "type" : "number"
+          },
+          "actualDuesCollected" : {
+            "type" : "number"
+          },
+          "collectionEfficiencyRate" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "totalOverdueDues" : {
+            "type" : "number"
+          },
+          "membershipFeeSummary" : {
+            "$ref" : "#/components/schemas/AnnualMembershipFeeComplianceDto"
+          },
+          "registrationFeeSummary" : {
+            "$ref" : "#/components/schemas/AnnualRegistrationFeeComplianceDto"
+          },
+          "combinedSummary" : {
+            "$ref" : "#/components/schemas/AnnualCombinedComplianceDto"
+          }
+        }
+      },
+      "AnnualExpenseCategoryDto" : {
+        "type" : "object",
+        "properties" : {
+          "category" : {
+            "type" : "string"
+          },
+          "totalAmount" : {
+            "type" : "number"
+          },
+          "percentage" : {
+            "type" : "number",
+            "format" : "double"
+          }
+        }
+      },
+      "AnnualFeeTypeReceiptDto" : {
+        "type" : "object",
+        "properties" : {
+          "feeType" : {
+            "type" : "string"
+          },
+          "q1" : {
+            "type" : "number"
+          },
+          "q2" : {
+            "type" : "number"
+          },
+          "q3" : {
+            "type" : "number"
+          },
+          "q4" : {
+            "type" : "number"
+          },
+          "total" : {
+            "type" : "number"
+          }
+        }
+      },
+      "AnnualFinancialReportDto" : {
+        "type" : "object",
+        "properties" : {
+          "year" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "generatedDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "baselineKey" : {
+            "type" : "string"
+          },
+          "beginningCashBalance" : {
+            "type" : "number"
+          },
+          "totalReceipts" : {
+            "type" : "number"
+          },
+          "totalDisbursements" : {
+            "type" : "number"
+          },
+          "netOperatingSurplus" : {
+            "type" : "number"
+          },
+          "endingCashBalance" : {
+            "type" : "number"
+          },
+          "receiptsByFeeType" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AnnualFeeTypeReceiptDto"
+            }
+          },
+          "receiptsByPaymentMethod" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AnnualMethodReceiptDto"
+            }
+          },
+          "disbursementsByCategory" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AnnualExpenseCategoryDto"
+            }
+          },
+          "complianceSummary" : {
+            "$ref" : "#/components/schemas/AnnualComplianceSummaryDto"
+          },
+          "isClosed" : {
+            "type" : "boolean"
+          },
+          "snapshotStatus" : {
+            "type" : "string"
+          }
+        }
+      },
+      "AnnualMembershipFeeComplianceDto" : {
+        "type" : "object",
+        "properties" : {
+          "activeMembersCount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "quarterlyFeeRate" : {
+            "type" : "number"
+          },
+          "annualExpectedDues" : {
+            "type" : "number"
+          },
+          "actualDuesCollected" : {
+            "type" : "number"
+          },
+          "collectionEfficiencyRate" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "totalOverdueDues" : {
+            "type" : "number"
+          },
+          "q1EligibleMembers" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "q2EligibleMembers" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "q3EligibleMembers" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "q4EligibleMembers" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "AnnualMethodReceiptDto" : {
+        "type" : "object",
+        "properties" : {
+          "methodOfPayment" : {
+            "type" : "string"
+          },
+          "totalAmount" : {
+            "type" : "number"
+          },
+          "percentage" : {
+            "type" : "number",
+            "format" : "double"
+          }
+        }
+      },
+      "AnnualRegistrationFeeComplianceDto" : {
+        "type" : "object",
+        "properties" : {
+          "registrationFeeRate" : {
+            "type" : "number"
+          },
+          "newMembersCount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "q1NewMembers" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "q2NewMembers" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "q3NewMembers" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "q4NewMembers" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "expectedRegistrationFees" : {
+            "type" : "number"
+          },
+          "actualRegistrationFeesCollected" : {
+            "type" : "number"
+          },
+          "collectionEfficiencyRate" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "totalOverdueRegistrationFees" : {
+            "type" : "number"
+          }
+        }
+      },
+      "GlobalResponseAnnualFinancialReportDto" : {
+        "type" : "object",
+        "default" : null,
+        "description" : "Unified API response envelope",
+        "properties" : {
+          "statusCode" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : "",
+            "description" : "HTTP status code",
+            "example" : 200
+          },
+          "statusDesc" : {
+            "type" : "string",
+            "default" : "",
+            "description" : "HTTP status description",
+            "example" : "OK"
+          },
+          "globalMessages" : {
+            "type" : "array",
+            "default" : "",
+            "description" : "Global-level messages (errors, warnings, info)",
+            "items" : {
+              "$ref" : "#/components/schemas/GlobalMsg"
+            }
+          },
+          "fieldMessages" : {
+            "type" : "array",
+            "default" : "",
+            "description" : "Field-level validation messages",
+            "items" : {
+              "$ref" : "#/components/schemas/FieldMsg"
+            }
+          },
+          "responseData" : {
+            "$ref" : "#/components/schemas/AnnualFinancialReportDto",
+            "default" : "",
+            "description" : "Response payload"
           },
           "meta" : {
             "$ref" : "#/components/schemas/PaginationMeta",
@@ -1517,6 +1871,9 @@
           "feeType" : {
             "type" : "string"
           },
+          "methodOfPayment" : {
+            "type" : "string"
+          },
           "year" : {
             "type" : "integer",
             "format" : "int32"
@@ -1535,7 +1892,7 @@
           }
         }
       },
-      "GlobalResponseListPaymentDto" : {
+      "GlobalResponsePaymentSearchResultDto" : {
         "type" : "object",
         "default" : null,
         "description" : "Unified API response envelope",
@@ -1570,17 +1927,36 @@
             }
           },
           "responseData" : {
-            "type" : "array",
+            "$ref" : "#/components/schemas/PaymentSearchResultDto",
             "default" : "",
-            "description" : "Response payload",
-            "items" : {
-              "$ref" : "#/components/schemas/PaymentDto"
-            }
+            "description" : "Response payload"
           },
           "meta" : {
             "$ref" : "#/components/schemas/PaginationMeta",
             "default" : "",
             "description" : "Pagination metadata"
+          }
+        }
+      },
+      "PaymentSearchResultDto" : {
+        "type" : "object",
+        "properties" : {
+          "payments" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PaymentDto"
+            }
+          },
+          "summary" : {
+            "$ref" : "#/components/schemas/PaymentSummaryDto"
+          }
+        }
+      },
+      "PaymentSummaryDto" : {
+        "type" : "object",
+        "properties" : {
+          "totalAmount" : {
+            "type" : "number"
           }
         }
       },

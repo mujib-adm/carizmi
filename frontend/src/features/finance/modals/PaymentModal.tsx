@@ -1,9 +1,10 @@
-import { Col, Divider, Form, Modal, Row } from 'antd';
+import { Alert, Col, Divider, Form, Modal, Row } from 'antd';
 import dayjs from 'dayjs';
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ReferenceConstants } from '../../../constants/ReferenceConstants';
 import { SystemSettingConstants } from '../../../constants/SystemSettingsConstants.ts';
-import { PaymentDto } from '../../../api/generated/types';
+import { MemberLookupDto, PaymentDto } from '../../../api/generated/types';
+import { useFiscalYears } from '../../../hooks/useFiscalYears';
 import { useSystemSettings } from '../../../hooks/useSystemSettings';
 import { useApiMessages } from '../../../hooks/useApiMessages';
 import { AntdFormItem } from '../../../components/AntdFormItem';
@@ -28,7 +29,19 @@ export default function PaymentModal({
   paymentMethods,
 }: PaymentModalProps) {
   const [form] = Form.useForm();
+  const [selectedMember, setSelectedMember] = useState<MemberLookupDto | null>(null);
   const { getNumericSetting } = useSystemSettings();
+  const { inauguralYear, currentYear } = useFiscalYears();
+
+  const feeYearOptions = useMemo(() => {
+    const years: { value: number; label: string }[] = [];
+    const maxYear = (currentYear || dayjs().year()) + 1;
+    const startYear = inauguralYear || 2026;
+    for (let y = maxYear; y >= startYear; y--) {
+      years.push({ value: y, label: `${y}` });
+    }
+    return years;
+  }, [currentYear, inauguralYear]);
 
   const { globalMessages, handleError, resetMessages } = useApiMessages(undefined, (field, msg) => {
     form.setFields([{ name: field, errors: [msg] }]);
@@ -88,11 +101,15 @@ export default function PaymentModal({
     <Modal
       open={open}
       className="modern-modal"
-      onCancel={onCancel}
+      onCancel={() => {
+        setSelectedMember(null);
+        onCancel();
+      }}
       onOk={handleOk}
       okText="Save"
       title={title}
       destroyOnHidden
+      afterClose={() => setSelectedMember(null)}
       centered
       width="90vw"
       style={{ maxWidth: 500 }}
@@ -123,11 +140,41 @@ export default function PaymentModal({
         <Form.Item name="memberID" label="Member" rules={[{ required: true }]}>
           <MemberLookup
             onSelectMember={(m) => {
-              // Optional side effects
+              setSelectedMember(m);
+              if (m?.status === ReferenceConstants.MEMBER_STATUS.PENDING) {
+                const regFee = getNumericSetting(
+                  SystemSettingConstants.FEE.TYPE,
+                  SystemSettingConstants.FEE.REGISTRATION_FEE
+                );
+                form.setFieldsValue({
+                  feeType: ReferenceConstants.FEE_TYPE.REGISTRATION_FEE,
+                  amount: regFee > 0 ? regFee : 0,
+                  year: null,
+                  quarter: null,
+                });
+              }
             }}
             onError={handleError}
           />
         </Form.Item>
+        {selectedMember?.status === ReferenceConstants.MEMBER_STATUS.INACTIVE && (
+          <Alert
+            style={{ marginBottom: 16 }}
+            message="Notice: Inactive Member"
+            description="This member is currently inactive. You may only record payments for quarters prior to their departure date. To record ongoing dues, please reactivate the member first."
+            type="warning"
+            showIcon
+          />
+        )}
+        {selectedMember?.status === ReferenceConstants.MEMBER_STATUS.PENDING && (
+          <Alert
+            style={{ marginBottom: 16 }}
+            message="Notice: Pending Member"
+            description="This member is currently pending. Recording their Registration Fee will activate their membership and establish their initial membership period."
+            type="info"
+            showIcon
+          />
+        )}
         <Divider />
 
         <Row gutter={16}>
@@ -162,10 +209,7 @@ export default function PaymentModal({
                     type="select"
                     rules={[{ required: true }]}
                     initialValue={dayjs().year()}
-                    options={[0, 1, 2].map((i) => {
-                      const y = dayjs().year() - 1 + i;
-                      return { value: y, label: y };
-                    })}
+                    options={feeYearOptions}
                   />
                 </Col>
                 <Col xs={24} sm={12}>

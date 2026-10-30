@@ -22,6 +22,7 @@ type SearchFilterBarProps = {
   onSearch: () => void;
   onAdd?: () => void;
   children?: React.ReactNode;
+  childrenPosition?: 'start' | 'end';
 };
 
 export default function SearchFilterBar({
@@ -31,6 +32,7 @@ export default function SearchFilterBar({
   onSearch,
   onAdd,
   children,
+  childrenPosition = 'end',
 }: SearchFilterBarProps) {
   const [form] = Form.useForm();
   const screens = useBreakpoint();
@@ -141,6 +143,7 @@ export default function SearchFilterBar({
             onValuesChange={handleValuesChange}
             onFinish={handleSearch}
           >
+            {childrenPosition === 'start' && children}
             {config.map((field) => (
               <Form.Item
                 key={field.name}
@@ -186,7 +189,7 @@ export default function SearchFilterBar({
                 )}
               </Form.Item>
             ))}
-            {children}
+            {childrenPosition !== 'start' && children}
           </Form>
         </div>
       </div>
@@ -204,6 +207,7 @@ export default function SearchFilterBar({
         onFinish={onSearch}
         style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}
       >
+        {childrenPosition === 'start' && children}
         {config.map((field) => (
           <Form.Item
             key={field.name}
@@ -235,7 +239,7 @@ export default function SearchFilterBar({
           </Form.Item>
         ))}
 
-        {children}
+        {childrenPosition !== 'start' && children}
 
         {/* Search Button next to filters */}
         <Form.Item style={{ marginBottom: 8 }}>

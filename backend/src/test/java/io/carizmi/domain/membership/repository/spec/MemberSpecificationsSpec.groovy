@@ -299,8 +299,6 @@ class MemberSpecificationsSpec extends BaseSpecification {
 
         and: "The expected filters and values are captured"
         if (testQuery && !testQuery.trim().isEmpty()) {
-            inspection.filters.contains(FieldConstants.STATUS)
-            inspection.values.contains(ReferenceConstants.MEMBER_STATUS.ACTIVE)
             inspection.filters.containsAll(expectedFilters)
             inspection.values.containsAll(expectedValues)
             if (expectedFilters.isEmpty()) {

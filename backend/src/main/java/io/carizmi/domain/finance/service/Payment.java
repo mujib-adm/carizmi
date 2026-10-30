@@ -2,10 +2,14 @@ package io.carizmi.domain.finance.service;
 
 import io.carizmi.domain.finance.data.dto.response.LatestPaymentDto;
 import io.carizmi.domain.finance.data.dto.PaymentDto;
+import io.carizmi.domain.finance.data.dto.projection.FeeTypeReceiptBreakdownProjection;
+import io.carizmi.domain.finance.data.dto.projection.FeeTypeQuarterlyTotalProjection;
+import io.carizmi.domain.finance.data.dto.projection.PaymentMethodTotalProjection;
 import io.carizmi.domain.finance.data.dto.request.PaymentSearchRequestDto;
+import io.carizmi.domain.finance.data.dto.response.PaymentSearchResultDto;
 import io.carizmi.domain.finance.model.PaymentVO;
 import io.carizmi.framework.bl.BusinessLogic;
-import io.carizmi.framework.data.response.PagedResult;
+import io.carizmi.framework.data.response.SinglePagedResult;
 import org.springframework.lang.NonNull;
 
 import java.math.BigDecimal;
@@ -25,17 +29,17 @@ public interface Payment extends BusinessLogic<PaymentVO> {
 
     PaymentDto getPayment(@NonNull Integer paymentID);
 
-    PagedResult<PaymentDto> searchPayments(PaymentSearchRequestDto request);
+    SinglePagedResult<PaymentSearchResultDto> searchPayments(PaymentSearchRequestDto request);
 
     List<LatestPaymentDto> getLatestPayments(int limit);
-
-    BigDecimal sumAmountByDateReceivedBefore(LocalDate date);
 
     BigDecimal sumAmountByDateReceivedBetween(LocalDate start, LocalDate end);
 
     BigDecimal sumAmountByYearAndQuarter(@NonNull Integer year, @NonNull Integer quarter);
 
     BigDecimal sumAmountByMemberID(@NonNull Integer memberID);
+
+    boolean hasPaymentsForMember(@NonNull Integer memberID);
 
     BigDecimal sumAmountByMemberIDAndYearAndQuarter(@NonNull Integer memberID, @NonNull Integer year, @NonNull Integer quarter);
 
@@ -46,6 +50,14 @@ public interface Payment extends BusinessLogic<PaymentVO> {
     List<PaymentSummary> findPaymentSummaries(String feeType, @NonNull Integer year);
 
     List<QuarterlyTotalProjection> findQuarterlyTotals(@NonNull Integer year);
+
+    List<FeeTypeQuarterlyTotalProjection> findFeeTypeQuarterlyTotals(@NonNull Integer year);
+
+    List<FeeTypeReceiptBreakdownProjection> findFeeTypeReceiptBreakdownsBetween(@NonNull LocalDate start, @NonNull LocalDate end);
+
+    List<PaymentMethodTotalProjection> findPaymentMethodTotalsBetween(@NonNull LocalDate start, @NonNull LocalDate end);
+
+    List<Integer> findMemberIDsByFeeTypeAndDateReceivedBetween(@NonNull String feeType, @NonNull LocalDate start, @NonNull LocalDate end);
 
     BigDecimal calculateTotalOverdue(@NonNull Integer year, @NonNull Integer currentQuarter,
                                      @NonNull BigDecimal feeAmt, @NonNull String feeType,

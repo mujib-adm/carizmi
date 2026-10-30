@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 
@@ -29,7 +30,7 @@ import java.util.List;
  */
 @Service
 @RequiredArgsConstructor
-public class DashboardServiceImpl implements DashboardService {
+public final class DashboardServiceImpl implements DashboardService {
     private static final Logger logger = LoggerFactory.getLogger(DashboardServiceImpl.class);
 
     private final DashboardSnapshot dashboardSnapshot;
@@ -40,8 +41,8 @@ public class DashboardServiceImpl implements DashboardService {
     public DashboardMetricsDto getMetrics() {
         DashboardSnapshotVO snapshotVO = dashboardSnapshot.getSnapshot().orElse(null);
 
-        if (snapshotVO == null) {
-            logger.info("Dashboard snapshot not found — triggering initial projection");
+        if (snapshotVO == null || isStaleYearSnapshot(snapshotVO)) {
+            logger.info("Dashboard snapshot missing or from prior fiscal year — triggering projection rebuild");
             dashboardProjector.rebuildProjection();
             snapshotVO = dashboardSnapshot.getSnapshot().orElse(null);
         }
@@ -61,6 +62,11 @@ public class DashboardServiceImpl implements DashboardService {
                 .quarterlyFeeAmt(snapshotVO.getQuarterlyFeeAmt())
                 .quarterlyCollections(deserializeCollections(snapshotVO.getQuarterlyCollections()))
                 .build();
+    }
+
+    private boolean isStaleYearSnapshot(DashboardSnapshotVO snapshotVO) {
+        return snapshotVO.getLastProjectedAt() != null
+                && snapshotVO.getLastProjectedAt().getYear() < LocalDate.now().getYear();
     }
 
     private List<QuarterlyCollectionDto> deserializeCollections(String json) {

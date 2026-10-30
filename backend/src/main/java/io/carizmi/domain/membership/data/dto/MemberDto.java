@@ -19,6 +19,7 @@ public class MemberDto {
     private String email;
     private String status;
     private LocalDate joinDate;
+    private LocalDate reactivationDate;
     private String address1;
     private String address2;
     private String city;

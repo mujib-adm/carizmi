@@ -157,4 +157,66 @@ class DashboardServiceSpec extends BaseSpecification {
         result.quarterlyCollections.isEmpty()
         noExceptionThrown()
     }
+
+    def "test - getMetrics: Should rebuild projection when cached snapshot is from a prior year"() {
+        given: "A snapshot projected in the previous year"
+        DashboardSnapshotVO staleSnapshot = new DashboardSnapshotVO(
+                id: 1,
+                totalActiveMembers: 5L,
+                totalRevenue: new BigDecimal("50000.00"),
+                duesThisQuarter: new BigDecimal("300.00"),
+                overdueTotal: new BigDecimal("240.00"),
+                quarterlyFeeAmt: new BigDecimal("60.00"),
+                quarterlyCollections: '[]',
+                lastProjectedAt: LocalDateTime.now().minusYears(1)
+        )
+        DashboardSnapshotVO freshSnapshot = new DashboardSnapshotVO(
+                id: 1,
+                totalActiveMembers: 4L,
+                totalRevenue: new BigDecimal("50165.00"),
+                duesThisQuarter: new BigDecimal("240.00"),
+                overdueTotal: BigDecimal.ZERO,
+                quarterlyFeeAmt: new BigDecimal("60.00"),
+                quarterlyCollections: null,
+                lastProjectedAt: LocalDateTime.now()
+        )
+
+        when: "getMetrics is called in the new year"
+        DashboardMetricsDto result = dashboardService.getMetrics()
+
+        then: "Projection rebuild is triggered and fresh snapshot is returned"
+        1 * dashboardSnapshot.getSnapshot() >> Optional.of(staleSnapshot)
+        1 * dashboardProjector.rebuildProjection()
+        1 * dashboardSnapshot.getSnapshot() >> Optional.of(freshSnapshot)
+        0 * _
+
+        and:
+        result.totalMembers == 4L
+        result.totalRevenue == new BigDecimal("50165.00")
+        result.overdueTotal == BigDecimal.ZERO
+    }
+
+    def "test - getMetrics: Should not rebuild projection when lastProjectedAt is null"() {
+        given: "A snapshot with null lastProjectedAt"
+        DashboardSnapshotVO snapshot = new DashboardSnapshotVO(
+                id: 1,
+                totalActiveMembers: 2L,
+                totalRevenue: new BigDecimal("1000.00"),
+                duesThisQuarter: new BigDecimal("120.00"),
+                overdueTotal: BigDecimal.ZERO,
+                quarterlyFeeAmt: new BigDecimal("60.00"),
+                quarterlyCollections: null,
+                lastProjectedAt: null
+        )
+
+        when: "getMetrics is called"
+        DashboardMetricsDto result = dashboardService.getMetrics()
+
+        then: "Returns snapshot without rebuilding"
+        1 * dashboardSnapshot.getSnapshot() >> Optional.of(snapshot)
+        0 * _
+
+        and:
+        result.totalMembers == 2L
+    }
 }

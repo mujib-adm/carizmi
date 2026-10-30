@@ -31,6 +31,15 @@ public final class QuarterUtils {
     }
 
     /**
+     * Returns the first day of the given quarter in the specified year.
+     * <p>Q1 → Jan 1, Q2 → Apr 1, Q3 → Jul 1, Q4 → Oct 1.</p>
+     */
+    public static LocalDate firstDayOfQuarter(int year, int quarter) {
+        int startMonth = (quarter - 1) * 3 + 1;
+        return LocalDate.of(year, startMonth, 1);
+    }
+
+    /**
      * Resolves a potentially null join date to a non-null value.
      * Falls back to {@code LocalDate.now()} if the provided date is null.
      */

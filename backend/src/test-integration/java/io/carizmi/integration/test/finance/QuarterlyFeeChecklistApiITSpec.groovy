@@ -3,9 +3,11 @@ package io.carizmi.integration.test.finance
 import io.carizmi.domain.finance.constants.QuarterCellStatus
 import io.carizmi.shared.constants.ReferenceConstants
 import io.carizmi.domain.platform.constants.SystemSettingConstants
+import io.carizmi.domain.membership.repository.MemberMembershipPeriodRepository
 import io.carizmi.domain.membership.repository.MemberRepository
 import io.carizmi.domain.finance.repository.PaymentRepository
 import io.carizmi.domain.platform.repository.SystemSettingRepository
+import io.carizmi.domain.membership.model.MemberMembershipPeriodVO
 import io.carizmi.domain.membership.model.MemberVO
 import io.carizmi.domain.finance.model.PaymentVO
 import io.carizmi.domain.platform.model.SystemSettingsVO
@@ -13,6 +15,7 @@ import io.carizmi.framework.data.response.GlobalResponse
 import io.carizmi.integration.base.BaseIntegrationSpecification
 import io.carizmi.integration.constants.ApiEndpoints
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.cache.CacheManager
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
@@ -26,10 +29,16 @@ class QuarterlyFeeChecklistApiITSpec extends BaseIntegrationSpecification {
     MemberRepository memberRepository
 
     @Autowired
+    MemberMembershipPeriodRepository memberMembershipPeriodRepository
+
+    @Autowired
     PaymentRepository paymentRepository
 
     @Autowired
     SystemSettingRepository systemSettingRepository
+
+    @Autowired(required = false)
+    CacheManager cacheManager
 
     def setup() {
         login()
@@ -37,7 +46,27 @@ class QuarterlyFeeChecklistApiITSpec extends BaseIntegrationSpecification {
 
     def cleanup() {
         paymentRepository.deleteAll()
+        memberMembershipPeriodRepository.deleteAll()
         memberRepository.deleteAll()
+        clearCaches()
+    }
+
+    private void clearCaches() {
+        if (cacheManager != null) {
+            cacheManager.cacheNames.each { name ->
+                cacheManager.getCache(name)?.clear()
+            }
+        }
+    }
+
+    private MemberVO saveActiveMember(MemberVO memberVO) {
+        MemberVO saved = memberRepository.save(memberVO)
+        memberMembershipPeriodRepository.save(new MemberMembershipPeriodVO(
+                memberID: saved.memberID,
+                startDate: saved.joinDate,
+                endDate: null
+        ))
+        return saved
     }
 
     // ---------------------------------------------------------------------------
@@ -47,14 +76,14 @@ class QuarterlyFeeChecklistApiITSpec extends BaseIntegrationSpecification {
         given: "seed test members for a past year where all 4 quarters are assessable"
         int testYear = LocalDate.now().getYear() - 1
 
-        MemberVO m1 = memberRepository.save(new MemberVO(
+        MemberVO m1 = saveActiveMember(new MemberVO(
                 firstName: "Alice", lastName: "Adams",
                 phone: "612-555-0001", email: "alice@test.com",
                 status: ReferenceConstants.MEMBER_STATUS.ACTIVE,
                 joinDate: LocalDate.of(testYear - 1, 1, 1),
                 state: "MN"
         ))
-        MemberVO m2 = memberRepository.save(new MemberVO(
+        MemberVO m2 = saveActiveMember(new MemberVO(
                 firstName: "Bob", lastName: "Baker",
                 phone: "612-555-0002", email: "bob@test.com",
                 status: ReferenceConstants.MEMBER_STATUS.ACTIVE,
@@ -159,7 +188,7 @@ class QuarterlyFeeChecklistApiITSpec extends BaseIntegrationSpecification {
         given: "a member who joined in Q2 of the test year"
         int testYear = LocalDate.now().getYear() - 1
 
-        MemberVO m = memberRepository.save(new MemberVO(
+        MemberVO m = saveActiveMember(new MemberVO(
                 firstName: "Charlie", lastName: "Clark",
                 phone: "612-555-0003", email: "charlie@test.com",
                 status: ReferenceConstants.MEMBER_STATUS.ACTIVE,
@@ -218,7 +247,7 @@ class QuarterlyFeeChecklistApiITSpec extends BaseIntegrationSpecification {
         given: "a seeded member"
         int futureYear = LocalDate.now().getYear() + 1
 
-        memberRepository.save(new MemberVO(
+        saveActiveMember(new MemberVO(
                 firstName: "Diana", lastName: "Davis",
                 phone: "612-555-0004", email: "diana@test.com",
                 status: ReferenceConstants.MEMBER_STATUS.ACTIVE,
@@ -270,7 +299,7 @@ class QuarterlyFeeChecklistApiITSpec extends BaseIntegrationSpecification {
         given: "5 seeded members"
         int testYear = LocalDate.now().getYear() - 1
         (1..5).each { i ->
-            memberRepository.save(new MemberVO(
+            saveActiveMember(new MemberVO(
                     firstName: "Pager${i}", lastName: "Test",
                     phone: "612-555-100${i}", email: "pager${i}@test.com",
                     status: ReferenceConstants.MEMBER_STATUS.ACTIVE,
@@ -355,7 +384,7 @@ class QuarterlyFeeChecklistApiITSpec extends BaseIntegrationSpecification {
         given: "a member who overpaid Q1"
         int testYear = LocalDate.now().getYear() - 1
 
-        MemberVO m = memberRepository.save(new MemberVO(
+        MemberVO m = saveActiveMember(new MemberVO(
                 firstName: "Eve", lastName: "Evans",
                 phone: "612-555-0005", email: "eve@test.com",
                 status: ReferenceConstants.MEMBER_STATUS.ACTIVE,
@@ -406,7 +435,7 @@ class QuarterlyFeeChecklistApiITSpec extends BaseIntegrationSpecification {
     // ---------------------------------------------------------------------------
     def "POST /checklist/quarterly-fee - Null year defaults to current year"() {
         given: "a seeded member"
-        memberRepository.save(new MemberVO(
+        saveActiveMember(new MemberVO(
                 firstName: "Frank", lastName: "Fisher",
                 phone: "612-555-0006", email: "frank@test.com",
                 status: ReferenceConstants.MEMBER_STATUS.ACTIVE,
@@ -437,7 +466,7 @@ class QuarterlyFeeChecklistApiITSpec extends BaseIntegrationSpecification {
         int currentYear = LocalDate.now().getYear()
         int currentQuarter = ((LocalDate.now().getMonthValue() - 1) / 3 + 1) as int
 
-        memberRepository.save(new MemberVO(
+        saveActiveMember(new MemberVO(
                 firstName: "Grace", lastName: "Green",
                 phone: "612-555-0007", email: "grace@test.com",
                 status: ReferenceConstants.MEMBER_STATUS.ACTIVE,
@@ -491,7 +520,7 @@ class QuarterlyFeeChecklistApiITSpec extends BaseIntegrationSpecification {
         given: "the seeded MEMBERSHIP_FEE is 60 (from systemsettings-data.json)"
         int testYear = LocalDate.now().getYear() - 1
 
-        MemberVO m = memberRepository.save(new MemberVO(
+        MemberVO m = saveActiveMember(new MemberVO(
                 firstName: "Helen", lastName: "Hill",
                 phone: "612-555-0008", email: "helen@test.com",
                 status: ReferenceConstants.MEMBER_STATUS.ACTIVE,
@@ -541,6 +570,7 @@ class QuarterlyFeeChecklistApiITSpec extends BaseIntegrationSpecification {
         if (feeSetting) {
             systemSettingRepository.delete(feeSetting)
             systemSettingRepository.flush()
+            clearCaches()
         }
 
         when: "requesting the checklist without a MEMBERSHIP_FEE in the system"
@@ -565,6 +595,7 @@ class QuarterlyFeeChecklistApiITSpec extends BaseIntegrationSpecification {
                     active: feeSetting.active
             ))
             systemSettingRepository.flush()
+            clearCaches()
         }
     }
 
@@ -588,7 +619,7 @@ class QuarterlyFeeChecklistApiITSpec extends BaseIntegrationSpecification {
         given: "a member with a partial Q1 payment"
         int testYear = LocalDate.now().getYear() - 1
 
-        MemberVO m = memberRepository.save(new MemberVO(
+        MemberVO m = saveActiveMember(new MemberVO(
                 firstName: "Ivan", lastName: "Ivanov",
                 phone: "612-555-0009", email: "ivan@test.com",
                 status: ReferenceConstants.MEMBER_STATUS.ACTIVE,
@@ -639,7 +670,7 @@ class QuarterlyFeeChecklistApiITSpec extends BaseIntegrationSpecification {
         given: "a member who joined in Q3"
         int testYear = LocalDate.now().getYear() - 1
 
-        memberRepository.save(new MemberVO(
+        saveActiveMember(new MemberVO(
                 firstName: "Julia", lastName: "Jones",
                 phone: "612-555-0010", email: "julia@test.com",
                 status: ReferenceConstants.MEMBER_STATUS.ACTIVE,
@@ -674,5 +705,72 @@ class QuarterlyFeeChecklistApiITSpec extends BaseIntegrationSpecification {
         and: "balance covers only eligible quarters: 2 x 60 = 120"
         (juliaRow.totalPaid as Number).doubleValue() == 0.0d
         (juliaRow.balance as Number).doubleValue() == 120.0d
+    }
+
+    // ---------------------------------------------------------------------------
+    // Test 14: Multi-period membership lifecycle — inactive gap quarter is NOT_APPLICABLE
+    // ---------------------------------------------------------------------------
+    def "POST /checklist/quarterly-fee - Multi-period member has NOT_APPLICABLE during inactive gap quarter"() {
+        given: "a member active in Q1, inactive during Q2, and reactivated in Q3-Q4 of testYear"
+        int testYear = LocalDate.now().getYear() - 1
+
+        MemberVO m = memberRepository.save(new MemberVO(
+                firstName: "Kevin", lastName: "King",
+                phone: "612-555-0011", email: "kevin@test.com",
+                status: ReferenceConstants.MEMBER_STATUS.ACTIVE,
+                joinDate: LocalDate.of(testYear, 1, 1),
+                state: "MN"
+        ))
+        // Episode 1: Q1 only (Jan 1 - Mar 31)
+        memberMembershipPeriodRepository.save(new MemberMembershipPeriodVO(
+                memberID: m.memberID,
+                startDate: LocalDate.of(testYear, 1, 1),
+                endDate: LocalDate.of(testYear, 3, 31)
+        ))
+        // Episode 2: Reactivated in Q3 (Jul 1 - open)
+        memberMembershipPeriodRepository.save(new MemberMembershipPeriodVO(
+                memberID: m.memberID,
+                startDate: LocalDate.of(testYear, 7, 1),
+                endDate: null
+        ))
+
+        and: "Kevin paid Q1 and Q3"
+        [1, 3].each { q ->
+            paymentRepository.save(new PaymentVO(
+                    member: m, feeType: ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE,
+                    amount: new BigDecimal("60.00"),
+                    dateReceived: LocalDate.of(testYear, q * 3, 1),
+                    year: testYear, quarter: q,
+                    methodOfPayment: ReferenceConstants.PAYMENT_METHOD.CASH
+            ))
+        }
+
+        when: "requesting the checklist"
+        Map<String, Object> searchRequest = [year: testYear, page: 0, size: 10]
+        ResponseEntity<GlobalResponse> response = restTemplate.exchange(
+                ApiEndpoints.Checklist.QUARTERLY_FEE,
+                HttpMethod.POST,
+                new HttpEntity<>(searchRequest, authHeaders),
+                GlobalResponse
+        )
+
+        then: "response is 200 OK"
+        response.statusCode == HttpStatus.OK
+
+        and: "Q1=PAID, Q2=NOT_APPLICABLE (inactive gap), Q3=PAID, Q4=UNPAID"
+        Map data = response.body.responseData as Map
+        List<Map> rows = data.rows as List<Map>
+        Map kevinRow = rows.find { it.memberName == "Kevin King" }
+        kevinRow != null
+
+        List<Map> quarters = kevinRow.quarters as List<Map>
+        quarters[0].status == QuarterCellStatus.PAID.name()            // Q1
+        quarters[1].status == QuarterCellStatus.NOT_APPLICABLE.name()  // Q2 (inactive gap)
+        quarters[2].status == QuarterCellStatus.PAID.name()            // Q3
+        quarters[3].status == QuarterCellStatus.UNPAID.name()          // Q4
+
+        and: "3 eligible quarters (Q1, Q3, Q4 = 180), paid 120 -> balance 60"
+        (kevinRow.totalPaid as Number).doubleValue() == 120.0d
+        (kevinRow.balance as Number).doubleValue() == 60.0d
     }
 }

@@ -62,6 +62,20 @@ public final class SystemSettingImpl extends SystemSettingAbstractBL implements 
     @Override
     @Transactional
     @CacheEvict(value = "systemSettings", allEntries = true)
+    public SystemSettingsVO add(SystemSettingsVO vo) {
+        return super.add(vo);
+    }
+
+    @Override
+    @Transactional
+    @CacheEvict(value = "systemSettings", allEntries = true)
+    public SystemSettingsVO update(SystemSettingsVO vo) {
+        return super.update(vo);
+    }
+
+    @Override
+    @Transactional
+    @CacheEvict(value = "systemSettings", allEntries = true)
     public void updateSystemSetting(SystemSettingsDto dto) {
         SystemSettingsVO existing = getRepo().findById(dto.getSystemSettingsID())
                 .orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
@@ -107,7 +121,7 @@ public final class SystemSettingImpl extends SystemSettingAbstractBL implements 
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(value = "systemSettings", key = "#settingKey")
+    @Cacheable(value = "systemSettings", key = "#settingKey", unless = "#result == null")
     public Optional<SystemSettingsVO> findBySettingKey(String settingKey) {
         return getRepo().findOne(SystemSettingsSpecifications.withSettingKey(settingKey));
     }
@@ -131,6 +145,21 @@ public final class SystemSettingImpl extends SystemSettingAbstractBL implements 
 
         if (feeAmount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalStateException("Invalid MEMBERSHIP_FEE value: " + feeAmount + ". Must be greater than 0.");
+        }
+        return feeAmount;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BigDecimal getRegistrationFeeAmount() {
+        BigDecimal feeAmount = new BigDecimal(
+                findBySettingKey(SystemSettingConstants.FEE.REGISTRATION_FEE)
+                        .orElseThrow(() -> new IllegalStateException("Required system setting not found: " + SystemSettingConstants.FEE.REGISTRATION_FEE))
+                        .getSettingValue()
+        );
+
+        if (feeAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalStateException("Invalid REGISTRATION_FEE value: " + feeAmount + ". Must be greater than 0.");
         }
         return feeAmount;
     }

@@ -1,11 +1,14 @@
 package io.carizmi.domain.membership.service;
 
+import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import io.carizmi.domain.membership.data.dto.MemberDto;
-import io.carizmi.shared.data.dto.MemberJoinDateProjection;
 import io.carizmi.domain.membership.data.dto.response.MemberLookupDto;
 import io.carizmi.domain.membership.data.dto.response.MemberSummaryDto;
+import io.carizmi.domain.membership.model.MemberMembershipPeriodVO;
 import io.carizmi.domain.membership.model.MemberVO;
 import io.carizmi.framework.bl.BusinessLogic;
 import io.carizmi.framework.data.response.PagedResult;
@@ -36,6 +39,20 @@ public interface Member extends BusinessLogic<MemberVO> {
 
     Page<MemberVO> findActiveMembers(@NonNull Pageable pageable);
 
-    List<MemberJoinDateProjection> findActiveMemberJoinDates();
+    Page<MemberVO> findMembersActiveInYear(int year, @NonNull Pageable pageable);
+
+    List<MemberVO> findAllMembersActiveInYear(int year);
+
+    List<MemberMembershipPeriodVO> findMembershipPeriods(@NonNull Integer memberID);
+
+    Map<Integer, List<MemberMembershipPeriodVO>> findMembershipPeriodsForMembers(@NonNull Collection<Integer> memberIDs);
+
+    long countActiveMembersInDateRange(@NonNull LocalDate start, @NonNull LocalDate end);
+
+    int deactivateDelinquentMembers(int year);
+
+    void activateMemberOnRegistrationFee(@NonNull Integer memberID, @NonNull LocalDate dateReceived);
+
+    void updateMemberJoinDateOnRegistrationFee(@NonNull Integer memberID, @NonNull LocalDate dateReceived);
 
 }

@@ -1,8 +1,11 @@
 package io.carizmi.domain.membership.repository.spec;
 
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import io.carizmi.shared.constants.FieldConstants;
 import io.carizmi.shared.constants.ReferenceConstants;
+import io.carizmi.domain.membership.model.MemberMembershipPeriodVO;
 import io.carizmi.domain.membership.model.MemberVO;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
@@ -87,11 +90,9 @@ public class MemberSpecifications {
             }
 
             String term = query.trim();
-            // 1. Define the Global Filter (Active Only)
-            Predicate isActive = cb.equal(root.get(FieldConstants.STATUS), ReferenceConstants.MEMBER_STATUS.ACTIVE);
             List<Predicate> searchPredicates = new ArrayList<>();
 
-            // 2. Phone Strategy: If the query matches a valid 10-digit US phone number format
+            // 1. Phone Strategy: If the query matches a valid 10-digit US phone number format
             Optional<PhoneUtils.PhoneParts> phoneParts = PhoneUtils.parse(term);
             if (phoneParts.isPresent()) {
                 PhoneUtils.PhoneParts parts = phoneParts.get();
@@ -100,7 +101,7 @@ public class MemberSpecifications {
                     searchPredicates.add(cb.equal(root.get(FieldConstants.PHONE), candidate));
                 }
             } else if (term.matches("\\d{4,}")) {
-                // 3. Member ID Strategy: Exact ID match if numeric with 4 digits minimum
+                // 2. Member ID Strategy: Exact ID match if numeric with 4 digits minimum
                 try {
                     searchPredicates.add(cb.equal(root.get(FieldConstants.MEMBER_ID), Integer.valueOf(term)));
                 } catch (NumberFormatException ignored) {
@@ -108,7 +109,7 @@ public class MemberSpecifications {
                     // leaving searchPredicates empty to return disjunction (1=0) without DB scan
                 }
             } else if (isValidNameQuery(term)) {
-                // 4. Name Strategy: Fuzzy match first name and last name (alphabetical, min 3 chars, no numerics)
+                // 3. Name Strategy: Fuzzy match first name and last name (alphabetical, min 3 chars, no numerics)
                 String lowerTerm = term.toLowerCase();
                 String pattern = "%" + lowerTerm + "%";
                 searchPredicates.add(cb.like(cb.lower(root.get(FieldConstants.FIRST_NAME)), pattern));
@@ -132,15 +133,42 @@ public class MemberSpecifications {
                 }
             }
 
-            // 5. If no search strategy matched (e.g. invalid query such as numbers with < 4 digits),
-            // return a false disjunction (SQL: status = '01' AND 1=0) to safely return zero records
-            // immediately without scanning the database.
+            // 4. If no search strategy matched (e.g. invalid query such as numbers with < 4 digits),
+            // return a false disjunction (SQL: 1=0) to safely return zero records immediately without scanning the database.
             if (searchPredicates.isEmpty()) {
-                return cb.and(isActive, cb.disjunction());
+                return cb.disjunction();
             }
 
-            // 6. Combine: Active AND ( Search1 OR Search2 ... )
-            return cb.and(isActive, cb.or(searchPredicates.toArray(new Predicate[0])));
+            // 5. Combine search predicates: ( Search1 OR Search2 ... )
+            return cb.or(searchPredicates.toArray(new Predicate[0]));
+        };
+    }
+
+    @NonNull
+    public static Specification<MemberVO> wasActiveInYear(int year) {
+        return (root, cq, cb) -> {
+            LocalDate yearEnd = LocalDate.of(year, 12, 31);
+            LocalDate yearStart = LocalDate.of(year, 1, 1);
+
+            // Exclude pending members who never became active
+            Predicate notPending = cb.notEqual(root.get(FieldConstants.STATUS), ReferenceConstants.MEMBER_STATUS.PENDING);
+
+            // Period subquery: checks if any active episode overlaps with the target year
+            Subquery<Integer> periodSubquery = cq.subquery(Integer.class);
+            Root<MemberMembershipPeriodVO> periodRoot =
+                    periodSubquery.from(MemberMembershipPeriodVO.class);
+            periodSubquery.select(periodRoot.get(FieldConstants.MEMBER_ID));
+            periodSubquery.where(
+                    cb.equal(periodRoot.get(FieldConstants.MEMBER_ID), root.get(FieldConstants.MEMBER_ID)),
+                    cb.lessThanOrEqualTo(periodRoot.get(FieldConstants.START_DATE), yearEnd),
+                    cb.or(
+                            cb.isNull(periodRoot.get(FieldConstants.END_DATE)),
+                            cb.greaterThanOrEqualTo(periodRoot.get(FieldConstants.END_DATE), yearStart)
+                    )
+            );
+            Predicate existsInPeriod = cb.exists(periodSubquery);
+
+            return cb.and(notPending, existsInPeriod);
         };
     }
 

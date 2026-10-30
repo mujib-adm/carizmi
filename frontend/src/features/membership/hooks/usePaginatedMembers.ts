@@ -26,5 +26,5 @@ export function usePaginatedMembers(initialRequest: MemberSearchRequestDto = {})
     [memoInitialRequest]
   );
 
-  return { members, meta, loading, fetchMembers, setMembers };
+  return { members, meta, loading, fetchMembers, setMembers, setMeta, setLoading };
 }

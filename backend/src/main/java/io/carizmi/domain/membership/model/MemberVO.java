@@ -53,8 +53,7 @@ public class MemberVO extends ValueObject {
     @Column(name = FieldConstants.STATUS, nullable = false, length = 3)
     private String status;
 
-    @NotNull
-    @Column(name = FieldConstants.JOIN_DATE, nullable = false)
+    @Column(name = FieldConstants.JOIN_DATE)
     private LocalDate joinDate;
 
     @Column(name = FieldConstants.ADDRESS1)

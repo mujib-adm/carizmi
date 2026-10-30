@@ -10,6 +10,11 @@ import io.carizmi.domain.platform.validation.ReferenceValidator;
 import io.carizmi.shared.util.PhoneUtils;
 import org.springframework.stereotype.Service;
 
+import io.carizmi.domain.finance.service.Payment;
+import io.carizmi.domain.platform.constants.BaselineConstants;
+import io.carizmi.domain.platform.service.SystemSetting;
+import io.carizmi.shared.message.ValidationMessages;
+
 @Service
 @RequiredArgsConstructor
 public class MemberValidator extends AbstractDomainValidator<MemberVO> {
@@ -18,6 +23,8 @@ public class MemberValidator extends AbstractDomainValidator<MemberVO> {
     private static final String ZIP_REGEX = "^\\d{5}(-\\d{4})?$";
 
     private final ReferenceValidator referenceValidator;
+    private final Payment payment;
+    private final SystemSetting systemSetting;
 
     @Override
     public void validate(MemberVO vo) {
@@ -34,6 +41,22 @@ public class MemberValidator extends AbstractDomainValidator<MemberVO> {
     public void validateForUpdate(MemberVO vo) {
         validateMemberID(vo);
         validate(vo);
+    }
+
+    @Override
+    public void validateForDelete(MemberVO vo) {
+        if (vo.getMemberID() != null && payment.hasPaymentsForMember(vo.getMemberID())) {
+            vo.addGlobalMessage(ValidationMessages.ERR_MEMBER_HISTORICAL_STANDING);
+            return;
+        }
+
+        if (vo.getJoinDate() != null) {
+            int joinYear = vo.getJoinDate().getYear();
+            String closingKey = BaselineConstants.getYearlyBaselineKey(joinYear + 1);
+            if (systemSetting.findBySettingKey(closingKey).isPresent()) {
+                vo.addGlobalMessage(ValidationMessages.ERR_MEMBER_HISTORICAL_STANDING);
+            }
+        }
     }
 
     private void validateMemberID(MemberVO vo) {
