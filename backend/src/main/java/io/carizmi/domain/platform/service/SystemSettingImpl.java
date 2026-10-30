@@ -121,7 +121,7 @@ public final class SystemSettingImpl extends SystemSettingAbstractBL implements 
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(value = "systemSettings", key = "#settingKey")
+    @Cacheable(value = "systemSettings", key = "#settingKey", unless = "#result == null")
     public Optional<SystemSettingsVO> findBySettingKey(String settingKey) {
         return getRepo().findOne(SystemSettingsSpecifications.withSettingKey(settingKey));
     }

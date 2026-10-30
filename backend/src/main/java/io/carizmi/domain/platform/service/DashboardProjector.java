@@ -6,7 +6,6 @@ import io.carizmi.domain.finance.service.Expense;
 import io.carizmi.domain.finance.service.Payment;
 import io.carizmi.domain.membership.service.Member;
 import io.carizmi.domain.platform.data.dto.response.QuarterlyCollectionDto;
-import io.carizmi.shared.data.dto.MemberJoinDateProjection;
 import io.carizmi.domain.platform.model.DashboardSnapshotVO;
 import io.carizmi.framework.projection.AbstractProjector;
 import io.carizmi.shared.constants.QuarterStatus;
@@ -103,15 +102,12 @@ public class DashboardProjector extends AbstractProjector {
                 quarterlyTotalsMap.put(qt.getQuarter(), qt.getTotalCollected());
             }
 
-            // Pre-compute per-quarter eligible member counts from lightweight join-date projections
+            // Pre-compute per-quarter eligible member counts across active membership episodes
             long[] eligibleMemberCounts = new long[4];
-            for (MemberJoinDateProjection proj : member.findActiveMemberJoinDates()) {
-                LocalDate joinDate = QuarterUtils.resolveJoinDate(proj.getJoinDate());
-                for (int q = 1; q <= 4; q++) {
-                    if (!joinDate.isAfter(QuarterUtils.lastDayOfQuarter(currentYear, q))) {
-                        eligibleMemberCounts[q - 1]++;
-                    }
-                }
+            for (int q = 1; q <= 4; q++) {
+                LocalDate qStart = QuarterUtils.firstDayOfQuarter(currentYear, q);
+                LocalDate qEnd = QuarterUtils.lastDayOfQuarter(currentYear, q);
+                eligibleMemberCounts[q - 1] = member.countActiveMembersInDateRange(qStart, qEnd);
             }
 
             List<QuarterlyCollectionDto> collections = new ArrayList<>();

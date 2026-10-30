@@ -127,6 +127,20 @@ public abstract class AbstractBusinessLogic<V extends ValueObject, R extends Jpa
      */
     protected abstract void performDomainValidation(V vo, boolean isUpdate);
 
+    /**
+     * Performs domain-specific validation for the given entity before deletion.
+     *
+     * <p>Subclasses override this method to invoke {@code validator.validateForDelete(vo)}
+     * and any stateful delete validation checks (e.g., historical standing, immutability guards).
+     * The framework checks {@code vo.hasErrors()} after this method returns
+     * and throws a {@link ValidationException} if errors were found.</p>
+     *
+     * @param vo the value object to validate for deletion
+     */
+    protected void performDeleteValidation(V vo) {
+        // No-op by default
+    }
+
     // ─── Lifecycle Hooks (subclass MAY override) ───────────────────────
 
     /**
@@ -150,6 +164,16 @@ public abstract class AbstractBusinessLogic<V extends ValueObject, R extends Jpa
     }
 
     /**
+     * Hook called before validation and deletion in a DELETE operation.
+     * Override to perform pre-processing or cascade adjustments.
+     *
+     * @param vo the value object being deleted
+     */
+    protected void beforeDelete(V vo) {
+        // No-op by default
+    }
+
+    /**
      * Hook called after a successful save in an ADD operation.
      * Override to trigger side effects that depend on the persisted entity.
      *
@@ -166,6 +190,16 @@ public abstract class AbstractBusinessLogic<V extends ValueObject, R extends Jpa
      * @param vo the saved value object
      */
     protected void afterExecuteUpdate(V vo) {
+        // No-op by default
+    }
+
+    /**
+     * Hook called after a successful deletion in a DELETE operation.
+     * Override to trigger side effects that depend on the deleted entity.
+     *
+     * @param vo the deleted value object
+     */
+    protected void afterExecuteDelete(V vo) {
         // No-op by default
     }
 
@@ -328,23 +362,38 @@ public abstract class AbstractBusinessLogic<V extends ValueObject, R extends Jpa
     /**
      * Deletes a single entity and publishes a DELETED domain event.
      *
+     * <p>Lifecycle: {@code beforeDelete → performDeleteValidation → repo.delete
+     * → afterExecuteDelete → publish DELETED event}</p>
+     *
      * @param vo the value object to delete
+     * @throws ValidationException if domain validation fails
      */
     @Override
     public void delete(@NonNull V vo) {
-        try {
-            getRepo().delete(vo);
+        beforeDelete(vo);
+        if (!vo.hasErrors()) {
+            performDeleteValidation(vo);
+            if (!vo.hasErrors()) {
+                try {
+                    getRepo().delete(vo);
 
-            vo.addGlobalMessage(FrameworkMessages.STS_RECORD_DELETED);
-            if (publishesDomainEvents()) {
-                domainEventPublisher.publish("DELETED", vo, getId(vo));
+                    vo.addGlobalMessage(FrameworkMessages.STS_RECORD_DELETED);
+                    afterExecuteDelete(vo);
+                    if (publishesDomainEvents()) {
+                        domainEventPublisher.publish("DELETED", vo, getId(vo));
+                    }
+                } catch (EmptyResultDataAccessException e) {
+                    getLogger().error("Delete failed, record not found in {}.", vo.getTableName(), e);
+                    vo.addGlobalMessage(FrameworkMessages.ERR_DELETE_RECORD_NOT_FOUND.addMessageArgs(vo.getTableName()));
+                } catch (DataAccessException e) {
+                    getLogger().error("Failed to delete record(s) from {}.", vo.getTableName(), e);
+                    vo.addGlobalMessage(FrameworkMessages.ERR_FAILED_TO_DELETE_RECORD.addMessageArgs(vo.getTableName()));
+                }
+            } else {
+                throw new ValidationException(vo);
             }
-        } catch (EmptyResultDataAccessException e) {
-            getLogger().error("Delete failed, record not found in {}.", vo.getTableName(), e);
-            vo.addGlobalMessage(FrameworkMessages.ERR_DELETE_RECORD_NOT_FOUND.addMessageArgs(vo.getTableName()));
-        } catch (DataAccessException e) {
-            getLogger().error("Failed to delete record(s) from {}.", vo.getTableName(), e);
-            vo.addGlobalMessage(FrameworkMessages.ERR_FAILED_TO_DELETE_RECORD.addMessageArgs(vo.getTableName()));
+        } else {
+            throw new ValidationException(vo);
         }
     }
 
@@ -352,16 +401,31 @@ public abstract class AbstractBusinessLogic<V extends ValueObject, R extends Jpa
      * Deletes multiple entities in a single batch operation.
      *
      * @param vos the list of value objects to delete
+     * @throws ValidationException if domain validation fails for any entity
      */
     @Override
     public void delete(@NonNull List<V> vos) {
         if (CollectionUtils.isEmpty(vos)) {
             return;
         }
+        for (V vo : vos) {
+            beforeDelete(vo);
+            if (vo.hasErrors()) {
+                throw new ValidationException(vo);
+            }
+            performDeleteValidation(vo);
+            if (vo.hasErrors()) {
+                throw new ValidationException(vo);
+            }
+        }
         try {
             getRepo().deleteAll(vos);
             for (V vo : vos) {
                 vo.addGlobalMessage(FrameworkMessages.STS_RECORD_DELETED);
+                afterExecuteDelete(vo);
+                if (publishesDomainEvents()) {
+                    domainEventPublisher.publish("DELETED", vo, getId(vo));
+                }
             }
         } catch (DataAccessException e) {
             V firstVo = vos.getFirst();

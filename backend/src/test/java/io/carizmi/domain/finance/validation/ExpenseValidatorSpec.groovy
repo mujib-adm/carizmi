@@ -128,7 +128,7 @@ class ExpenseValidatorSpec extends BaseSpecification {
 
         then: "The expected calls are made"
         1 * referenceValidator.validate(vo, fieldName, referenceName, category)
-        1 * systemSetting.findBySettingKey(BaselineConstants.getYearlyBaselineKey(LocalDate.now().year + 1)) >> Optional.empty()
+        2 * systemSetting.findBySettingKey(BaselineConstants.getYearlyBaselineKey(LocalDate.now().year + 1)) >> Optional.empty()
         0 * _
 
         and: "The expected result"
@@ -149,7 +149,7 @@ class ExpenseValidatorSpec extends BaseSpecification {
 
         then: "The expected calls are made"
         1 * referenceValidator.validate(vo, fieldName, referenceName, category)
-        1 * systemSetting.findBySettingKey(BaselineConstants.getYearlyBaselineKey(LocalDate.now().year + 1)) >> Optional.empty()
+        2 * systemSetting.findBySettingKey(BaselineConstants.getYearlyBaselineKey(LocalDate.now().year + 1)) >> Optional.empty()
         0 * _
 
         and: "The expected result"
@@ -201,5 +201,73 @@ class ExpenseValidatorSpec extends BaseSpecification {
 
         and:
         !vo.getFieldMessages().containsKey(FieldConstants.DATE_OF_EXPENSE)
+    }
+
+    def "test - validateForDelete: Fails if expense is in a closed fiscal year"() {
+        given:
+        int year = 2025
+        ExpenseVO vo = new ExpenseVO(expenseID: 5, dateOfExpense: LocalDate.of(year, 3, 15))
+
+        when: "validateForDelete is called"
+        expenseValidator.validateForDelete(vo)
+
+        then: "Error is attached to dateOfExpense"
+        1 * systemSetting.findBySettingKey(BaselineConstants.getYearlyBaselineKey(year + 1)) >> Optional.of(new SystemSettingsVO())
+        0 * _
+
+        and:
+        vo.hasErrors()
+        vo.getFieldMessages().containsKey(FieldConstants.DATE_OF_EXPENSE)
+    }
+
+    def "test - validateForDelete: Passes if expense is in an open fiscal year"() {
+        given:
+        int year = 2026
+        ExpenseVO vo = new ExpenseVO(expenseID: 5, dateOfExpense: LocalDate.of(year, 3, 15))
+
+        when: "validateForDelete is called"
+        expenseValidator.validateForDelete(vo)
+
+        then: "No error is attached"
+        1 * systemSetting.findBySettingKey(BaselineConstants.getYearlyBaselineKey(year + 1)) >> Optional.empty()
+        0 * _
+
+        and:
+        !vo.hasErrors()
+    }
+
+    def "test - validateForUpdate: Fails if expense is in a closed fiscal year"() {
+        given:
+        int year = 2025
+        ExpenseVO vo = new ExpenseVO(expenseID: 5, dateOfExpense: LocalDate.of(year, 3, 15))
+
+        when: "validateForUpdate is called"
+        expenseValidator.validateForUpdate(vo)
+
+        then: "Error is attached to dateOfExpense"
+        2 * systemSetting.findBySettingKey(BaselineConstants.getYearlyBaselineKey(year + 1)) >> Optional.of(new SystemSettingsVO())
+        0 * _
+
+        and:
+        vo.hasErrors()
+        vo.getFieldMessages().containsKey(FieldConstants.DATE_OF_EXPENSE)
+    }
+
+    def "test - validateForUpdate: Passes if expense is in an open fiscal year"() {
+        given:
+        int year = 2026
+        String category = ReferenceConstants.EXPENSE_CATEGORY.OFFICE_SUPPLIES
+        ExpenseVO vo = new ExpenseVO(expenseID: 5, dateOfExpense: LocalDate.of(year, 3, 15), category: category, description: "Desc", amount: 10.0)
+
+        when: "validateForUpdate is called"
+        expenseValidator.validateForUpdate(vo)
+
+        then: "No error is attached"
+        2 * systemSetting.findBySettingKey(BaselineConstants.getYearlyBaselineKey(year + 1)) >> Optional.empty()
+        1 * referenceValidator.validate(vo, FieldConstants.CATEGORY, ReferenceConstants.EXPENSE_CATEGORY.NAME, category)
+        0 * _
+
+        and:
+        !vo.hasErrors()
     }
 }

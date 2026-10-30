@@ -61,12 +61,14 @@ export function ReferenceProvider({ children }: { children: React.ReactNode }) {
     return references[name] || [];
   };
 
-  const toCode = (name: string, display: string) => {
+  const toCode = (name: string, display?: string) => {
+    if (!display) return undefined;
     const ref = references[name]?.find((r) => r.referenceDisplay === display);
     return ref?.referenceCode;
   };
 
-  const toDisplay = (name: string, code: string) => {
+  const toDisplay = (name: string, code?: string) => {
+    if (!code) return undefined;
     const ref = references[name]?.find((r) => r.referenceCode === code);
     return ref?.referenceDisplay || code;
   };

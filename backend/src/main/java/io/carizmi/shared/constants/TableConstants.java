@@ -12,5 +12,7 @@ public final class TableConstants {
     public static final String SYSTEM_SETTINGS_TABLE = "systemsettings";
     public static final String REFERENCE_TABLE = "reference";
     public static final String EXPENSE_TABLE = "expense";
+    public static final String ANNUAL_REPORT_SNAPSHOT_TABLE = "annual_report_snapshot";
+    public static final String MEMBER_MEMBERSHIP_PERIOD_TABLE = "member_membership_period";
 
 }

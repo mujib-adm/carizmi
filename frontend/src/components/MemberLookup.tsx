@@ -5,6 +5,8 @@ import { membersApi } from '../api/generated/members/members';
 import type { MemberLookupDto } from '../api/generated/types/index';
 
 import type { SelectProps } from 'antd';
+import { ReferenceConstants } from '../constants/ReferenceConstants';
+import { useReference } from '../hooks/useReference';
 import '../styles/components/MemberLookup.css';
 
 interface MemberLookupProps extends SelectProps<number> {
@@ -23,6 +25,7 @@ export default function MemberLookup({
   style,
   ...rest
 }: MemberLookupProps) {
+  const { toDisplay } = useReference();
   const [data, setData] = useState<MemberLookupDto[]>([]);
   const [fetching, setFetching] = useState(false);
 
@@ -91,7 +94,7 @@ export default function MemberLookup({
           className={`member-lookup-select ${compact ? 'member-lookup-select-compact' : ''} ${className || ''}`}
           style={{ width: compact ? 220 : '100%', ...style }}
           popupMatchSelectWidth={compact ? false : undefined}
-          styles={compact ? { popup: { root: { minWidth: 220 } } } : undefined}
+          styles={compact ? { popup: { root: { minWidth: 280 } } } : undefined}
           {...rest}
           showSearch
           value={value}
@@ -110,17 +113,33 @@ export default function MemberLookup({
             )
           }
           suffixIcon={<UserOutlined className="member-lookup-suffix-icon" />}
-          options={(data || []).map((d: MemberLookupDto) => ({
-            value: d.memberID,
-            label: `${d.firstName} ${d.lastName}`,
-            member: d,
-          }))}
+          options={(data || []).map((d: MemberLookupDto) => {
+            const isInactive = d.status === ReferenceConstants.MEMBER_STATUS.INACTIVE;
+            const isPending = d.status === ReferenceConstants.MEMBER_STATUS.PENDING;
+            const statusLabel = isInactive
+              ? toDisplay(ReferenceConstants.MEMBER_STATUS.NAME, d.status) || 'Inactive'
+              : isPending
+              ? toDisplay(ReferenceConstants.MEMBER_STATUS.NAME, d.status) || 'Pending'
+              : '';
+            return {
+              value: d.memberID,
+              label: `${d.firstName} ${d.lastName}${statusLabel ? ` (${statusLabel})` : ''}`,
+              member: d,
+            };
+          })}
           optionRender={(option) => {
             const d = option.data.member;
+            const isActive = d.status === ReferenceConstants.MEMBER_STATUS.ACTIVE;
+            const isPending = d.status === ReferenceConstants.MEMBER_STATUS.PENDING;
+            const isInactive = d.status === ReferenceConstants.MEMBER_STATUS.INACTIVE;
+            const activeLabel = toDisplay(ReferenceConstants.MEMBER_STATUS.NAME, d.status) || 'Active';
+            const pendingLabel = toDisplay(ReferenceConstants.MEMBER_STATUS.NAME, d.status) || 'Pending';
+            const inactiveLabel = toDisplay(ReferenceConstants.MEMBER_STATUS.NAME, d.status) || 'Inactive';
+
             if (compact) {
               return (
                 <div className="member-option-container member-option-container-compact">
-                  <div className="member-option-info">
+                  <div className="member-option-info member-option-info-compact">
                     <span className="member-name">
                       {d.firstName} {d.lastName}
                     </span>
@@ -130,6 +149,19 @@ export default function MemberLookup({
                       </span>
                     )}
                   </div>
+                  {isActive ? (
+                    <Tag className="member-tag member-tag-compact member-tag-active" color="success">
+                      {activeLabel}
+                    </Tag>
+                  ) : isPending ? (
+                    <Tag className="member-tag member-tag-compact member-tag-pending" color="warning">
+                      {pendingLabel}
+                    </Tag>
+                  ) : isInactive ? (
+                    <Tag className="member-tag member-tag-compact member-tag-inactive" color="error">
+                      {inactiveLabel}
+                    </Tag>
+                  ) : null}
                 </div>
               );
             }
@@ -143,15 +175,19 @@ export default function MemberLookup({
                     ID: <span className="member-id-mono">{d.memberID}</span> • Phone: {d.phone}
                   </span>
                 </div>
-                {d.status == '01' ? (
-                  <Tag className="member-tag" color="success">
-                    Active
+                {isActive ? (
+                  <Tag className="member-tag member-tag-active" color="success">
+                    {activeLabel}
                   </Tag>
-                ) : (
-                  <Tag className="member-tag" color="error">
-                    {d.status}
+                ) : isPending ? (
+                  <Tag className="member-tag member-tag-pending" color="warning">
+                    {pendingLabel}
                   </Tag>
-                )}
+                ) : isInactive ? (
+                  <Tag className="member-tag member-tag-inactive" color="error">
+                    {inactiveLabel}
+                  </Tag>
+                ) : null}
               </div>
             );
           }}

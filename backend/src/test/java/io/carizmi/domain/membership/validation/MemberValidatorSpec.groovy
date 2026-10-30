@@ -8,13 +8,20 @@ import io.carizmi.domain.membership.model.MemberVO
 import io.carizmi.testbase.BaseSpecification
 import spock.lang.Subject
 import spock.lang.Unroll
+import io.carizmi.domain.finance.service.Payment
+import io.carizmi.domain.platform.constants.BaselineConstants
+import io.carizmi.domain.platform.model.SystemSettingsVO
+import io.carizmi.domain.platform.service.SystemSetting
+import java.time.LocalDate
 
 class MemberValidatorSpec extends BaseSpecification {
 
     ReferenceValidator referenceValidator = Mock()
+    Payment payment = Mock()
+    SystemSetting systemSetting = Mock()
 
     @Subject
-    MemberValidator memberValidator = new MemberValidator(referenceValidator)
+    MemberValidator memberValidator = new MemberValidator(referenceValidator, payment, systemSetting)
 
     def "test - validate: Should pass for valid VO"() {
         given: "A valid MemberVO"
@@ -189,5 +196,55 @@ class MemberValidatorSpec extends BaseSpecification {
         "def" | true
         ""    | true
         null  | true
+    }
+
+
+    def "test - validateForDelete: Rejects deletion when member has payment history"() {
+        given: "A member with payments recorded"
+        MemberVO vo = new MemberVO(memberID: 42, joinDate: LocalDate.of(2026, 1, 1))
+
+        when: "validateForDelete is called"
+        memberValidator.validateForDelete(vo)
+
+        then: "payment check returns true and error is captured"
+        1 * payment.hasPaymentsForMember(42) >> true
+        0 * _
+
+        and:
+        vo.hasErrors()
+    }
+
+    def "test - validateForDelete: Rejects deletion when member was active in a closed fiscal year"() {
+        given: "A member with no payments but joinDate in a closed year"
+        MemberVO vo = new MemberVO(memberID: 42, joinDate: LocalDate.of(2025, 5, 1))
+        String closingKey = BaselineConstants.getYearlyBaselineKey(2026)
+
+        when: "validateForDelete is called"
+        memberValidator.validateForDelete(vo)
+
+        then: "payment check returns false but baseline exists for closed year"
+        1 * payment.hasPaymentsForMember(42) >> false
+        1 * systemSetting.findBySettingKey(closingKey) >> Optional.of(new SystemSettingsVO())
+        0 * _
+
+        and:
+        vo.hasErrors()
+    }
+
+    def "test - validateForDelete: Allows deletion when member has no payments and joinDate is in open year"() {
+        given: "A member with no payments and joinDate in an open year"
+        MemberVO vo = new MemberVO(memberID: 42, joinDate: LocalDate.of(2026, 5, 1))
+        String closingKey = BaselineConstants.getYearlyBaselineKey(2027)
+
+        when: "validateForDelete is called"
+        memberValidator.validateForDelete(vo)
+
+        then: "payment check returns false and year is open"
+        1 * payment.hasPaymentsForMember(42) >> false
+        1 * systemSetting.findBySettingKey(closingKey) >> Optional.empty()
+        0 * _
+
+        and:
+        !vo.hasErrors()
     }
 }

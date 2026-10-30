@@ -74,6 +74,11 @@ public final class PaymentImpl extends PaymentAbstractBL implements Payment {
     }
 
     @Override
+    protected void performDeleteValidation(PaymentVO vo) {
+        validator.validateForDelete(vo);
+    }
+
+    @Override
     @Transactional
     public Integer addPayment(PaymentDto requestDto) {
         PaymentVO vo = voTransformer.transform(requestDto);
@@ -200,6 +205,12 @@ public final class PaymentImpl extends PaymentAbstractBL implements Payment {
 
     @Override
     @Transactional(readOnly = true)
+    public boolean hasPaymentsForMember(@NonNull Integer memberID) {
+        return getRepo().exists(PaymentSpecifications.hasMemberID(memberID));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public BigDecimal sumAmountByMemberIDAndYearAndQuarter(@NonNull Integer memberID, @NonNull Integer year, @NonNull Integer quarter) {
         return getRepo().sumAmountByMemberIDAndYearAndQuarter(memberID, year, quarter);
     }
@@ -260,14 +271,39 @@ public final class PaymentImpl extends PaymentAbstractBL implements Payment {
         return getRepo().calculateTotalOverdue(year, currentQuarter, feeAmt, feeType, status);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<Integer> findMemberIDsByFeeTypeAndDateReceivedBetween(@NonNull String feeType, @NonNull LocalDate start, @NonNull LocalDate end) {
+        return getRepo().findMemberIDsByFeeTypeAndDateReceivedBetween(feeType, start, end);
+    }
+
     private void performStatefulValidation(PaymentVO vo) {
         // Duplicate Check logic for payments (add & update)
+        duplicateValidation(vo);
+    }
+
+    private void duplicateValidation(PaymentVO vo) {
+        if (vo.getMember() == null || vo.getMember().getMemberID() == null) {
+            return;
+        }
         if (ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE.equals(vo.getFeeType())) {
             if (checkExists(vo.getPaymentID(), vo.getMember().getMemberID(), vo.getFeeType(), vo.getYear(), vo.getQuarter())) {
                 vo.addFieldMessage(FieldConstants.QUARTER, ValidationMessages.ERR_PAYMENT_ALREADY_EXISTS.addMessageArgs(
                         String.valueOf(vo.getYear()), vo.getQuarter()));
             }
+        } else if (ReferenceConstants.FEE_TYPE.REGISTRATION_FEE.equals(vo.getFeeType())) {
+            if (checkRegistrationFeeExists(vo.getPaymentID(), vo.getMember().getMemberID())) {
+                vo.addFieldMessage(FieldConstants.FEE_TYPE, ValidationMessages.ERR_REGISTRATION_FEE_ALREADY_EXISTS);
+            }
         }
+    }
+
+    private boolean checkRegistrationFeeExists(Integer paymentID, Integer memberID) {
+        Specification<PaymentVO> spec = Specification.allOf(
+                PaymentSpecifications.hasMemberID(memberID),
+                PaymentSpecifications.hasFeeType(ReferenceConstants.FEE_TYPE.REGISTRATION_FEE),
+                PaymentSpecifications.notPaymentId(paymentID));
+        return getRepo().exists(spec);
     }
 
     private boolean checkExists(Integer paymentID, Integer memberID, String feeType, Integer year, Integer quarter) {

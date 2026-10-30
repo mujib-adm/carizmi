@@ -1,9 +1,9 @@
-import { Col, Divider, Form, Modal, Row } from 'antd';
+import { Alert, Col, Divider, Form, Modal, Row } from 'antd';
 import dayjs from 'dayjs';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ReferenceConstants } from '../../../constants/ReferenceConstants';
 import { SystemSettingConstants } from '../../../constants/SystemSettingsConstants.ts';
-import { PaymentDto } from '../../../api/generated/types';
+import { MemberLookupDto, PaymentDto } from '../../../api/generated/types';
 import { useFiscalYears } from '../../../hooks/useFiscalYears';
 import { useSystemSettings } from '../../../hooks/useSystemSettings';
 import { useApiMessages } from '../../../hooks/useApiMessages';
@@ -29,6 +29,7 @@ export default function PaymentModal({
   paymentMethods,
 }: PaymentModalProps) {
   const [form] = Form.useForm();
+  const [selectedMember, setSelectedMember] = useState<MemberLookupDto | null>(null);
   const { getNumericSetting } = useSystemSettings();
   const { inauguralYear, currentYear } = useFiscalYears();
 
@@ -49,6 +50,7 @@ export default function PaymentModal({
   useEffect(() => {
     if (open) {
       resetMessages();
+      setSelectedMember(null);
       if (initialValues) {
         form.setFieldsValue({
           ...initialValues,
@@ -135,11 +137,41 @@ export default function PaymentModal({
         <Form.Item name="memberID" label="Member" rules={[{ required: true }]}>
           <MemberLookup
             onSelectMember={(m) => {
-              // Optional side effects
+              setSelectedMember(m);
+              if (m?.status === ReferenceConstants.MEMBER_STATUS.PENDING) {
+                const regFee = getNumericSetting(
+                  SystemSettingConstants.FEE.TYPE,
+                  SystemSettingConstants.FEE.REGISTRATION_FEE
+                );
+                form.setFieldsValue({
+                  feeType: ReferenceConstants.FEE_TYPE.REGISTRATION_FEE,
+                  amount: regFee > 0 ? regFee : 0,
+                  year: null,
+                  quarter: null,
+                });
+              }
             }}
             onError={handleError}
           />
         </Form.Item>
+        {selectedMember?.status === ReferenceConstants.MEMBER_STATUS.INACTIVE && (
+          <Alert
+            style={{ marginBottom: 16 }}
+            message="Notice: Inactive Member"
+            description="This member is currently inactive. You may only record payments for quarters prior to their departure date. To record ongoing dues, please reactivate the member first."
+            type="warning"
+            showIcon
+          />
+        )}
+        {selectedMember?.status === ReferenceConstants.MEMBER_STATUS.PENDING && (
+          <Alert
+            style={{ marginBottom: 16 }}
+            message="Notice: Pending Member"
+            description="This member is currently pending. Recording their Registration Fee will activate their membership and establish their initial membership period."
+            type="info"
+            showIcon
+          />
+        )}
         <Divider />
 
         <Row gutter={16}>

@@ -1,5 +1,5 @@
 import { DeleteOutlined, EditOutlined, EyeOutlined, TeamOutlined } from '@ant-design/icons';
-import { Button, Card, Form, Grid, Modal, Space, Table, Typography } from 'antd';
+import { Button, Card, Form, Grid, Modal, Space, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -96,7 +96,7 @@ export default function MemberPage() {
       setLoading(true);
       try {
         const resp = await membersApi.getMember(selectedMemberID);
-        if (resp.responseData) {
+        if (resp.responseData && (!filters.status || resp.responseData.status === filters.status)) {
           setMembers([resp.responseData]);
           setMeta({
             page: 0,
@@ -229,7 +229,31 @@ export default function MemberPage() {
       dataIndex: 'status',
       key: 'status',
       responsive: ['md'],
-      render: (code: string) => toDisplay(ReferenceConstants.MEMBER_STATUS.NAME, code),
+      render: (code: string) => {
+        const label = toDisplay(ReferenceConstants.MEMBER_STATUS.NAME, code) || code;
+        if (code === ReferenceConstants.MEMBER_STATUS.ACTIVE) {
+          return (
+            <Tag className="member-tag member-tag-active" color="success">
+              {label}
+            </Tag>
+          );
+        }
+        if (code === ReferenceConstants.MEMBER_STATUS.PENDING) {
+          return (
+            <Tag className="member-tag member-tag-pending" color="warning">
+              {label}
+            </Tag>
+          );
+        }
+        if (code === ReferenceConstants.MEMBER_STATUS.INACTIVE) {
+          return (
+            <Tag className="member-tag member-tag-inactive" color="error">
+              {label}
+            </Tag>
+          );
+        }
+        return label;
+      },
     },
     ...(canWrite
       ? [
@@ -258,6 +282,18 @@ export default function MemberPage() {
       : []),
   ];
 
+  const searchConfig = useMemo(() => {
+    return memberSearchFiltersConfig.map((filter) => {
+      if (filter.name === 'status') {
+        return {
+          ...filter,
+          options: [{ value: '', label: 'All' }, ...statusOptions],
+        };
+      }
+      return filter;
+    });
+  }, [statusOptions]);
+
   return (
     <div>
       <div className="page-header">
@@ -267,7 +303,7 @@ export default function MemberPage() {
       </div>
 
       <SearchFilterBar
-        config={memberSearchFiltersConfig as any}
+        config={searchConfig as any}
         filters={filters}
         onChange={setFilters}
         onSearch={handleSearch}

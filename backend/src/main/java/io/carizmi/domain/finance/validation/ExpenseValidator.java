@@ -3,13 +3,13 @@ package io.carizmi.domain.finance.validation;
 import lombok.RequiredArgsConstructor;
 import io.carizmi.domain.platform.constants.BaselineConstants;
 import io.carizmi.domain.platform.service.SystemSetting;
+import io.carizmi.domain.platform.validation.ReferenceValidator;
 import org.apache.commons.lang3.StringUtils;
 import io.carizmi.shared.constants.FieldConstants;
 import io.carizmi.shared.constants.ReferenceConstants;
 import io.carizmi.shared.message.ValidationMessages;
 import io.carizmi.domain.finance.model.ExpenseVO;
 import io.carizmi.framework.bl.AbstractDomainValidator;
-import io.carizmi.domain.platform.validation.ReferenceValidator;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -30,7 +30,31 @@ public class ExpenseValidator extends AbstractDomainValidator<ExpenseVO> {
     @Override
     public void validateForUpdate(ExpenseVO vo) {
         validateRequired(vo, FieldConstants.EXPENSE_ID, vo.getExpenseID());
+        validateRecordNotClosed(vo);
         validate(vo);
+    }
+
+    @Override
+    public void validateForDelete(ExpenseVO vo) {
+        if (vo.getDateOfExpense() != null) {
+            int expenseYear = vo.getDateOfExpense().getYear();
+            String closingKey = BaselineConstants.getYearlyBaselineKey(expenseYear + 1);
+            if (systemSetting.findBySettingKey(closingKey).isPresent()) {
+                vo.addFieldMessage(FieldConstants.DATE_OF_EXPENSE,
+                        ValidationMessages.ERR_TRANSACTION_CLOSED_YEAR_DELETE.addMessageArgs(String.valueOf(expenseYear)));
+            }
+        }
+    }
+
+    private void validateRecordNotClosed(ExpenseVO existingVO) {
+        if (existingVO.getDateOfExpense() != null) {
+            int expenseYear = existingVO.getDateOfExpense().getYear();
+            String closingKey = BaselineConstants.getYearlyBaselineKey(expenseYear + 1);
+            if (systemSetting.findBySettingKey(closingKey).isPresent()) {
+                existingVO.addFieldMessage(FieldConstants.DATE_OF_EXPENSE,
+                        ValidationMessages.ERR_TRANSACTION_CLOSED_YEAR_MUTATION.addMessageArgs(String.valueOf(expenseYear)));
+            }
+        }
     }
 
     private void validateDateOfExpense(ExpenseVO vo) {

@@ -4,4 +4,6 @@ import io.carizmi.domain.finance.data.dto.response.AnnualFinancialReportDto;
 
 public interface AnnualReportService {
     AnnualFinancialReportDto getAnnualReport(Integer year);
+
+    AnnualFinancialReportDto generateAndFreezeSnapshot(int year);
 }

@@ -116,6 +116,51 @@
 
 .member-tag {
   margin: 0 !important;
+  font-weight: 500;
+  border-radius: 12px !important;
+  padding: 1px 8px !important;
+  font-size: 12px !important;
+  letter-spacing: 0.2px;
+  flex-shrink: 0;
+}
+
+/* Active Status: Subtle, elegant forest green */
+.member-tag-active {
+  background: rgba(45, 106, 79, 0.1) !important;
+  border: 1px solid rgba(45, 106, 79, 0.25) !important;
+  color: #2d6a4f !important;
+}
+
+[data-theme="dark"] .member-tag-active {
+  background: rgba(82, 183, 136, 0.16) !important;
+  border: 1px solid rgba(82, 183, 136, 0.35) !important;
+  color: #52b788 !important;
+}
+
+/* Pending Status: Warm amber / gold with distinct visual identity */
+.member-tag-pending {
+  background: rgba(245, 158, 11, 0.12) !important;
+  border: 1px solid rgba(245, 158, 11, 0.35) !important;
+  color: #b45309 !important;
+}
+
+[data-theme="dark"] .member-tag-pending {
+  background: rgba(245, 158, 11, 0.2) !important;
+  border: 1px solid rgba(245, 158, 11, 0.45) !important;
+  color: #fbbf24 !important;
+}
+
+/* Inactive Status: Muted crimson / red */
+.member-tag-inactive {
+  background: rgba(220, 38, 38, 0.1) !important;
+  border: 1px solid rgba(220, 38, 38, 0.25) !important;
+  color: #dc2626 !important;
+}
+
+[data-theme="dark"] .member-tag-inactive {
+  background: rgba(239, 68, 68, 0.18) !important;
+  border: 1px solid rgba(239, 68, 68, 0.35) !important;
+  color: #f87171 !important;
 }
 
 /* Compact mode for Filter bars */
@@ -152,7 +197,9 @@
 
 /* Option Render - Compact mode */
 .member-option-container-compact {
-  justify-content: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
 }
 
 .member-option-container-compact .member-name {
@@ -163,4 +210,14 @@
 .member-option-container-compact .member-details {
   font-size: 11px;
   line-height: 1.2;
+}
+
+.member-tag-compact {
+  font-size: 11px !important;
+  line-height: 16px !important;
+  height: 18px !important;
+  padding: 0 6px !important;
+  border-radius: 9px !important;
+  margin: 0 !important;
+  flex-shrink: 0;
 }

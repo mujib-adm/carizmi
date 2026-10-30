@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   FileTextOutlined,
   PrinterOutlined,
@@ -8,8 +8,10 @@ import {
   ShoppingCartOutlined,
   BarChartOutlined,
   FileSearchOutlined,
+  LockOutlined,
+  WarningOutlined,
 } from '@ant-design/icons';
-import { Button, Progress, Select, Space, Spin, Table, Tag, Typography } from 'antd';
+import { Button, Popconfirm, Progress, Select, Space, Spin, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { reportsApi } from '../../../api/generated/reports/reports';
 import type {
@@ -20,13 +22,14 @@ import type {
 } from '../../../api/generated/types';
 import { useReference } from '../../../hooks/useReference';
 import { useFiscalYears } from '../../../hooks/useFiscalYears';
+import { useAuthorization } from '../../../hooks/useAuthorization';
 import { ReferenceConstants } from '../../../constants/ReferenceConstants';
 import { useApiMessages } from '../../../hooks/useApiMessages';
 import { MessageBanner } from '../../../components/MessageBanner';
 import officialLogo from '../../../assets/images/official_logo.jpeg';
 import styles from '../../../styles/pages/AnnualReportPage.module.css';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 const formatCurrency = (val?: number | null): string => {
   return `$${(val ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -61,13 +64,15 @@ interface ComplianceRowItem {
 }
 
 export default function AnnualReportPage() {
-  const { availableYears, yearOptions, currentYear } = useFiscalYears();
+  const { yearOptions, currentYear } = useFiscalYears();
+  const { isAdmin } = useAuthorization();
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [report, setReport] = useState<AnnualFinancialReportDto | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [closingYear, setClosingYear] = useState<boolean>(false);
   const { toDisplay } = useReference();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { globalMessages, handleError, resetMessages } = useApiMessages<any>();
+  const { globalMessages, handleResponse, handleError, resetMessages } = useApiMessages<any>();
 
   const fetchReport = (year: number) => {
     setLoading(true);
@@ -102,6 +107,29 @@ export default function AnnualReportPage() {
   const handlePrint = () => {
     window.print();
   };
+
+  const handleCloseFiscalYear = () => {
+    const targetYear = report?.year ?? selectedYear;
+    setClosingYear(true);
+    resetMessages();
+    reportsApi
+      .closeFiscalYear(targetYear)
+      .then((resp) => {
+        handleResponse(resp);
+        if (resp.responseData) {
+          setReport(resp.responseData);
+        }
+      })
+      .catch((err) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        handleError(err as any);
+      })
+      .finally(() => {
+        setClosingYear(false);
+      });
+  };
+
+  const isUnclosedPastYear = Boolean(report) && !report?.isClosed && (report?.year ?? selectedYear) < currentYear;
 
   // 1. Fee Types Table Columns
   const feeTypeColumns: ColumnsType<AnnualFeeTypeReceiptDto> = [
@@ -443,6 +471,42 @@ export default function AnnualReportPage() {
 
       {globalMessages && <MessageBanner messages={globalMessages} />}
 
+      {isAdmin && isUnclosedPastYear && report && (
+        <div className={`${styles.unclosedYearBanner} ${styles.noPrint}`}>
+          <div className={styles.unclosedYearBannerContent}>
+            <WarningOutlined className={styles.unclosedYearIcon} />
+            <div>
+              <div className={styles.unclosedYearTitle}>
+                Fiscal Year {report.year} Closing Pending
+              </div>
+              <div className={styles.unclosedYearDescription}>
+                Fiscal year {report.year} has ended, but the automated year-end closing process has
+                not yet completed. You can manually trigger the year-end close to deactivate
+                full-year delinquent members, roll forward the ending cash balance to{' '}
+                {(report.year ?? selectedYear) + 1}, and freeze the official statement.
+              </div>
+            </div>
+          </div>
+          <Popconfirm
+            title={`Close & Freeze Fiscal Year ${report.year}?`}
+            description={`This will permanently freeze the ${report.year} Annual Financial Statement and roll forward the ending cash balance to ${(report.year ?? selectedYear) + 1}.`}
+            onConfirm={handleCloseFiscalYear}
+            okText="Yes, Close & Freeze"
+            cancelText="Cancel"
+            placement="bottomRight"
+          >
+            <Button
+              type="primary"
+              icon={<LockOutlined />}
+              loading={closingYear}
+              className={styles.closeYearButton}
+            >
+              Close & Freeze {report.year}
+            </Button>
+          </Popconfirm>
+        </div>
+      )}
+
       {/* Main Report Document Sheet */}
       {loading ? (
         <div className={styles.loadingContainer}>
@@ -466,9 +530,19 @@ export default function AnnualReportPage() {
                 Cash Receipts, Disbursements, and Fund Balance
               </div>
               <div className={styles.metaRow}>
-                <span className={styles.metaItemCenter}>
-                  <strong>For the Year Ended:</strong> December 31, {report.year}
+                <span className={styles.metaPeriod}>
+                  <strong>{report.isClosed ? 'For the Year Ended:' : 'For the Year Ending:'}</strong>{' '}
+                  December 31, {report.year}
                 </span>
+                {report.isClosed ? (
+                  <span className={styles.statusBadgeClosed}>
+                    <LockOutlined className={styles.badgeIcon} /> Official Statement (Closed)
+                  </span>
+                ) : (
+                  <span className={styles.statusBadgeLive}>
+                    <span className={styles.liveAmberDot} /> Live Projection (Open Year)
+                  </span>
+                )}
               </div>
             </div>
           </div>

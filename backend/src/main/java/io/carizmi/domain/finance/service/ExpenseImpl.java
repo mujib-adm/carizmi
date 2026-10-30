@@ -61,6 +61,11 @@ public final class ExpenseImpl extends ExpenseAbstractBL implements Expense {
     }
 
     @Override
+    protected void performDeleteValidation(ExpenseVO vo) {
+        validator.validateForDelete(vo);
+    }
+
+    @Override
     @Transactional
     public Integer addExpense(ExpenseDto requestDto) {
         ExpenseVO vo = voTransformer.transform(requestDto);

@@ -35,12 +35,12 @@ export function MemberModal({ open, onCancel, onSubmit, initial, statusOptions }
           ...initial,
           phone: formatPhoneNumber(initial.phone, ''),
           joinDate: initial.joinDate ? dayjs(initial.joinDate) : null,
+          reactivationDate: dayjs(),
         });
       } else {
         form.resetFields();
         form.setFieldsValue({
-          status: ReferenceConstants.MEMBER_STATUS.ACTIVE,
-          joinDate: dayjs(),
+          status: ReferenceConstants.MEMBER_STATUS.PENDING,
           state: 'MN',
         });
       }
@@ -55,7 +55,8 @@ export function MemberModal({ open, onCancel, onSubmit, initial, statusOptions }
       const payload: MemberDto = {
         ...values,
         memberID: initial?.memberID,
-        joinDate: values.joinDate ? values.joinDate.format('YYYY-MM-DD') : null,
+        joinDate: values.joinDate ? values.joinDate.format('YYYY-MM-DD') : (initial?.joinDate || null),
+        reactivationDate: values.reactivationDate ? values.reactivationDate.format('YYYY-MM-DD') : null,
       };
 
       await onSubmit(payload);
@@ -128,20 +129,42 @@ export function MemberModal({ open, onCancel, onSubmit, initial, statusOptions }
               label="Status"
               type="select"
               options={statusOptions}
+              disabled={!initial?.memberID}
               rules={[{ required: true, message: 'Status is required' }]}
               placeholder="Pick status"
             />
           </Col>
-          <Col xs={24} sm={12}>
-            <AntdFormItem
-              name="joinDate"
-              label="Join Date"
-              type="date"
-              rules={[{ required: true, message: 'Join Date is required' }]}
-              placeholder="mm/dd/yyyy"
-            />
-          </Col>
+          {initial?.memberID ? (
+            <Col xs={24} sm={12}>
+              <AntdFormItem
+                name="joinDate"
+                label="Join Date"
+                type="date"
+                disabled
+                placeholder="mm/dd/yyyy"
+              />
+            </Col>
+          ) : null}
         </Row>
+
+        <Form.Item noStyle shouldUpdate={(prev, curr) => prev.status !== curr.status}>
+          {({ getFieldValue }) =>
+            initial?.status === ReferenceConstants.MEMBER_STATUS.INACTIVE &&
+            getFieldValue('status') === ReferenceConstants.MEMBER_STATUS.ACTIVE ? (
+              <Row gutter={12}>
+                <Col xs={24} sm={12}>
+                  <AntdFormItem
+                    name="reactivationDate"
+                    label="Reactivation Date"
+                    type="date"
+                    rules={[{ required: true, message: 'Reactivation Date is required' }]}
+                    placeholder="mm/dd/yyyy"
+                  />
+                </Col>
+              </Row>
+            ) : null
+          }
+        </Form.Item>
 
         <AntdFormItem name="address1" label="Address 1" placeholder="Address 1" />
         <AntdFormItem name="address2" label="Address 2" placeholder="Address 2" />

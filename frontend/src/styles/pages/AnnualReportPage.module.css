@@ -43,6 +43,58 @@
   background-color: var(--primary-color, #1e5631) !important;
 }
 
+.unclosedYearBanner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  background-color: #fffbeb;
+  border: 1px solid #f59e0b;
+  border-left: 4px solid #d97706;
+  border-radius: 8px;
+  padding: 14px 18px;
+  max-width: 1040px;
+  margin: 0 auto 20px auto;
+}
+
+.unclosedYearBannerContent {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.unclosedYearIcon {
+  font-size: 20px;
+  color: #d97706;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.unclosedYearTitle {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #92400e;
+  margin-bottom: 2px;
+}
+
+.unclosedYearDescription {
+  font-size: 0.84rem;
+  color: #78350f;
+  line-height: 1.45;
+}
+
+.closeYearButton:not(:disabled) {
+  background-color: #b45309 !important;
+  border-color: #b45309 !important;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.closeYearButton:not(:disabled):hover {
+  background-color: #92400e !important;
+  border-color: #92400e !important;
+}
+
 .loadingContainer {
   text-align: center;
   padding: 80px 0;
@@ -134,17 +186,17 @@
 .headerLogo {
   position: absolute;
   left: 0;
-  top: 0%;
-  transform: translateY(-12%);
-  width: 154px;
-  height: 154px;
+  top: 48%;
+  transform: translateY(-50%);
+  width: 135px;
+  height: 135px;
   object-fit: contain;
   flex-shrink: 0;
 }
 
 .headerCenter {
   width: 100%;
-  max-width: calc(100% - 240px);
+  max-width: calc(100% - 280px);
   margin: 0 auto;
   text-align: center;
 }
@@ -166,31 +218,64 @@
 
 .metaRow {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   font-size: 0.85rem;
-  color: #6b7280;
-  margin-top: 12px;
+  color: #4b5563;
+  margin-top: 10px;
   flex-wrap: nowrap;
-  gap: 12px;
+  gap: 10px;
 }
 
-.metaItemLeft {
-  text-align: left;
-  flex: 1;
+.metaPeriod {
   white-space: nowrap;
 }
 
-.metaItemCenter {
-  text-align: center;
-  flex: 1;
+.statusBadgeLive {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background-color: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  user-select: none;
+  cursor: default;
   white-space: nowrap;
 }
 
-.metaItemRight {
-  text-align: right;
-  flex: 1;
+.liveAmberDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #d97706;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.statusBadgeClosed {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  user-select: none;
+  cursor: default;
   white-space: nowrap;
+}
+
+.badgeIcon {
+  font-size: 11px;
 }
 
 /* Report Sections */
@@ -604,7 +689,7 @@
   .letterhead {
     position: relative !important;
     padding: 2px 0 10px 0 !important;
-    margin-bottom: 60px !important;
+    margin-bottom: 52px !important;
     min-height: 84px !important;
     border-bottom: 2px solid var(--primary-color, #1e5631) !important;
     display: flex !important;
@@ -615,55 +700,76 @@
   .headerLogo {
     position: absolute !important;
     left: 0 !important;
-    top: 0% !important;
-    transform: translateY(-15%) !important;
-    width: 130px !important;
-    height: 130px !important;
+    top: 42% !important;
+    transform: translateY(-50%) !important;
+    width: 110px !important;
+    height: 110px !important;
     object-fit: contain !important;
   }
 
   .headerCenter {
     width: 100% !important;
-    max-width: calc(100% - 200px) !important;
+    max-width: calc(100% - 240px) !important;
     margin: 0 auto !important;
     text-align: center !important;
   }
 
   .reportTitle {
-    font-size: 1.45rem !important;
-    margin-bottom: 4px !important;
-    letter-spacing: 0.02em;
+    font-size: 1.35rem !important;
+    margin-bottom: 2px !important;
+    letter-spacing: 0.02em !important;
   }
 
   .reportSubtitle {
-    font-size: 0.85rem !important;
+    font-size: 0.82rem !important;
   }
 
   .metaRow {
     display: flex !important;
-    justify-content: space-between !important;
+    justify-content: center !important;
     align-items: center !important;
     flex-wrap: nowrap !important;
     font-size: 0.72rem !important;
     gap: 8px !important;
+    margin-top: 5px !important;
   }
 
-  .metaItemLeft {
-    text-align: left !important;
-    flex: 1 !important;
+  .metaPeriod {
     white-space: nowrap !important;
   }
 
-  .metaItemCenter {
-    text-align: center !important;
-    flex: 1 !important;
+  .statusBadgeLive {
+    font-size: 0.65rem !important;
+    padding: 1px 7px !important;
+    background-color: #fffbeb !important;
+    border: 1px solid #fde68a !important;
+    color: #92400e !important;
     white-space: nowrap !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
-  .metaItemRight {
-    text-align: right !important;
-    flex: 1 !important;
+  .liveAmberDot {
+    width: 5px !important;
+    height: 5px !important;
+    background-color: #d97706 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .statusBadgeClosed {
+    font-size: 0.65rem !important;
+    padding: 1px 7px !important;
+    background-color: #f0fdf4 !important;
+    border: 1px solid #bbf7d0 !important;
+    color: #166534 !important;
     white-space: nowrap !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .badgeIcon {
+    font-size: 10px !important;
   }
 
   .efficiencyBadgeSuccess {

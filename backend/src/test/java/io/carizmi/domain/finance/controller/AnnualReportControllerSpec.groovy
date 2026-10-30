@@ -2,6 +2,7 @@ package io.carizmi.domain.finance.controller
 
 import io.carizmi.domain.finance.data.dto.response.AnnualFinancialReportDto
 import io.carizmi.domain.finance.service.AnnualReportService
+import io.carizmi.domain.platform.scheduler.YearEndScheduler
 import io.carizmi.framework.data.response.GlobalResponse
 import io.carizmi.testbase.BaseSpecification
 import org.springframework.http.HttpStatus
@@ -13,9 +14,10 @@ import java.time.LocalDate
 class AnnualReportControllerSpec extends BaseSpecification {
 
     AnnualReportService reportService = Mock()
+    YearEndScheduler yearEndScheduler = Mock()
 
     @Subject
-    AnnualReportController controller = new AnnualReportController(reportService)
+    AnnualReportController controller = new AnnualReportController(reportService, yearEndScheduler)
 
     def "test - getAnnualReport: Should delegate to service with given year and return okWithData"() {
         given: "A report year and mock report DTO"
@@ -70,5 +72,29 @@ class AnnualReportControllerSpec extends BaseSpecification {
         then: "Exception is propagated"
         1 * reportService.getAnnualReport(2026) >> { throw new RuntimeException("Database error") }
         thrown(RuntimeException)
+    }
+
+    def "test - closeFiscalYear: Should delegate to yearEndScheduler and return okWithData with success message"() {
+        given: "A completed fiscal year"
+        Integer year = 2025
+        AnnualFinancialReportDto closedReport = AnnualFinancialReportDto.builder()
+                .year(year)
+                .isClosed(true)
+                .snapshotStatus("OFFICIAL_CLOSED_SNAPSHOT")
+                .build()
+
+        when: "closeFiscalYear is called"
+        ResponseEntity<GlobalResponse<AnnualFinancialReportDto>> response = controller.closeFiscalYear(year)
+
+        then: "Delegates to yearEndScheduler.closeFiscalYearManually"
+        1 * yearEndScheduler.closeFiscalYearManually(year) >> closedReport
+        0 * _
+
+        and: "Returns OK with frozen report and confirmation message"
+        response.statusCode == HttpStatus.OK
+        response.body != null
+        response.body.responseData.year == year
+        response.body.responseData.isClosed
+        response.body.globalMessages[0].message.contains("Fiscal year 2025 has been officially closed and frozen.")
     }
 }

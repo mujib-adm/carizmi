@@ -19,7 +19,7 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-public class BaselineServiceImpl implements BaselineService {
+public final class BaselineServiceImpl implements BaselineService {
     private static final Logger logger = LoggerFactory.getLogger(BaselineServiceImpl.class);
 
     private final SystemSetting systemSetting;
@@ -27,7 +27,7 @@ public class BaselineServiceImpl implements BaselineService {
     private final Expense expense;
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public BigDecimal getBaselineForYear(int year) {
         String key = BaselineConstants.getYearlyBaselineKey(year);
 
@@ -38,8 +38,8 @@ public class BaselineServiceImpl implements BaselineService {
             return new BigDecimal(snapshot.get().getSettingValue());
         }
 
-        // 2. Fallback: Dynamic Roll-Forward from prior year
-        logger.warn("Baseline snapshot for {} not found. Attempting dynamic roll-forward from year {}.", year, year - 1);
+        // 2. Fallback: Dynamic Roll-Forward from prior year (read-only projection; persisted only on closeYear)
+        logger.warn("Baseline snapshot for {} not found. Computing dynamic roll-forward from year {}.", year, year - 1);
 
         Optional<SystemSettingsVO> prevSnapshot = systemSetting.findBySettingKey(BaselineConstants.getYearlyBaselineKey(year - 1));
         if (prevSnapshot.isPresent()) {
@@ -53,9 +53,7 @@ public class BaselineServiceImpl implements BaselineService {
             BigDecimal expenses = expense.sumAmountByDateOfExpenseBetween(startOfPrevYear, endOfPrevYear);
             if (expenses == null) expenses = BigDecimal.ZERO;
 
-            BigDecimal calculatedBaseline = prevBaseline.add(payments).subtract(expenses);
-            saveBaselineSnapshot(year, calculatedBaseline);
-            return calculatedBaseline;
+            return prevBaseline.add(payments).subtract(expenses);
         }
 
         logger.info("No prior baseline found for year {}. Defaulting to ZERO.", year);

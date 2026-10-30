@@ -22,6 +22,7 @@ import io.carizmi.framework.data.response.PagedResult
 import io.carizmi.framework.exception.DuplicateRecordException
 import io.carizmi.framework.exception.ValidationException
 import io.carizmi.framework.exception.RecordNotFoundException
+import io.carizmi.shared.message.ValidationMessages
 import io.carizmi.framework.util.MySQLConstraintResolver
 import io.carizmi.domain.finance.repository.PaymentRepository
 import io.carizmi.domain.finance.validation.PaymentValidator
@@ -141,6 +142,52 @@ class PaymentSpec extends BaseSpecification {
         noExceptionThrown()
     }
 
+    def "test - addPayment: Success - Registration Fee publishes DomainEvent via framework"() {
+        given: "A registration fee payment request"
+        Integer memberId = 99
+        Integer paymentId = 15
+        LocalDate dateReceived = LocalDate.of(2026, 4, 15)
+        String feeType = ReferenceConstants.FEE_TYPE.REGISTRATION_FEE
+        PaymentDto request = new PaymentDto(memberID: memberId, feeType: feeType, dateReceived: dateReceived)
+        PaymentVO vo = new PaymentVO(paymentID: paymentId, member: new MemberVO(memberID: memberId), feeType: feeType, dateReceived: dateReceived)
+
+        when: "addPayment is executed"
+        Integer result = paymentImpl.addPayment(request)
+
+        then: "Registration fee is validated, saved, and DomainEvent is published"
+        1 * voTransformer.transform(request) >> vo
+        1 * validator.validate(vo)
+        1 * paymentRepo.exists(_ as JpaSpecification) >> false
+        1 * paymentRepo.save(vo) >> vo
+        1 * domainEventPublisher.publish("CREATED", vo, paymentId)
+        0 * _
+
+        and:
+        result == paymentId
+        noExceptionThrown()
+    }
+
+    def "test - addPayment: Duplicate Registration Fee triggers validation error"() {
+        given: "A member who already has a registration fee recorded"
+        Integer memberId = 99
+        String feeType = ReferenceConstants.FEE_TYPE.REGISTRATION_FEE
+        PaymentDto request = new PaymentDto(memberID: memberId, feeType: feeType)
+        PaymentVO vo = new PaymentVO(member: new MemberVO(memberID: memberId), feeType: feeType)
+
+        when: "addPayment is executed"
+        paymentImpl.addPayment(request)
+
+        then: "Duplicate is detected and ValidationException is thrown"
+        1 * voTransformer.transform(request) >> vo
+        1 * validator.validate(vo)
+        1 * paymentRepo.exists(_ as JpaSpecification) >> true
+        0 * _
+
+        and:
+        vo.hasErrors()
+        thrown(ValidationException)
+    }
+
     def "test - addPayment: Duplicate Handling"() {
         given: "A duplicate payment scenario"
         PaymentVO vo = new PaymentVO()
@@ -241,15 +288,58 @@ class PaymentSpec extends BaseSpecification {
         paymentImpl.updatePayment(new PaymentDto(paymentID: paymentId))
 
         then: "The expected calls are made"
-        1 * paymentRepo.findById(1) >> Optional.of(vo)
+        1 * paymentRepo.findById(paymentId) >> Optional.of(vo)
         1 * voTransformer.transformForUpdate(_, _) >> vo
         1 * validator.validateForUpdate(_)
         1 * paymentRepo.save(vo) >> vo
         1 * domainEventPublisher.publish("UPDATED", vo, _)
-        0 * _
-
         and: "The expected result"
         noExceptionThrown()
+    }
+
+    def "test - updatePayment: Success - Registration Fee publishes DomainEvent via framework"() {
+        given: "An existing registration fee payment update request"
+        Integer paymentId = 1
+        Integer memberId = 99
+        LocalDate newDate = LocalDate.of(2026, 7, 10)
+        PaymentDto dto = new PaymentDto(paymentID: paymentId, memberID: memberId, feeType: ReferenceConstants.FEE_TYPE.REGISTRATION_FEE, dateReceived: newDate)
+        PaymentVO existingVO = new PaymentVO(paymentID: paymentId, member: new MemberVO(memberID: memberId), feeType: ReferenceConstants.FEE_TYPE.REGISTRATION_FEE, dateReceived: LocalDate.of(2026, 4, 1))
+        PaymentVO updatedVO = new PaymentVO(paymentID: paymentId, member: new MemberVO(memberID: memberId), feeType: ReferenceConstants.FEE_TYPE.REGISTRATION_FEE, dateReceived: newDate)
+
+        when: "updatePayment is executed"
+        paymentImpl.updatePayment(dto)
+
+        then: "Payment updated and DomainEvent published with UPDATED"
+        1 * paymentRepo.findById(paymentId) >> Optional.of(existingVO)
+        1 * voTransformer.transformForUpdate(dto, existingVO) >> updatedVO
+        1 * validator.validateForUpdate(updatedVO)
+        1 * paymentRepo.exists(_ as JpaSpecification) >> false
+        1 * paymentRepo.save(updatedVO) >> updatedVO
+        1 * domainEventPublisher.publish("UPDATED", updatedVO, paymentId)
+        0 * _
+
+        and:
+        noExceptionThrown()
+    }
+
+    def "test - updatePayment: Blocked if existing record in closed fiscal year"() {
+        given: "An existing payment in a closed year"
+        Integer paymentId = 1
+        PaymentDto dto = new PaymentDto(paymentID: paymentId)
+        PaymentVO existingVO = new PaymentVO(paymentID: paymentId, feeType: "Other")
+        PaymentVO updatedVO = new PaymentVO(paymentID: paymentId, feeType: "Other")
+
+        when: "The target method executed"
+        paymentImpl.updatePayment(dto)
+
+        then: "Validator marks error and exception is thrown"
+        1 * paymentRepo.findById(1) >> Optional.of(existingVO)
+        1 * voTransformer.transformForUpdate(dto, existingVO) >> updatedVO
+        1 * validator.validateForUpdate(updatedVO) >> { PaymentVO p -> p.addFieldMessage("dateReceived", ValidationMessages.ERR_TRANSACTION_CLOSED_YEAR_MUTATION) }
+        0 * _
+
+        and:
+        thrown(ValidationException)
     }
 
     def "test - updatePayment: DB Error"() {
@@ -262,7 +352,7 @@ class PaymentSpec extends BaseSpecification {
         paymentImpl.updatePayment(dto)
 
         then: "The expected calls are made"
-        1 * paymentRepo.findById(1) >> Optional.of(vo)
+        1 * paymentRepo.findById(id) >> Optional.of(vo)
         1 * voTransformer.transformForUpdate(dto, vo) >> vo
         1 * validator.validateForUpdate(vo)
         1 * paymentRepo.save(vo) >> { throw new DataAccessException("error", new RuntimeException("root")) {} }
@@ -281,7 +371,7 @@ class PaymentSpec extends BaseSpecification {
         paymentImpl.updatePayment(new PaymentDto(paymentID: paymentId))
 
         then: "The expected calls are made"
-        1 * paymentRepo.findById(99) >> Optional.empty()
+        1 * paymentRepo.findById(paymentId) >> Optional.empty()
         0 * _
 
         and: "The expected result"
@@ -330,13 +420,31 @@ class PaymentSpec extends BaseSpecification {
         paymentImpl.deletePayment(paymentId)
 
         then: "The expected calls are made"
-        1 * paymentRepo.findById(1) >> Optional.of(vo)
+        1 * paymentRepo.findById(paymentId) >> Optional.of(vo)
+        1 * validator.validateForDelete(vo)
         1 * paymentRepo.delete(vo)
         1 * domainEventPublisher.publish("DELETED", vo, _)
         0 * _
 
         and: "The expected result"
         noExceptionThrown()
+    }
+
+    def "test - deletePayment: Blocked if in closed fiscal year"() {
+        given: "An existing payment in a closed year"
+        Integer paymentId = 1
+        PaymentVO vo = new PaymentVO()
+
+        when: "The target method executed"
+        paymentImpl.deletePayment(paymentId)
+
+        then: "Validator marks error and exception is thrown"
+        1 * paymentRepo.findById(paymentId) >> Optional.of(vo)
+        1 * validator.validateForDelete(vo) >> { PaymentVO p -> p.addFieldMessage("dateReceived", ValidationMessages.ERR_TRANSACTION_CLOSED_YEAR_DELETE) }
+        0 * _
+
+        and:
+        thrown(ValidationException)
     }
 
     def "test - deletePayment: DB Error"() {
@@ -348,7 +456,8 @@ class PaymentSpec extends BaseSpecification {
         paymentImpl.deletePayment(id)
 
         then: "The expected calls are made"
-        1 * paymentRepo.findById(1) >> Optional.of(vo)
+        1 * paymentRepo.findById(id) >> Optional.of(vo)
+        1 * validator.validateForDelete(vo)
         1 * paymentRepo.delete(vo) >> { throw new DataAccessException("error", new RuntimeException("root")) {} }
         0 * _
 
@@ -365,11 +474,34 @@ class PaymentSpec extends BaseSpecification {
         paymentImpl.deletePayment(paymentId)
 
         then: "The expected calls are made"
-        1 * paymentRepo.findById(99) >> Optional.empty()
+        1 * paymentRepo.findById(paymentId) >> Optional.empty()
         0 * _
 
         and: "The expected result"
         thrown(RecordNotFoundException)
+    }
+
+    def "test - hasPaymentsForMember: Returns correct boolean based on repository"() {
+        given: "A target member ID"
+        Integer memberId = 123
+        JpaSpecification capturedSpec = null
+
+        when: "hasPaymentsForMember is called"
+        boolean hasPayments = paymentImpl.hasPaymentsForMember(memberId)
+
+        then: "Repository method is queried"
+        1 * paymentRepo.exists(_ as JpaSpecification) >> { JpaSpecification spec -> capturedSpec = spec; expected }
+        0 * _
+
+        and:
+        hasPayments == expected
+        capturedSpec != null
+        Map<String, List> inspection = inspectSpecification(capturedSpec)
+        inspection.filters.containsAll([TableConstants.MEMBER_TABLE, FieldConstants.MEMBER_ID])
+        inspection.values.contains(memberId)
+
+        where:
+        expected << [true, false]
     }
 
     def "test - getPayment: Success"() {
@@ -382,7 +514,7 @@ class PaymentSpec extends BaseSpecification {
         PaymentDto result = paymentImpl.getPayment(paymentId)
 
         then: "The expected calls are made"
-        1 * paymentRepo.findById(1) >> Optional.of(vo)
+        1 * paymentRepo.findById(paymentId) >> Optional.of(vo)
         1 * dtoTransformer.transform(vo) >> dto
         0 * _
 
@@ -399,7 +531,7 @@ class PaymentSpec extends BaseSpecification {
         paymentImpl.getPayment(paymentId)
 
         then: "The expected calls are made"
-        1 * paymentRepo.findById(99) >> Optional.empty()
+        1 * paymentRepo.findById(paymentId) >> Optional.empty()
         0 * _
 
         and: "The expected result"
@@ -820,5 +952,31 @@ class PaymentSpec extends BaseSpecification {
         and: "The expected result"
         result == [mockProj]
         noExceptionThrown()
+    }
+
+    @Unroll
+    def "test - findMemberIDsByFeeTypeAndDateReceivedBetween: Should delegate to repo [size: #expectedList.size()]"() {
+        given: "Criteria parameters"
+        String feeType = ReferenceConstants.FEE_TYPE.REGISTRATION_FEE
+        LocalDate start = LocalDate.of(2026, 1, 1)
+        LocalDate end = LocalDate.of(2026, 12, 31)
+
+        when: "The target method executed"
+        List<Integer> result = paymentImpl.findMemberIDsByFeeTypeAndDateReceivedBetween(feeType, start, end)
+
+        then: "The expected calls are made"
+        1 * paymentRepo.findMemberIDsByFeeTypeAndDateReceivedBetween(feeType, start, end) >> expectedList
+        0 * _
+
+        and: "The expected result"
+        result == expectedList
+        noExceptionThrown()
+
+        where:
+        expectedList << [
+                [],
+                [101],
+                [101, 102, 105]
+        ]
     }
 }

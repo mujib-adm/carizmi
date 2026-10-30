@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.resttestclient.TestRestTemplate
+import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -20,6 +21,7 @@ import spock.lang.Specification
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         classes = [CarizmiApplication, TestContainersConfig]
 )
+@AutoConfigureTestRestTemplate
 @ActiveProfiles("test")
 @Testcontainers
 abstract class BaseIntegrationSpecification extends Specification {
@@ -33,7 +35,7 @@ abstract class BaseIntegrationSpecification extends Specification {
     protected List<String> rawCookies
     protected Map<String, String> adminDefaultCreds
 
-    @Autowired
+    @Autowired(required = false)
     TestRestTemplate restTemplate
 
     def setup() {

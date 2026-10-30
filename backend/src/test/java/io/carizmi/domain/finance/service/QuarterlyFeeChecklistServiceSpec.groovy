@@ -7,10 +7,10 @@ import io.carizmi.domain.finance.constants.QuarterCellStatus
 import io.carizmi.shared.constants.ReferenceConstants
 import io.carizmi.domain.membership.service.Member
 import io.carizmi.domain.platform.service.SystemSetting
+import io.carizmi.domain.membership.model.MemberMembershipPeriodVO
 import io.carizmi.domain.membership.model.MemberVO
 import io.carizmi.domain.finance.data.dto.request.ChecklistSearchRequestDto
 import io.carizmi.domain.finance.data.dto.response.ChecklistSummaryDto
-import io.carizmi.shared.data.dto.MemberJoinDateProjection
 import io.carizmi.domain.finance.data.dto.response.MemberQuarterlyRowDto
 import io.carizmi.shared.data.dto.PaymentSummary
 import io.carizmi.domain.finance.data.dto.response.QuarterlyChecklistDto
@@ -73,13 +73,6 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         ] as PaymentSummary
     }
 
-    private MemberJoinDateProjection createJoinDateProjection(Integer memberID, LocalDate joinDate) {
-        return [
-                getMemberID: { -> memberID },
-                getJoinDate: { -> joinDate }
-        ] as MemberJoinDateProjection
-    }
-
     private ChecklistSearchRequestDto searchRequest(Integer year, int page = 0, int size = 100) {
         ChecklistSearchRequestDto requestDto = new ChecklistSearchRequestDto()
         requestDto.setYear(year)
@@ -115,19 +108,17 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
             createSummary(1, year, q, new BigDecimal("60.00"))
         }
 
-        // Global summary data (same member, same summaries)
-        List<MemberJoinDateProjection> joinDates = [createJoinDateProjection(1, LocalDate.of(year - 1, 1, 1))]
-
         Pageable capturedPageable
 
         when: "The target method executed"
         SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(searchRequest(year))
 
         then: "The expected calls are made"
-        1 * member.findActiveMembers(_ as Pageable) >> { Pageable p -> capturedPageable = p; expectedPage }
+        1 * member.findMembersActiveInYear(year, _ as Pageable) >> { int y, Pageable p -> capturedPageable = p; expectedPage }
         1 * payment.findMembersPaymentSummaries([1], ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> summaries
-        1 * member.findActiveMemberJoinDates() >> joinDates
+        1 * member.findAllMembersActiveInYear(year) >> [memberVO1]
         1 * payment.findPaymentSummaries(ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> summaries
+        _ * member.findMembershipPeriodsForMembers(_) >> Collections.emptyMap()
         1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
         0 * _
 
@@ -184,7 +175,6 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
 
         // Paid Q2
         List<PaymentSummary> summaries = [createSummary(3, year, 2, new BigDecimal("60.00"))]
-        List<MemberJoinDateProjection> joinDates = [createJoinDateProjection(3, LocalDate.of(year, 4, 15))]
 
         Pageable capturedPageable
 
@@ -192,10 +182,11 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(searchRequest(year))
 
         then: "The expected calls are made"
-        1 * member.findActiveMembers(_ as Pageable) >> { Pageable p -> capturedPageable = p; expectedPage }
+        1 * member.findMembersActiveInYear(year, _ as Pageable) >> { int y, Pageable p -> capturedPageable = p; expectedPage }
         1 * payment.findMembersPaymentSummaries([3], ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> summaries
-        1 * member.findActiveMemberJoinDates() >> joinDates
+        1 * member.findAllMembersActiveInYear(year) >> [memberVO1]
         1 * payment.findPaymentSummaries(ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> summaries
+        _ * member.findMembershipPeriodsForMembers(_) >> Collections.emptyMap()
         1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
         0 * _
 
@@ -237,16 +228,16 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
 
         // Paid Q1 only
         List<PaymentSummary> summaries = [createSummary(2, year, 1, new BigDecimal("60.00"))]
-        List<MemberJoinDateProjection> joinDates = [createJoinDateProjection(2, LocalDate.of(year - 1, 1, 1))]
 
         when: "The target method executed"
         SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(searchRequest(year))
 
         then: "The expected calls are made"
-        1 * member.findActiveMembers(_ as Pageable) >> expectedPage
+        1 * member.findMembersActiveInYear(year, _ as Pageable) >> expectedPage
         1 * payment.findMembersPaymentSummaries([2], ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> summaries
-        1 * member.findActiveMemberJoinDates() >> joinDates
+        1 * member.findAllMembersActiveInYear(year) >> [memberVO1]
         1 * payment.findPaymentSummaries(ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> summaries
+        _ * member.findMembershipPeriodsForMembers(_) >> Collections.emptyMap()
         1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
         0 * _
 
@@ -280,16 +271,16 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
 
         MemberVO memberVO1 = createMember(1, "First1", "Last1", LocalDate.of(year - 1, 1, 1))
         Page<MemberVO> expectedPage = createPage([memberVO1])
-        List<MemberJoinDateProjection> joinDates = [createJoinDateProjection(1, LocalDate.of(year - 1, 1, 1))]
 
         when: "The target method executed"
         SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(searchRequest(year))
 
         then: "The expected calls are made"
-        1 * member.findActiveMembers(_ as Pageable) >> expectedPage
+        1 * member.findMembersActiveInYear(year, _ as Pageable) >> expectedPage
         1 * payment.findMembersPaymentSummaries([1], ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> []
-        1 * member.findActiveMemberJoinDates() >> joinDates
+        1 * member.findAllMembersActiveInYear(year) >> [memberVO1]
         1 * payment.findPaymentSummaries(ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> []
+        _ * member.findMembershipPeriodsForMembers(_) >> Collections.emptyMap()
         1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
         0 * _
 
@@ -314,16 +305,16 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
 
         MemberVO memberVO1 = createMember(1, "First1", "Last1", LocalDate.of(futureYear - 2, 1, 1))
         Page<MemberVO> expectedPage = createPage([memberVO1])
-        List<MemberJoinDateProjection> joinDates = [createJoinDateProjection(1, LocalDate.of(futureYear - 2, 1, 1))]
 
         when: "The target method executed"
         SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(searchRequest(futureYear))
 
         then: "The expected calls are made"
-        1 * member.findActiveMembers(_ as Pageable) >> expectedPage
+        1 * member.findMembersActiveInYear(futureYear, _ as Pageable) >> expectedPage
         1 * payment.findMembersPaymentSummaries([1], ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, futureYear) >> []
-        1 * member.findActiveMemberJoinDates() >> joinDates
+        1 * member.findAllMembersActiveInYear(futureYear) >> [memberVO1]
         1 * payment.findPaymentSummaries(ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, futureYear) >> []
+        _ * member.findMembershipPeriodsForMembers(_) >> Collections.emptyMap()
         1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
         0 * _
 
@@ -351,10 +342,11 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(searchRequest(year))
 
         then: "The expected calls are made"
-        1 * member.findActiveMembers(_ as Pageable) >> emptyPage
+        1 * member.findMembersActiveInYear(year, _ as Pageable) >> emptyPage
         0 * payment.findMembersPaymentSummaries(_, _, _)
-        1 * member.findActiveMemberJoinDates() >> []
+        1 * member.findAllMembersActiveInYear(year) >> []
         1 * payment.findPaymentSummaries(ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> []
+        _ * member.findMembershipPeriodsForMembers(_) >> Collections.emptyMap()
         1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
         0 * _
 
@@ -378,16 +370,16 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
 
         MemberVO memberVO1 = createMember(1, "First1", "Last1", LocalDate.of(year - 1, 6, 1))
         Page<MemberVO> expectedPage = createPage([memberVO1])
-        List<MemberJoinDateProjection> joinDates = [createJoinDateProjection(1, LocalDate.of(year - 1, 6, 1))]
 
         when: "The target method executed"
         SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(searchRequest(year))
 
         then: "The expected calls are made"
-        1 * member.findActiveMembers(_ as Pageable) >> expectedPage
+        1 * member.findMembersActiveInYear(year, _ as Pageable) >> expectedPage
         1 * payment.findMembersPaymentSummaries([1], ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> []
-        1 * member.findActiveMemberJoinDates() >> joinDates
+        1 * member.findAllMembersActiveInYear(year) >> [memberVO1]
         1 * payment.findPaymentSummaries(ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> []
+        _ * member.findMembershipPeriodsForMembers(_) >> Collections.emptyMap()
         1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
         0 * _
 
@@ -429,16 +421,16 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         List<PaymentSummary> summaries = (1..4).collect { q ->
             createSummary(1, pastYear, q, new BigDecimal("60.00"))
         }
-        List<MemberJoinDateProjection> joinDates = [createJoinDateProjection(1, LocalDate.of(pastYear - 1, 1, 1))]
 
         when: "The target method executed"
         SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(searchRequest(pastYear))
 
         then: "The expected calls are made"
-        1 * member.findActiveMembers(_ as Pageable) >> expectedPage
+        1 * member.findMembersActiveInYear(pastYear, _ as Pageable) >> expectedPage
         1 * payment.findMembersPaymentSummaries([1], ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, pastYear) >> summaries
-        1 * member.findActiveMemberJoinDates() >> joinDates
+        1 * member.findAllMembersActiveInYear(pastYear) >> [memberVO1]
         1 * payment.findPaymentSummaries(ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, pastYear) >> summaries
+        _ * member.findMembershipPeriodsForMembers(_) >> Collections.emptyMap()
         1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
         0 * _
 
@@ -469,20 +461,15 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         // The Page is created with DB-level sort (firstName, lastName)
         Page<MemberVO> expectedPage = createPage([memberVO3, memberVO1, memberVO2])
 
-        List<MemberJoinDateProjection> joinDates = [
-                createJoinDateProjection(1, LocalDate.of(year - 1, 1, 1)),
-                createJoinDateProjection(2, LocalDate.of(year - 1, 1, 1)),
-                createJoinDateProjection(3, LocalDate.of(year - 1, 1, 1))
-        ]
-
         when: "The target method executed"
         SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(searchRequest(year))
 
         then: "The expected calls are made"
-        1 * member.findActiveMembers(_ as Pageable) >> expectedPage
+        1 * member.findMembersActiveInYear(year, _ as Pageable) >> expectedPage
         1 * payment.findMembersPaymentSummaries([2, 3, 1], ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> []
-        1 * member.findActiveMemberJoinDates() >> joinDates
+        1 * member.findAllMembersActiveInYear(year) >> [memberVO3, memberVO1, memberVO2]
         1 * payment.findPaymentSummaries(ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> []
+        _ * member.findMembershipPeriodsForMembers(_) >> Collections.emptyMap()
         1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
         0 * _
 
@@ -505,22 +492,17 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         PageRequest page0Pageable = PageRequest.of(0, 2, Sort.by(FieldConstants.FIRST_NAME, FieldConstants.LAST_NAME))
         Page<MemberVO> page0 = new PageImpl<>([memberVO1, memberVO2], page0Pageable, 3)
 
-        List<MemberJoinDateProjection> joinDates = [
-                createJoinDateProjection(1, LocalDate.of(year - 1, 1, 1)),
-                createJoinDateProjection(2, LocalDate.of(year - 1, 1, 1)),
-                createJoinDateProjection(3, LocalDate.of(year - 1, 1, 1))
-        ]
-
         Pageable capturedPageable
 
         when: "The target method executed"
         SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(searchRequest(year, 0, 2))
 
         then: "The expected calls are made"
-        1 * member.findActiveMembers(_ as Pageable) >> { Pageable p -> capturedPageable = p; page0 }
+        1 * member.findMembersActiveInYear(year, _ as Pageable) >> { int y, Pageable p -> capturedPageable = p; page0 }
         1 * payment.findMembersPaymentSummaries([1, 2], ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> []
-        1 * member.findActiveMemberJoinDates() >> joinDates
+        1 * member.findAllMembersActiveInYear(year) >> [memberVO1, memberVO2, new MemberVO(memberID: 3, firstName: "First3", lastName: "Last3", joinDate: LocalDate.of(year - 1, 1, 1))]
         1 * payment.findPaymentSummaries(ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> []
+        _ * member.findMembershipPeriodsForMembers(_) >> Collections.emptyMap()
         1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
         0 * _
 
@@ -555,22 +537,17 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         PageRequest page1Pageable = PageRequest.of(1, 2, Sort.by(FieldConstants.FIRST_NAME, FieldConstants.LAST_NAME))
         Page<MemberVO> page1 = new PageImpl<>([memberVO3], page1Pageable, 3)
 
-        List<MemberJoinDateProjection> joinDates = [
-                createJoinDateProjection(1, LocalDate.of(year - 1, 1, 1)),
-                createJoinDateProjection(2, LocalDate.of(year - 1, 1, 1)),
-                createJoinDateProjection(3, LocalDate.of(year - 1, 1, 1))
-        ]
-
         Pageable capturedPageable
 
         when: "The target method executed"
         SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(searchRequest(year, 1, 2))
 
         then: "The expected calls are made"
-        1 * member.findActiveMembers(_ as Pageable) >> { Pageable p -> capturedPageable = p; page1 }
+        1 * member.findMembersActiveInYear(year, _ as Pageable) >> { int y, Pageable p -> capturedPageable = p; page1 }
         1 * payment.findMembersPaymentSummaries([3], ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> []
-        1 * member.findActiveMemberJoinDates() >> joinDates
+        1 * member.findAllMembersActiveInYear(year) >> [new MemberVO(memberID: 1, firstName: "First1", lastName: "Last1", joinDate: LocalDate.of(year - 1, 1, 1)), new MemberVO(memberID: 2, firstName: "First2", lastName: "Last2", joinDate: LocalDate.of(year - 1, 1, 1)), memberVO3]
         1 * payment.findPaymentSummaries(ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> []
+        _ * member.findMembershipPeriodsForMembers(_) >> Collections.emptyMap()
         1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
         0 * _
 
@@ -627,8 +604,9 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(request)
 
         then: "The expected calls are made with DB-level sort"
-        1 * member.findActiveMembers(_ as Pageable) >> { Pageable p -> capturedPageable = p; allMembersPage }
+        1 * member.findMembersActiveInYear(year, _ as Pageable) >> { int y, Pageable p -> capturedPageable = p; allMembersPage }
         1 * payment.findMembersPaymentSummaries([1, 2, 3], ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> summaries
+        _ * member.findMembershipPeriodsForMembers(_) >> Collections.emptyMap()
         1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
         0 * _
 
@@ -690,8 +668,9 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(request)
 
         then:
-        1 * member.findActiveMembers(_ as Pageable) >> allMembersPage
+        1 * member.findMembersActiveInYear(year, _ as Pageable) >> allMembersPage
         1 * payment.findMembersPaymentSummaries([1, 2, 3, 4], ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> summaries
+        _ * member.findMembershipPeriodsForMembers(_) >> Collections.emptyMap()
         1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
         0 * _
 
@@ -731,6 +710,8 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         then: "Member is fetched via member.getMember(memberID) and payments scoped to member 10"
         1 * member.getMember(memberID) >> memberDto
         1 * payment.findMembersPaymentSummaries([memberID], ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> summaries
+        _ * member.findMembershipPeriods(_) >> []
+        _ * member.findMembershipPeriodsForMembers(_) >> Collections.emptyMap()
         1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
         0 * _
 
@@ -772,6 +753,7 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
 
         then: "RecordNotFoundException is handled and returns empty checklist"
         1 * member.getMember(memberID) >> { throw new RecordNotFoundException("Record not found") }
+        _ * member.findMembershipPeriodsForMembers(_) >> Collections.emptyMap()
         1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
         0 * _
 
@@ -786,19 +768,22 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         noExceptionThrown()
     }
 
-    def "test getQuarterlyChecklist - filtered by memberID - member inactive"() {
-        given: "a member with inactive status (e.g. 02)"
+    def "test getQuarterlyChecklist - filtered by memberID - member inactive and departed before year"() {
+        given: "a member with inactive status who departed before the assessed year"
         int year = LocalDate.now().getYear() - 1
         int memberID = 20
-        MemberDto inactiveMember = createMemberDto(memberID, "Jane", "Inactive", LocalDate.of(year - 1, 1, 1), "02")
+        MemberDto inactiveMember = createMemberDto(memberID, "Jane", "Inactive", LocalDate.of(year - 3, 1, 1), ReferenceConstants.MEMBER_STATUS.INACTIVE)
+        MemberMembershipPeriodVO closedPeriod = new MemberMembershipPeriodVO(memberID: memberID, startDate: LocalDate.of(year - 3, 1, 1), endDate: LocalDate.of(year - 1, 12, 31))
         ChecklistSearchRequestDto request = searchRequest(year, 0, 10)
         request.setMemberID(memberID)
 
-        when: "Retrieving checklist for inactive member"
+        when: "Retrieving checklist for member who departed before year"
         SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(request)
 
-        then: "Returns empty checklist because checklist only includes active members"
+        then: "Returns empty checklist because member was not active in that year"
         1 * member.getMember(memberID) >> inactiveMember
+        1 * member.findMembershipPeriods(memberID) >> [closedPeriod]
+        _ * member.findMembershipPeriodsForMembers(_) >> Collections.emptyMap()
         1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
         0 * _
 
@@ -807,6 +792,34 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         result.rows.isEmpty()
         checklistResult.meta().totalRecords == 0
         checklistResult.meta().totalPages == 0
+        noExceptionThrown()
+    }
+
+    def "test getQuarterlyChecklist - filtered by memberID - inactive member who was active in target year is included"() {
+        given: "a member who is currently inactive but was active in assessed year (left in subsequent year)"
+        int year = LocalDate.now().getYear() - 1
+        int memberID = 21
+        MemberDto inactiveMember = createMemberDto(memberID, "Bob", "PriorActive", LocalDate.of(year - 1, 1, 1), ReferenceConstants.MEMBER_STATUS.INACTIVE)
+        MemberMembershipPeriodVO activePeriod = new MemberMembershipPeriodVO(memberID: memberID, startDate: LocalDate.of(year - 1, 1, 1), endDate: LocalDate.of(year + 1, 2, 1))
+        ChecklistSearchRequestDto request = searchRequest(year, 0, 10)
+        request.setMemberID(memberID)
+
+        when: "Retrieving checklist for member active in assessed year"
+        SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(request)
+
+        then: "Returns single member row"
+        1 * member.getMember(memberID) >> inactiveMember
+        1 * member.findMembershipPeriods(memberID) >> [activePeriod]
+        1 * payment.findMembersPaymentSummaries([memberID], ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> []
+        _ * member.findMembershipPeriodsForMembers(_) >> [(memberID): [activePeriod]]
+        1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
+        0 * _
+
+        and: "Row exists for Bob PriorActive"
+        QuarterlyChecklistDto result = checklistResult.data()
+        result.rows.size() == 1
+        result.rows[0].memberID == memberID
+        result.rows[0].memberName == "Bob PriorActive"
         noExceptionThrown()
     }
 
@@ -826,6 +839,8 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         then: "Narrowest filter (memberID) executes; unpaidQuarters bulk fetch is skipped"
         1 * member.getMember(memberID) >> memberDto
         1 * payment.findMembersPaymentSummaries([memberID], ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> []
+        _ * member.findMembershipPeriods(_) >> []
+        _ * member.findMembershipPeriodsForMembers(_) >> Collections.emptyMap()
         1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
         0 * _
 
@@ -849,16 +864,16 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         MemberVO m6 = createMember(6, "F", "Six", LocalDate.of(year, 1, 1), "   ")
 
         Page<MemberVO> page = createPage([m1, m2, m3, m4, m5, m6], 0, 10)
-        List<MemberJoinDateProjection> joinDates = (1..6).collect { createJoinDateProjection(it, LocalDate.of(year, 1, 1)) }
 
         when: "Retrieving checklist"
         SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(searchRequest(year, 0, 10))
 
         then:
-        1 * member.findActiveMembers(_ as Pageable) >> page
+        1 * member.findMembersActiveInYear(year, _ as Pageable) >> page
         1 * payment.findMembersPaymentSummaries([1, 2, 3, 4, 5, 6], ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> []
-        1 * member.findActiveMemberJoinDates() >> joinDates
+        1 * member.findAllMembersActiveInYear(year) >> [m1, m2, m3, m4, m5, m6]
         1 * payment.findPaymentSummaries(ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> []
+        _ * member.findMembershipPeriodsForMembers(_) >> Collections.emptyMap()
         1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
         0 * _
 
@@ -870,5 +885,46 @@ class QuarterlyFeeChecklistServiceSpec extends Specification {
         rows.find { it.memberID == 4 }.phone == "612-555-0104"
         rows.find { it.memberID == 5 }.phone == null
         rows.find { it.memberID == 6 }.phone == null
+    }
+
+    def "test getQuarterlyChecklist - member with hiatus periods resolves hiatus quarters as NOT_APPLICABLE"() {
+        given: "A year and member active in Q1, inactive in Q2/Q3 (hiatus), reactivated in Q4"
+        int year = 2026
+        MemberVO memberVO = createMember(1, "Hiatus", "Member", LocalDate.of(year, 1, 1))
+        Page<MemberVO> page = createPage([memberVO])
+
+        // Periods: Period 1 = Jan 1 to Mar 31 (Q1), Period 2 = Oct 1 to Dec 31 (Q4)
+        MemberMembershipPeriodVO p1 = MemberMembershipPeriodVO.builder()
+                .memberID(1).startDate(LocalDate.of(year, 1, 1)).endDate(LocalDate.of(year, 3, 31)).build()
+        MemberMembershipPeriodVO p2 = MemberMembershipPeriodVO.builder()
+                .memberID(1).startDate(LocalDate.of(year, 10, 1)).endDate(null).build()
+        Map<Integer, List<MemberMembershipPeriodVO>> periodsMap = [(1): [p1, p2]]
+
+        // Paid 60 for Q1, paid 60 for Q4
+        List<PaymentSummary> summaries = [
+                createSummary(1, year, 1, new BigDecimal("60")),
+                createSummary(1, year, 4, new BigDecimal("60"))
+        ]
+
+        when: "Retrieving checklist"
+        SinglePagedResult<QuarterlyChecklistDto> checklistResult = service.getQuarterlyChecklist(searchRequest(year))
+
+        then: "Periods are loaded and applied"
+        1 * member.findMembersActiveInYear(year, _ as Pageable) >> page
+        1 * payment.findMembersPaymentSummaries([1], ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> summaries
+        1 * member.findAllMembersActiveInYear(year) >> [memberVO]
+        1 * payment.findPaymentSummaries(ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year) >> summaries
+        2 * member.findMembershipPeriodsForMembers(_) >> periodsMap
+        1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60")
+        0 * _
+
+        and: "Q1 is PAID, Q2 and Q3 are NOT_APPLICABLE because member was on hiatus"
+        List<MemberQuarterlyRowDto> rows = checklistResult.data().rows
+        rows.size() == 1
+        MemberQuarterlyRowDto row = rows[0]
+        row.quarters[0].status == QuarterCellStatus.PAID
+        row.quarters[1].status == QuarterCellStatus.NOT_APPLICABLE
+        row.quarters[2].status == QuarterCellStatus.NOT_APPLICABLE
+        row.quarters[3].status == QuarterCellStatus.PAID
     }
 }

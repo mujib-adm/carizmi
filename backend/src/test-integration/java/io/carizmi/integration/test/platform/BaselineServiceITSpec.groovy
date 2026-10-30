@@ -234,23 +234,4 @@ class BaselineServiceITSpec extends BaseIntegrationSpecification {
         BigDecimal updated2027 = baselineService.getBaselineForYear(2027)
         updated2027.compareTo(new BigDecimal("56721.68")) == 0
     }
-
-    def "Integration Test: Dynamic fallback computes and persists snapshot when missing"() {
-        given: "2026 baseline exists, but 2027 snapshot does not exist"
-        systemSettingRepository.findAll().each { vo ->
-            if (vo.settingKey == "YEARLY_BASELINE_2027") {
-                systemSettingRepository.delete(vo)
-            }
-        }
-        assert systemSettingRepository.findAll().every { it.settingKey != "YEARLY_BASELINE_2027" }
-
-        when: "getBaselineForYear(2027) is called without prior closeYear execution"
-        BigDecimal fallbackBaseline = baselineService.getBaselineForYear(2027)
-
-        then: "Dynamically calculates from 2026, saves snapshot to DB, and returns value"
-        fallbackBaseline.compareTo(new BigDecimal("55221.68")) == 0
-        SystemSettingsVO createdRecord = systemSettingRepository.findAll().find { it.settingKey == "YEARLY_BASELINE_2027" }
-        createdRecord != null
-        new BigDecimal(createdRecord.settingValue).compareTo(new BigDecimal("55221.68")) == 0
-    }
 }

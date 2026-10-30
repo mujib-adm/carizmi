@@ -60,27 +60,18 @@ class BaselineServiceSpec extends BaseSpecification {
         BigDecimal disbursements = new BigDecimal("4500.00")
         BigDecimal expectedBaseline = priorBaseline.add(receipts).subtract(disbursements)
 
-        SystemSettingsVO savedVO = null
-
         when: "getBaselineForYear is called for 2027"
         BigDecimal result = baselineService.getBaselineForYear(targetYear)
 
-        then: "It checks 2027 (empty), finds 2026 snapshot, queries receipts/disbursements between Jan 1 and Dec 31 of 2026, and saves 2027 snapshot"
+        then: "It checks 2027 (empty), finds 2026 snapshot, queries receipts/disbursements between Jan 1 and Dec 31 of 2026, and returns dynamic roll-forward without persisting"
         1 * systemSetting.findBySettingKey(BaselineConstants.getYearlyBaselineKey(targetYear)) >> Optional.empty()
         1 * systemSetting.findBySettingKey(BaselineConstants.getYearlyBaselineKey(priorYear)) >> Optional.of(priorSnapshot)
         1 * payment.sumAmountByDateReceivedBetween(startOfPriorYear, endOfPriorYear) >> receipts
         1 * expense.sumAmountByDateOfExpenseBetween(startOfPriorYear, endOfPriorYear) >> disbursements
-        1 * systemSetting.findBySettingKey(BaselineConstants.getYearlyBaselineKey(targetYear)) >> Optional.empty()
-        1 * systemSetting.add(_ as SystemSettingsVO) >> { SystemSettingsVO vo -> savedVO = vo; vo }
         0 * _
 
-        and: "Computed baseline is persisted and returned"
+        and: "Computed baseline is returned without prematurely closing the prior year"
         result == expectedBaseline
-        savedVO != null
-        savedVO.settingKey == BaselineConstants.getYearlyBaselineKey(targetYear)
-        savedVO.settingValue == expectedBaseline.toString()
-        savedVO.effectiveDate == LocalDate.of(targetYear, 1, 1)
-        savedVO.active == true
     }
 
     def "test - getBaselineForYear: Should return ZERO if snapshot and prior year snapshot both missing"() {
@@ -113,8 +104,6 @@ class BaselineServiceSpec extends BaseSpecification {
         LocalDate startOfPriorYear = LocalDate.of(priorYear, 1, 1)
         LocalDate endOfPriorYear = LocalDate.of(priorYear, 12, 31)
 
-        SystemSettingsVO savedVO = null
-
         when: "getBaselineForYear is executed"
         BigDecimal result = baselineService.getBaselineForYear(targetYear)
 
@@ -123,14 +112,10 @@ class BaselineServiceSpec extends BaseSpecification {
         1 * systemSetting.findBySettingKey(BaselineConstants.getYearlyBaselineKey(priorYear)) >> Optional.of(priorSnapshot)
         1 * payment.sumAmountByDateReceivedBetween(startOfPriorYear, endOfPriorYear) >> null
         1 * expense.sumAmountByDateOfExpenseBetween(startOfPriorYear, endOfPriorYear) >> null
-        1 * systemSetting.findBySettingKey(BaselineConstants.getYearlyBaselineKey(targetYear)) >> Optional.empty()
-        1 * systemSetting.add(_ as SystemSettingsVO) >> { SystemSettingsVO vo -> savedVO = vo; vo }
         0 * _
 
         and: "Result equals prior baseline"
         result == priorBaseline
-        savedVO != null
-        savedVO.settingValue == priorBaseline.toString()
     }
 
     def "test - closeYear: Should calculate ending balance of closed year and save snapshot for next year"() {

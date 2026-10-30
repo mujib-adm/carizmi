@@ -93,6 +93,9 @@ public interface PaymentRepository extends JpaRepository<PaymentVO, Integer>, Jp
     @Query("select p.methodOfPayment as methodOfPayment, coalesce(sum(p.amount), 0) as totalAmount from PaymentVO p where p.dateReceived >= :start and p.dateReceived <= :end group by p.methodOfPayment")
     List<PaymentMethodTotalProjection> findPaymentMethodTotalsBetween(@Param("start") LocalDate start, @Param("end") LocalDate end);
 
+    @Query("select distinct p.member.memberID from PaymentVO p where p.feeType = :feeType and p.dateReceived >= :start and p.dateReceived <= :end")
+    List<Integer> findMemberIDsByFeeTypeAndDateReceivedBetween(@Param("feeType") String feeType, @Param("start") LocalDate start, @Param("end") LocalDate end);
+
     @Query(value = """
             SELECT COALESCE(SUM(GREATEST(0, :feeAmt - COALESCE(paid.total, 0))), 0)
             FROM member m
@@ -104,15 +107,38 @@ public interface PaymentRepository extends JpaRepository<PaymentVO, Integer>, Jp
                 GROUP BY p.memberID, p.quarter
             ) paid ON m.memberID = paid.memberID AND quarters.q = paid.quarter
             WHERE m.status = :status
-              AND quarters.q >= CASE
-                    WHEN YEAR(COALESCE(m.joinDate, CURDATE())) = :year
-                      THEN QUARTER(COALESCE(m.joinDate, CURDATE()))
-                    ELSE 1
-                  END
               AND quarters.q < :currentQuarter
-              AND (YEAR(COALESCE(m.joinDate, CURDATE())) < :year
-                   OR (YEAR(COALESCE(m.joinDate, CURDATE())) = :year
-                       AND QUARTER(COALESCE(m.joinDate, CURDATE())) < :currentQuarter))
+              AND (
+                -- 1. If membership periods exist for the member, quarter must overlap an active period
+                EXISTS (
+                    SELECT 1 FROM member_membership_period pr
+                    WHERE pr.memberID = m.memberID
+                      AND pr.startDate <= STR_TO_DATE(CONCAT(:year, CASE quarters.q
+                            WHEN 1 THEN '-03-31'
+                            WHEN 2 THEN '-06-30'
+                            WHEN 3 THEN '-09-30'
+                            ELSE '-12-31'
+                          END), '%Y-%m-%d')
+                      AND (pr.endDate IS NULL OR pr.endDate >= STR_TO_DATE(CONCAT(:year, CASE quarters.q
+                            WHEN 1 THEN '-01-01'
+                            WHEN 2 THEN '-04-01'
+                            WHEN 3 THEN '-07-01'
+                            ELSE '-10-01'
+                          END), '%Y-%m-%d'))
+                )
+                OR (
+                    -- 2. Legacy fallback if member has no periods recorded yet
+                    NOT EXISTS (SELECT 1 FROM member_membership_period pr2 WHERE pr2.memberID = m.memberID)
+                    AND quarters.q >= CASE
+                            WHEN YEAR(COALESCE(m.joinDate, CURDATE())) = :year
+                              THEN QUARTER(COALESCE(m.joinDate, CURDATE()))
+                            ELSE 1
+                          END
+                    AND (YEAR(COALESCE(m.joinDate, CURDATE())) < :year
+                         OR (YEAR(COALESCE(m.joinDate, CURDATE())) = :year
+                             AND QUARTER(COALESCE(m.joinDate, CURDATE())) < :currentQuarter))
+                )
+              )
             """, nativeQuery = true)
     BigDecimal calculateTotalOverdue(@Param("year") Integer year,
                                      @Param("currentQuarter") Integer currentQuarter,

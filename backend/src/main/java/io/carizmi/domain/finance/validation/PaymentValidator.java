@@ -1,15 +1,16 @@
 package io.carizmi.domain.finance.validation;
 
-import lombok.RequiredArgsConstructor;
+import io.carizmi.domain.finance.model.PaymentVO;
+import io.carizmi.domain.membership.service.MemberMembershipPeriod;
 import io.carizmi.domain.platform.constants.BaselineConstants;
 import io.carizmi.domain.platform.service.SystemSetting;
-import org.apache.commons.lang3.StringUtils;
+import io.carizmi.domain.platform.validation.ReferenceValidator;
+import io.carizmi.framework.bl.AbstractDomainValidator;
 import io.carizmi.shared.constants.FieldConstants;
 import io.carizmi.shared.constants.ReferenceConstants;
 import io.carizmi.shared.message.ValidationMessages;
-import io.carizmi.domain.finance.model.PaymentVO;
-import io.carizmi.framework.bl.AbstractDomainValidator;
-import io.carizmi.domain.platform.validation.ReferenceValidator;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -18,6 +19,7 @@ public class PaymentValidator extends AbstractDomainValidator<PaymentVO> {
 
     private final ReferenceValidator referenceValidator;
     private final SystemSetting systemSetting;
+    private final MemberMembershipPeriod memberMembershipPeriod;
 
     @Override
     public void validate(PaymentVO vo) {
@@ -32,14 +34,44 @@ public class PaymentValidator extends AbstractDomainValidator<PaymentVO> {
     @Override
     public void validateForUpdate(PaymentVO vo) {
         validateRequired(vo, FieldConstants.PAYMENT_ID, vo.getPaymentID());
+        validateRecordNotClosed(vo);
         validate(vo);
+    }
+
+    @Override
+    public void validateForDelete(PaymentVO vo) {
+        if (vo.getDateReceived() != null) {
+            int receiptYear = vo.getDateReceived().getYear();
+            String closingKey = BaselineConstants.getYearlyBaselineKey(receiptYear + 1);
+            if (systemSetting.findBySettingKey(closingKey).isPresent()) {
+                vo.addFieldMessage(FieldConstants.DATE_RECEIVED,
+                        ValidationMessages.ERR_TRANSACTION_CLOSED_YEAR_DELETE.addMessageArgs(String.valueOf(receiptYear)));
+            }
+        }
+    }
+
+    private void validateRecordNotClosed(PaymentVO existingVO) {
+        if (existingVO.getDateReceived() != null) {
+            int receiptYear = existingVO.getDateReceived().getYear();
+            String closingKey = BaselineConstants.getYearlyBaselineKey(receiptYear + 1);
+            if (systemSetting.findBySettingKey(closingKey).isPresent()) {
+                existingVO.addFieldMessage(FieldConstants.DATE_RECEIVED,
+                        ValidationMessages.ERR_TRANSACTION_CLOSED_YEAR_MUTATION.addMessageArgs(String.valueOf(receiptYear)));
+            }
+        }
     }
 
     private void validateMember(PaymentVO vo) {
         if (vo.getMember() == null) {
             validateRequired(vo, FieldConstants.MEMBER_ID, null);
-        } else {
-            validateRequired(vo, FieldConstants.MEMBER_ID, vo.getMember().getMemberID());
+            return;
+        }
+
+        validateRequired(vo, FieldConstants.MEMBER_ID, vo.getMember().getMemberID());
+        if (ReferenceConstants.MEMBER_STATUS.PENDING.equals(vo.getMember().getStatus())) {
+            if (!ReferenceConstants.FEE_TYPE.REGISTRATION_FEE.equals(vo.getFeeType())) {
+                vo.addFieldMessage(FieldConstants.MEMBER_ID, ValidationMessages.ERR_PAYMENT_MEMBER_PENDING);
+            }
         }
     }
 
@@ -81,6 +113,16 @@ public class PaymentValidator extends AbstractDomainValidator<PaymentVO> {
         if (ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE.equals(vo.getFeeType())) {
             validateRequired(vo, FieldConstants.YEAR, vo.getYear());
             validateRequired(vo, FieldConstants.QUARTER, vo.getQuarter());
+
+            if (vo.getYear() != null && vo.getQuarter() != null && vo.getMember() != null && vo.getMember().getMemberID() != null) {
+                boolean isActiveInPeriod = memberMembershipPeriod.isMemberActiveInQuarter(vo.getMember().getMemberID(), vo.getYear(), vo.getQuarter());
+
+                if (!isActiveInPeriod) {
+                    vo.addFieldMessage(FieldConstants.QUARTER,
+                            ValidationMessages.ERR_PAYMENT_MEMBER_NOT_ACTIVE_IN_PERIOD.addMessageArgs(
+                                    String.valueOf(vo.getYear()), vo.getQuarter()));
+                }
+            }
         }
     }
 }

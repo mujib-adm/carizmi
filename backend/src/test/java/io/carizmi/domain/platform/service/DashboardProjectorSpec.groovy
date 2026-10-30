@@ -7,7 +7,6 @@ import io.carizmi.domain.finance.service.Payment
 import io.carizmi.domain.membership.service.Member
 import io.carizmi.domain.platform.model.DashboardSnapshotVO
 import io.carizmi.shared.constants.ReferenceConstants
-import io.carizmi.shared.data.dto.MemberJoinDateProjection
 import io.carizmi.shared.data.dto.QuarterlyTotalProjection
 import io.carizmi.shared.util.QuarterUtils
 import io.carizmi.testbase.BaseSpecification
@@ -67,7 +66,7 @@ class DashboardProjectorSpec extends BaseSpecification {
         1 * payment.calculateTotalOverdue(currentYear, currentQuarter, quarterlyFeeAmt,
                 ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, ReferenceConstants.MEMBER_STATUS.ACTIVE) >> overdueTotal
         1 * payment.findQuarterlyTotals(currentYear) >> [qt1, qt2]
-        1 * member.findActiveMemberJoinDates() >> []
+        4 * member.countActiveMembersInDateRange(_, _) >> 0L
         1 * dashboardSnapshot.getSnapshot() >> Optional.of(existingSnapshot)
         1 * objectMapper.writeValueAsString(_ as List) >> '[]'
         1 * dashboardSnapshot.saveSnapshot(_ as DashboardSnapshotVO) >> { DashboardSnapshotVO vo -> capturedSnapshot = vo }
@@ -102,7 +101,7 @@ class DashboardProjectorSpec extends BaseSpecification {
         1 * payment.calculateTotalOverdue(currentYear, currentQuarter, quarterlyFeeAmt,
                 ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, ReferenceConstants.MEMBER_STATUS.ACTIVE) >> BigDecimal.ZERO
         1 * payment.findQuarterlyTotals(currentYear) >> []
-        1 * member.findActiveMemberJoinDates() >> []
+        4 * member.countActiveMembersInDateRange(_, _) >> 0L
         1 * dashboardSnapshot.getSnapshot() >> Optional.empty()
         1 * objectMapper.writeValueAsString(_ as List) >> '[]'
         1 * dashboardSnapshot.saveSnapshot(_ as DashboardSnapshotVO) >> { DashboardSnapshotVO vo -> capturedSnapshot = vo }
@@ -137,7 +136,7 @@ class DashboardProjectorSpec extends BaseSpecification {
         1 * payment.calculateTotalOverdue(currentYear, currentQuarter, quarterlyFeeAmt,
                 ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, ReferenceConstants.MEMBER_STATUS.ACTIVE) >> BigDecimal.ZERO
         1 * payment.findQuarterlyTotals(currentYear) >> []
-        1 * member.findActiveMemberJoinDates() >> []
+        4 * member.countActiveMembersInDateRange(_, _) >> 0L
         1 * dashboardSnapshot.getSnapshot() >> Optional.empty()
         1 * objectMapper.writeValueAsString(_ as List) >> '[]'
         1 * dashboardSnapshot.saveSnapshot(_ as DashboardSnapshotVO) >> { DashboardSnapshotVO vo -> capturedSnapshot = vo }
@@ -150,15 +149,6 @@ class DashboardProjectorSpec extends BaseSpecification {
 
     def "test rebuildProjection - Should scope quarterly percentages to members who joined on or before that quarter"() {
         given: "Two members: one joined in Q1 and one joined in Q2 of the current year"
-        MemberJoinDateProjection q1Member = Stub() {
-            getMemberID() >> 1
-            getJoinDate() >> LocalDate.of(currentYear, 1, 15)
-        }
-        MemberJoinDateProjection q2Member = Stub() {
-            getMemberID() >> 2
-            getJoinDate() >> LocalDate.of(currentYear, 4, 10)
-        }
-
         QuarterlyTotalProjection qt1 = Stub() { getQuarter() >> 1; getTotalCollected() >> new BigDecimal("60.00") }
         QuarterlyTotalProjection qt2 = Stub() { getQuarter() >> 2; getTotalCollected() >> new BigDecimal("60.00") }
 
@@ -177,7 +167,10 @@ class DashboardProjectorSpec extends BaseSpecification {
         1 * payment.calculateTotalOverdue(currentYear, currentQuarter, quarterlyFeeAmt,
                 ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, ReferenceConstants.MEMBER_STATUS.ACTIVE) >> BigDecimal.ZERO
         1 * payment.findQuarterlyTotals(currentYear) >> [qt1, qt2]
-        1 * member.findActiveMemberJoinDates() >> [q1Member, q2Member]
+        1 * member.countActiveMembersInDateRange(LocalDate.of(currentYear, 1, 1), LocalDate.of(currentYear, 3, 31)) >> 1L
+        1 * member.countActiveMembersInDateRange(LocalDate.of(currentYear, 4, 1), LocalDate.of(currentYear, 6, 30)) >> 2L
+        1 * member.countActiveMembersInDateRange(LocalDate.of(currentYear, 7, 1), LocalDate.of(currentYear, 9, 30)) >> 2L
+        1 * member.countActiveMembersInDateRange(LocalDate.of(currentYear, 10, 1), LocalDate.of(currentYear, 12, 31)) >> 2L
         1 * dashboardSnapshot.getSnapshot() >> Optional.empty()
         1 * objectMapper.writeValueAsString(_ as List) >> { args ->
             capturedCollections = args[0] as List
@@ -214,7 +207,7 @@ class DashboardProjectorSpec extends BaseSpecification {
         1 * payment.calculateTotalOverdue(currentYear, currentQuarter, quarterlyFeeAmt,
                 ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, ReferenceConstants.MEMBER_STATUS.ACTIVE) >> BigDecimal.ZERO
         1 * payment.findQuarterlyTotals(currentYear) >> []
-        1 * member.findActiveMemberJoinDates() >> []
+        4 * member.countActiveMembersInDateRange(_, _) >> 0L
         1 * dashboardSnapshot.getSnapshot() >> Optional.empty()
         1 * objectMapper.writeValueAsString(_ as List) >> { throw new JacksonException("test error") {} }
         0 * _

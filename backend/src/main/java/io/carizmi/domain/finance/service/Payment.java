@@ -39,6 +39,8 @@ public interface Payment extends BusinessLogic<PaymentVO> {
 
     BigDecimal sumAmountByMemberID(@NonNull Integer memberID);
 
+    boolean hasPaymentsForMember(@NonNull Integer memberID);
+
     BigDecimal sumAmountByMemberIDAndYearAndQuarter(@NonNull Integer memberID, @NonNull Integer year, @NonNull Integer quarter);
 
     List<PaymentSummary> findMemberPaymentSummaries(@NonNull Integer memberID, String feeType);
@@ -54,6 +56,8 @@ public interface Payment extends BusinessLogic<PaymentVO> {
     List<FeeTypeReceiptBreakdownProjection> findFeeTypeReceiptBreakdownsBetween(@NonNull LocalDate start, @NonNull LocalDate end);
 
     List<PaymentMethodTotalProjection> findPaymentMethodTotalsBetween(@NonNull LocalDate start, @NonNull LocalDate end);
+
+    List<Integer> findMemberIDsByFeeTypeAndDateReceivedBetween(@NonNull String feeType, @NonNull LocalDate start, @NonNull LocalDate end);
 
     BigDecimal calculateTotalOverdue(@NonNull Integer year, @NonNull Integer currentQuarter,
                                      @NonNull BigDecimal feeAmt, @NonNull String feeType,

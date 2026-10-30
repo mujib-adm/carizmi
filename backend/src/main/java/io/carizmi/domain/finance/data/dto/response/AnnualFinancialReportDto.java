@@ -26,4 +26,6 @@ public class AnnualFinancialReportDto {
     private List<AnnualMethodReceiptDto> receiptsByPaymentMethod;
     private List<AnnualExpenseCategoryDto> disbursementsByCategory;
     private AnnualComplianceSummaryDto complianceSummary;
+    private Boolean isClosed;
+    private String snapshotStatus;
 }

@@ -1,5 +1,7 @@
 package io.carizmi.domain.finance.service
 
+import io.carizmi.domain.finance.model.AnnualReportSnapshotVO
+import io.carizmi.domain.membership.model.MemberVO
 import io.carizmi.domain.finance.data.dto.projection.ExpenseCategoryTotalProjection
 import io.carizmi.domain.finance.data.dto.projection.FeeTypeReceiptBreakdownProjection
 import io.carizmi.domain.finance.data.dto.projection.PaymentMethodTotalProjection
@@ -11,9 +13,9 @@ import io.carizmi.domain.platform.constants.BaselineConstants
 import io.carizmi.domain.platform.service.BaselineService
 import io.carizmi.domain.platform.service.SystemSetting
 import io.carizmi.shared.constants.ReferenceConstants
-import io.carizmi.shared.data.dto.MemberJoinDateProjection
 import io.carizmi.testbase.BaseSpecification
 import spock.lang.Subject
+import tools.jackson.databind.ObjectMapper
 
 import java.time.LocalDate
 
@@ -24,11 +26,11 @@ class AnnualReportServiceSpec extends BaseSpecification {
     Expense expense = Mock()
     Member member = Mock()
     SystemSetting systemSetting = Mock()
+    AnnualReportSnapshot annualReportSnapshot = Mock()
+    ObjectMapper objectMapper = Mock()
 
     @Subject
-    AnnualReportServiceImpl reportService = new AnnualReportServiceImpl(
-            baselineService, payment, expense, member, systemSetting
-    )
+    AnnualReportServiceImpl reportService = new AnnualReportServiceImpl(baselineService, payment, expense, member, systemSetting, annualReportSnapshot, objectMapper)
 
     def "test - getAnnualReport: Full report generation for specified year"() {
         given: "A specified year"
@@ -67,29 +69,23 @@ class AnnualReportServiceSpec extends BaseSpecification {
             getTotalAmount() >> new BigDecimal("4820.00")
         }
 
-        // 24 charter members with 2026-01-01 (should NOT be counted as new members)
-        MemberJoinDateProjection charterMemberProj = Stub(MemberJoinDateProjection) {
-            getJoinDate() >> LocalDate.of(2026, 1, 1)
-        }
-        // 1 new member joining in Q2 (2026-04-26)
-        MemberJoinDateProjection newQ2MemberProj = Stub(MemberJoinDateProjection) {
-            getJoinDate() >> LocalDate.of(2026, 4, 26)
-        }
-        List<MemberJoinDateProjection> joinDateList = (1..24).collect { charterMemberProj } + [newQ2MemberProj]
+        List<MemberVO> memberList = (1..24).collect { new MemberVO(joinDate: LocalDate.of(2026, 1, 1)) } + [new MemberVO(joinDate: LocalDate.of(2026, 4, 26))]
 
         when: "getAnnualReport is executed"
         AnnualFinancialReportDto report = reportService.getAnnualReport(year)
 
         then: "Expected calls are made to services and repositories"
+        1 * annualReportSnapshot.findByFiscalYear(year) >> Optional.empty()
+        1 * systemSetting.findBySettingKey(BaselineConstants.getYearlyBaselineKey(year + 1)) >> Optional.empty()
         1 * baselineService.getBaselineForYear(year) >> beginningBalance
         1 * payment.sumAmountByDateReceivedBetween(startOfYear, endOfYear) >> totalReceipts
         1 * expense.sumAmountByDateOfExpenseBetween(startOfYear, endOfYear) >> totalDisbursements
         1 * payment.findFeeTypeReceiptBreakdownsBetween(startOfYear, endOfYear) >> [feeProj1, feeProj2]
         1 * payment.findPaymentMethodTotalsBetween(startOfYear, endOfYear) >> [methodProj1]
+        1 * payment.findMemberIDsByFeeTypeAndDateReceivedBetween(ReferenceConstants.FEE_TYPE.REGISTRATION_FEE, startOfYear, endOfYear) >> []
         1 * expense.findExpenseCategoryTotalsBetween(startOfYear, endOfYear) >> [expenseProj1]
-        1 * member.countActiveMembers() >> 100L
+        1 * member.findAllMembersActiveInYear(year) >> memberList
         1 * systemSetting.getQuarterlyFeeAmount() >> quarterlyFeeAmt
-        1 * member.findActiveMemberJoinDates() >> joinDateList
         1 * systemSetting.getRegistrationFeeAmount() >> registrationFeeAmt
         0 * _
 
@@ -124,7 +120,7 @@ class AnnualReportServiceSpec extends BaseSpecification {
         and: "Membership fee compliance summary reflects join-date quarter eligibility"
         report.complianceSummary != null
         report.complianceSummary.membershipFeeSummary != null
-        report.complianceSummary.membershipFeeSummary.activeMembersCount == 100L
+        report.complianceSummary.membershipFeeSummary.activeMembersCount == 25L
         report.complianceSummary.membershipFeeSummary.quarterlyFeeRate == quarterlyFeeAmt
         report.complianceSummary.membershipFeeSummary.q1EligibleMembers == 24L
         report.complianceSummary.membershipFeeSummary.q2EligibleMembers == 25L
@@ -157,7 +153,7 @@ class AnnualReportServiceSpec extends BaseSpecification {
         report.complianceSummary.combinedSummary.totalOverdueAmount == new BigDecimal("740.00") // 740 + 0
 
         and: "Top-level backward compatible fields match membership totals"
-        report.complianceSummary.activeMembersCount == 100L
+        report.complianceSummary.activeMembersCount == 25L
         report.complianceSummary.quarterlyFeeRate == quarterlyFeeAmt
         report.complianceSummary.annualExpectedDues == new BigDecimal("5940.00")
         report.complianceSummary.actualDuesCollected == new BigDecimal("5200.00")
@@ -175,15 +171,17 @@ class AnnualReportServiceSpec extends BaseSpecification {
         AnnualFinancialReportDto report = reportService.getAnnualReport(null)
 
         then: "Current year is used"
+        1 * annualReportSnapshot.findByFiscalYear(currentYear) >> Optional.empty()
+        1 * systemSetting.findBySettingKey(BaselineConstants.getYearlyBaselineKey(currentYear + 1)) >> Optional.empty()
         1 * baselineService.getBaselineForYear(currentYear) >> BigDecimal.ZERO
         1 * payment.sumAmountByDateReceivedBetween(startOfYear, endOfYear) >> BigDecimal.ZERO
         1 * expense.sumAmountByDateOfExpenseBetween(startOfYear, endOfYear) >> BigDecimal.ZERO
         1 * payment.findFeeTypeReceiptBreakdownsBetween(startOfYear, endOfYear) >> []
         1 * payment.findPaymentMethodTotalsBetween(startOfYear, endOfYear) >> []
+        1 * payment.findMemberIDsByFeeTypeAndDateReceivedBetween(ReferenceConstants.FEE_TYPE.REGISTRATION_FEE, startOfYear, endOfYear) >> []
         1 * expense.findExpenseCategoryTotalsBetween(startOfYear, endOfYear) >> []
-        1 * member.countActiveMembers() >> 0L
+        1 * member.findAllMembersActiveInYear(currentYear) >> []
         1 * systemSetting.getQuarterlyFeeAmount() >> BigDecimal.ZERO
-        1 * member.findActiveMemberJoinDates() >> []
         1 * systemSetting.getRegistrationFeeAmount() >> BigDecimal.ZERO
         0 * _
 
@@ -210,15 +208,17 @@ class AnnualReportServiceSpec extends BaseSpecification {
         AnnualFinancialReportDto report = reportService.getAnnualReport(pastYear)
 
         then: "Nulls are handled gracefully"
+        1 * annualReportSnapshot.findByFiscalYear(pastYear) >> Optional.empty()
+        1 * systemSetting.findBySettingKey(BaselineConstants.getYearlyBaselineKey(pastYear + 1)) >> Optional.empty()
         1 * baselineService.getBaselineForYear(pastYear) >> null
         1 * payment.sumAmountByDateReceivedBetween(startOfYear, endOfYear) >> null
         1 * expense.sumAmountByDateOfExpenseBetween(startOfYear, endOfYear) >> null
         1 * payment.findFeeTypeReceiptBreakdownsBetween(startOfYear, endOfYear) >> null
         1 * payment.findPaymentMethodTotalsBetween(startOfYear, endOfYear) >> null
+        1 * payment.findMemberIDsByFeeTypeAndDateReceivedBetween(ReferenceConstants.FEE_TYPE.REGISTRATION_FEE, startOfYear, endOfYear) >> null
         1 * expense.findExpenseCategoryTotalsBetween(startOfYear, endOfYear) >> null
-        1 * member.countActiveMembers() >> 5L
+        1 * member.findAllMembersActiveInYear(pastYear) >> null
         1 * systemSetting.getQuarterlyFeeAmount() >> null
-        1 * member.findActiveMemberJoinDates() >> null
         1 * systemSetting.getRegistrationFeeAmount() >> { throw new RuntimeException("DB error") }
         0 * _
 
@@ -267,15 +267,17 @@ class AnnualReportServiceSpec extends BaseSpecification {
         AnnualFinancialReportDto report = reportService.getAnnualReport(year)
 
         then: "Projections are processed safely"
+        1 * annualReportSnapshot.findByFiscalYear(year) >> Optional.empty()
+        1 * systemSetting.findBySettingKey(BaselineConstants.getYearlyBaselineKey(year + 1)) >> Optional.empty()
         1 * baselineService.getBaselineForYear(year) >> BigDecimal.ZERO
         1 * payment.sumAmountByDateReceivedBetween(startOfYear, endOfYear) >> new BigDecimal("300.00")
         1 * expense.sumAmountByDateOfExpenseBetween(startOfYear, endOfYear) >> BigDecimal.ZERO
         1 * payment.findFeeTypeReceiptBreakdownsBetween(startOfYear, endOfYear) >> [projCustom, projInvalidQuarter, projNullQuarter]
         1 * payment.findPaymentMethodTotalsBetween(startOfYear, endOfYear) >> []
+        1 * payment.findMemberIDsByFeeTypeAndDateReceivedBetween(ReferenceConstants.FEE_TYPE.REGISTRATION_FEE, startOfYear, endOfYear) >> []
         1 * expense.findExpenseCategoryTotalsBetween(startOfYear, endOfYear) >> []
-        1 * member.countActiveMembers() >> 0L
+        1 * member.findAllMembersActiveInYear(year) >> []
         1 * systemSetting.getQuarterlyFeeAmount() >> BigDecimal.ZERO
-        1 * member.findActiveMemberJoinDates() >> []
         1 * systemSetting.getRegistrationFeeAmount() >> BigDecimal.ZERO
         0 * _
 
@@ -301,23 +303,23 @@ class AnnualReportServiceSpec extends BaseSpecification {
             getTotalAmount() >> new BigDecimal("10000.00")
         }
 
-        MemberJoinDateProjection joinDateProj = Stub(MemberJoinDateProjection) {
-            getJoinDate() >> LocalDate.of(2025, 1, 1)
-        }
+        MemberVO memberVO = new MemberVO(joinDate: LocalDate.of(2025, 1, 1))
 
         when: "getAnnualReport is executed"
         AnnualFinancialReportDto report = reportService.getAnnualReport(year)
 
         then: "Interactions and calculations"
+        1 * annualReportSnapshot.findByFiscalYear(year) >> Optional.empty()
+        1 * systemSetting.findBySettingKey(BaselineConstants.getYearlyBaselineKey(year + 1)) >> Optional.empty()
         1 * baselineService.getBaselineForYear(year) >> BigDecimal.ZERO
         1 * payment.sumAmountByDateReceivedBetween(startOfYear, endOfYear) >> new BigDecimal("10000.00")
         1 * expense.sumAmountByDateOfExpenseBetween(startOfYear, endOfYear) >> BigDecimal.ZERO
         1 * payment.findFeeTypeReceiptBreakdownsBetween(startOfYear, endOfYear) >> [feeProj]
         1 * payment.findPaymentMethodTotalsBetween(startOfYear, endOfYear) >> []
+        1 * payment.findMemberIDsByFeeTypeAndDateReceivedBetween(ReferenceConstants.FEE_TYPE.REGISTRATION_FEE, startOfYear, endOfYear) >> []
         1 * expense.findExpenseCategoryTotalsBetween(startOfYear, endOfYear) >> []
-        1 * member.countActiveMembers() >> 1L
+        1 * member.findAllMembersActiveInYear(year) >> [memberVO]
         1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60.00")
-        1 * member.findActiveMemberJoinDates() >> [joinDateProj]
         1 * systemSetting.getRegistrationFeeAmount() >> new BigDecimal("50.00")
         0 * _
 
@@ -345,15 +347,17 @@ class AnnualReportServiceSpec extends BaseSpecification {
         AnnualFinancialReportDto report = reportService.getAnnualReport(year)
 
         then: "Interactions and calculations"
+        1 * annualReportSnapshot.findByFiscalYear(year) >> Optional.empty()
+        1 * systemSetting.findBySettingKey(BaselineConstants.getYearlyBaselineKey(year + 1)) >> Optional.empty()
         1 * baselineService.getBaselineForYear(year) >> BigDecimal.ZERO
         1 * payment.sumAmountByDateReceivedBetween(startOfYear, endOfYear) >> new BigDecimal("100.00")
         1 * expense.sumAmountByDateOfExpenseBetween(startOfYear, endOfYear) >> BigDecimal.ZERO
         1 * payment.findFeeTypeReceiptBreakdownsBetween(startOfYear, endOfYear) >> [regFeeProj]
         1 * payment.findPaymentMethodTotalsBetween(startOfYear, endOfYear) >> []
+        1 * payment.findMemberIDsByFeeTypeAndDateReceivedBetween(ReferenceConstants.FEE_TYPE.REGISTRATION_FEE, startOfYear, endOfYear) >> []
         1 * expense.findExpenseCategoryTotalsBetween(startOfYear, endOfYear) >> []
-        1 * member.countActiveMembers() >> 0L
+        1 * member.findAllMembersActiveInYear(year) >> []
         1 * systemSetting.getQuarterlyFeeAmount() >> BigDecimal.ZERO
-        1 * member.findActiveMemberJoinDates() >> []
         1 * systemSetting.getRegistrationFeeAmount() >> null
         0 * _
 
@@ -402,15 +406,17 @@ class AnnualReportServiceSpec extends BaseSpecification {
         AnnualFinancialReportDto report = reportService.getAnnualReport(year)
 
         then: "Repository interactions"
+        1 * annualReportSnapshot.findByFiscalYear(year) >> Optional.empty()
+        1 * systemSetting.findBySettingKey(BaselineConstants.getYearlyBaselineKey(year + 1)) >> Optional.empty()
         1 * baselineService.getBaselineForYear(year) >> BigDecimal.ZERO
         1 * payment.sumAmountByDateReceivedBetween(startOfYear, endOfYear) >> totalCashReceipts
         1 * expense.sumAmountByDateOfExpenseBetween(startOfYear, endOfYear) >> BigDecimal.ZERO
         1 * payment.findFeeTypeReceiptBreakdownsBetween(startOfYear, endOfYear) >> [currentProj, arrearsProj, advanceProj]
         1 * payment.findPaymentMethodTotalsBetween(startOfYear, endOfYear) >> []
+        1 * payment.findMemberIDsByFeeTypeAndDateReceivedBetween(ReferenceConstants.FEE_TYPE.REGISTRATION_FEE, startOfYear, endOfYear) >> []
         1 * expense.findExpenseCategoryTotalsBetween(startOfYear, endOfYear) >> []
-        1 * member.countActiveMembers() >> 0L
+        1 * member.findAllMembersActiveInYear(year) >> []
         1 * systemSetting.getQuarterlyFeeAmount() >> BigDecimal.ZERO
-        1 * member.findActiveMemberJoinDates() >> []
         1 * systemSetting.getRegistrationFeeAmount() >> BigDecimal.ZERO
         0 * _
 
@@ -435,5 +441,236 @@ class AnnualReportServiceSpec extends BaseSpecification {
         BigDecimal sumSection2 = currentMembership.total + arrearsRow.total + advanceRow.total
         sumSection2 == totalCashReceipts
         report.totalReceipts == totalCashReceipts
+    }
+
+    def "test - getAnnualReport: Serves frozen snapshot from repository with zero computation"() {
+        given: "A closed year with snapshot present"
+        int year = 2025
+        AnnualFinancialReportDto cachedDto = AnnualFinancialReportDto.builder()
+                .year(year)
+                .totalReceipts(new BigDecimal("50000.00"))
+                .isClosed(true)
+                .snapshotStatus("OFFICIAL_CLOSED_SNAPSHOT")
+                .build()
+        String json = '{"year":2025,"totalReceipts":50000.00,"isClosed":true,"snapshotStatus":"OFFICIAL_CLOSED_SNAPSHOT"}'
+        AnnualReportSnapshotVO snapshotVO = AnnualReportSnapshotVO.builder()
+                .fiscalYear(year)
+                .reportData(json)
+                .build()
+
+        when: "getAnnualReport is executed"
+        AnnualFinancialReportDto report = reportService.getAnnualReport(year)
+
+        then: "Served directly from snapshot"
+        1 * annualReportSnapshot.findByFiscalYear(year) >> Optional.of(snapshotVO)
+        1 * objectMapper.readValue(json, AnnualFinancialReportDto) >> cachedDto
+        0 * _
+
+        and:
+        report.year == year
+        report.totalReceipts == new BigDecimal("50000.00")
+        report.isClosed
+        report.snapshotStatus == "OFFICIAL_CLOSED_SNAPSHOT"
+    }
+
+    def "test - getAnnualReport: Closed year with missing snapshot generates and freezes snapshot"() {
+        given: "A closed year where baseline exists but snapshot missing"
+        int year = 2025
+        LocalDate startOfYear = LocalDate.of(year, 1, 1)
+        LocalDate endOfYear = LocalDate.of(year, 12, 31)
+
+        when: "getAnnualReport is executed"
+        AnnualFinancialReportDto report = reportService.getAnnualReport(year)
+
+        then: "Delinquent members are deactivated, and snapshot is generated and persisted"
+        1 * annualReportSnapshot.findByFiscalYear(year) >> Optional.empty()
+        1 * systemSetting.findBySettingKey(BaselineConstants.getYearlyBaselineKey(year + 1)) >> Optional.of(new io.carizmi.domain.platform.model.SystemSettingsVO())
+        1 * member.deactivateDelinquentMembers(year) >> 0
+        1 * baselineService.getBaselineForYear(year) >> BigDecimal.ZERO
+        1 * payment.sumAmountByDateReceivedBetween(startOfYear, endOfYear) >> BigDecimal.ZERO
+        1 * expense.sumAmountByDateOfExpenseBetween(startOfYear, endOfYear) >> BigDecimal.ZERO
+        1 * payment.findFeeTypeReceiptBreakdownsBetween(startOfYear, endOfYear) >> []
+        1 * payment.findPaymentMethodTotalsBetween(startOfYear, endOfYear) >> []
+        1 * payment.findMemberIDsByFeeTypeAndDateReceivedBetween(ReferenceConstants.FEE_TYPE.REGISTRATION_FEE, startOfYear, endOfYear) >> []
+        1 * expense.findExpenseCategoryTotalsBetween(startOfYear, endOfYear) >> []
+        1 * member.findAllMembersActiveInYear(year) >> []
+        1 * systemSetting.getQuarterlyFeeAmount() >> BigDecimal.ZERO
+        1 * systemSetting.getRegistrationFeeAmount() >> BigDecimal.ZERO
+        1 * objectMapper.writeValueAsString(_ as AnnualFinancialReportDto) >> '{"year":2025,"isClosed":true}'
+        1 * annualReportSnapshot.add(_ as AnnualReportSnapshotVO)
+        0 * _
+
+        and:
+        report.year == year
+        report.isClosed
+        report.snapshotStatus == "OFFICIAL_CLOSED_SNAPSHOT"
+    }
+
+    def "test - generateAndFreezeSnapshot: Directly executes snapshot freezing"() {
+        given: "A fiscal year"
+        int year = 2026
+        LocalDate startOfYear = LocalDate.of(year, 1, 1)
+        LocalDate endOfYear = LocalDate.of(year, 12, 31)
+
+        when: "generateAndFreezeSnapshot is executed"
+        AnnualFinancialReportDto report = reportService.generateAndFreezeSnapshot(year)
+
+        then: "Snapshot is saved"
+        1 * annualReportSnapshot.findByFiscalYear(year) >> Optional.empty()
+        1 * baselineService.getBaselineForYear(year) >> BigDecimal.ZERO
+        1 * payment.sumAmountByDateReceivedBetween(startOfYear, endOfYear) >> BigDecimal.ZERO
+        1 * expense.sumAmountByDateOfExpenseBetween(startOfYear, endOfYear) >> BigDecimal.ZERO
+        1 * payment.findFeeTypeReceiptBreakdownsBetween(startOfYear, endOfYear) >> []
+        1 * payment.findPaymentMethodTotalsBetween(startOfYear, endOfYear) >> []
+        1 * payment.findMemberIDsByFeeTypeAndDateReceivedBetween(ReferenceConstants.FEE_TYPE.REGISTRATION_FEE, startOfYear, endOfYear) >> []
+        1 * expense.findExpenseCategoryTotalsBetween(startOfYear, endOfYear) >> []
+        1 * member.findAllMembersActiveInYear(year) >> []
+        1 * systemSetting.getQuarterlyFeeAmount() >> BigDecimal.ZERO
+        1 * systemSetting.getRegistrationFeeAmount() >> BigDecimal.ZERO
+        1 * objectMapper.writeValueAsString(_ as AnnualFinancialReportDto) >> '{"year":2026,"isClosed":true}'
+        1 * annualReportSnapshot.add(_ as AnnualReportSnapshotVO)
+        0 * _
+
+        and:
+        report.year == year
+        report.isClosed
+        report.snapshotStatus == "OFFICIAL_CLOSED_SNAPSHOT"
+    }
+
+    def "test - generateAndFreezeSnapshot: Returns existing snapshot idempotently when already present"() {
+        given: "A fiscal year with an already persisted snapshot"
+        int year = 2026
+        AnnualReportSnapshotVO existingSnapshot = AnnualReportSnapshotVO.builder()
+                .fiscalYear(year)
+                .reportData('{"year":2026,"isClosed":true}')
+                .build()
+        AnnualFinancialReportDto expectedReport = AnnualFinancialReportDto.builder()
+                .year(year)
+                .isClosed(true)
+                .snapshotStatus("OFFICIAL_CLOSED_SNAPSHOT")
+                .build()
+
+        when: "generateAndFreezeSnapshot is executed"
+        AnnualFinancialReportDto report = reportService.generateAndFreezeSnapshot(year)
+
+        then: "Existing snapshot is returned without recomputing or overwriting"
+        1 * annualReportSnapshot.findByFiscalYear(year) >> Optional.of(existingSnapshot)
+        1 * objectMapper.readValue('{"year":2026,"isClosed":true}', AnnualFinancialReportDto.class) >> expectedReport
+        0 * _
+
+        and:
+        report == expectedReport
+    }
+
+    def "test - generateAndFreezeSnapshot: Regenerates snapshot if existing snapshot fails deserialization"() {
+        given: "A fiscal year with a corrupted existing snapshot"
+        int year = 2026
+        LocalDate startOfYear = LocalDate.of(year, 1, 1)
+        LocalDate endOfYear = LocalDate.of(year, 12, 31)
+        AnnualReportSnapshotVO corruptedSnapshot = AnnualReportSnapshotVO.builder()
+                .fiscalYear(year)
+                .reportData("corrupted-json")
+                .build()
+
+        when: "generateAndFreezeSnapshot is executed"
+        AnnualFinancialReportDto report = reportService.generateAndFreezeSnapshot(year)
+
+        then: "Falls back to computing and updating the existing snapshot"
+        1 * annualReportSnapshot.findByFiscalYear(year) >> Optional.of(corruptedSnapshot)
+        1 * objectMapper.readValue("corrupted-json", AnnualFinancialReportDto.class) >> { throw new RuntimeException("Bad JSON") }
+        1 * baselineService.getBaselineForYear(year) >> BigDecimal.ZERO
+        1 * payment.sumAmountByDateReceivedBetween(startOfYear, endOfYear) >> BigDecimal.ZERO
+        1 * expense.sumAmountByDateOfExpenseBetween(startOfYear, endOfYear) >> BigDecimal.ZERO
+        1 * payment.findFeeTypeReceiptBreakdownsBetween(startOfYear, endOfYear) >> []
+        1 * payment.findPaymentMethodTotalsBetween(startOfYear, endOfYear) >> []
+        1 * payment.findMemberIDsByFeeTypeAndDateReceivedBetween(ReferenceConstants.FEE_TYPE.REGISTRATION_FEE, startOfYear, endOfYear) >> []
+        1 * expense.findExpenseCategoryTotalsBetween(startOfYear, endOfYear) >> []
+        1 * member.findAllMembersActiveInYear(year) >> []
+        1 * systemSetting.getQuarterlyFeeAmount() >> BigDecimal.ZERO
+        1 * systemSetting.getRegistrationFeeAmount() >> BigDecimal.ZERO
+        1 * objectMapper.writeValueAsString(_ as AnnualFinancialReportDto) >> '{"year":2026,"isClosed":true}'
+        1 * annualReportSnapshot.update(_ as AnnualReportSnapshotVO)
+        0 * _
+
+        and:
+        report.year == year
+        report.isClosed
+        report.snapshotStatus == "OFFICIAL_CLOSED_SNAPSHOT"
+    }
+
+    def "test - generateAndFreezeSnapshot: Throws IllegalStateException when serialization fails so transaction rolls back"() {
+        given: "A fiscal year"
+        int year = 2026
+        LocalDate startOfYear = LocalDate.of(year, 1, 1)
+        LocalDate endOfYear = LocalDate.of(year, 12, 31)
+
+        when: "generateAndFreezeSnapshot is executed and objectMapper throws exception"
+        reportService.generateAndFreezeSnapshot(year)
+
+        then: "IllegalStateException is propagated to trigger transaction rollback"
+        1 * annualReportSnapshot.findByFiscalYear(year) >> Optional.empty()
+        1 * baselineService.getBaselineForYear(year) >> BigDecimal.ZERO
+        1 * payment.sumAmountByDateReceivedBetween(startOfYear, endOfYear) >> BigDecimal.ZERO
+        1 * expense.sumAmountByDateOfExpenseBetween(startOfYear, endOfYear) >> BigDecimal.ZERO
+        1 * payment.findFeeTypeReceiptBreakdownsBetween(startOfYear, endOfYear) >> []
+        1 * payment.findPaymentMethodTotalsBetween(startOfYear, endOfYear) >> []
+        1 * payment.findMemberIDsByFeeTypeAndDateReceivedBetween(ReferenceConstants.FEE_TYPE.REGISTRATION_FEE, startOfYear, endOfYear) >> []
+        1 * expense.findExpenseCategoryTotalsBetween(startOfYear, endOfYear) >> []
+        1 * member.findAllMembersActiveInYear(year) >> []
+        1 * systemSetting.getQuarterlyFeeAmount() >> BigDecimal.ZERO
+        1 * systemSetting.getRegistrationFeeAmount() >> BigDecimal.ZERO
+        1 * objectMapper.writeValueAsString(_ as AnnualFinancialReportDto) >> { throw new RuntimeException("Serialization failure") }
+        0 * annualReportSnapshot.add(_)
+        0 * _
+
+        and:
+        thrown(IllegalStateException)
+    }
+
+    def "test - getAnnualReport: Includes genuine new member registered in Q1 with 2026-01-01 joinDate who paid registration fee"() {
+        given: "A year with 1 charter member (no reg fee) and 1 new member registered in Q1 (with reg fee)"
+        int year = 2026
+        LocalDate startOfYear = LocalDate.of(year, 1, 1)
+        LocalDate endOfYear = LocalDate.of(year, 12, 31)
+
+        MemberVO charterMember = new MemberVO(memberID: 1001, joinDate: LocalDate.of(2026, 1, 1))
+        MemberVO newQ1Member = new MemberVO(memberID: 1109, joinDate: LocalDate.of(2026, 1, 1))
+
+        FeeTypeReceiptBreakdownProjection regFeeProj = Stub(FeeTypeReceiptBreakdownProjection) {
+            getFeeType() >> ReferenceConstants.FEE_TYPE.REGISTRATION_FEE
+            getObligationYear() >> null
+            getReceivedQuarter() >> 1
+            getFeeQuarter() >> 1
+            getTotalAmount() >> new BigDecimal("50.00")
+        }
+
+        when: "getAnnualReport is executed"
+        AnnualFinancialReportDto report = reportService.getAnnualReport(year)
+
+        then: "Interactions and expectations"
+        1 * annualReportSnapshot.findByFiscalYear(year) >> Optional.empty()
+        1 * systemSetting.findBySettingKey(BaselineConstants.getYearlyBaselineKey(year + 1)) >> Optional.empty()
+        1 * baselineService.getBaselineForYear(year) >> BigDecimal.ZERO
+        1 * payment.sumAmountByDateReceivedBetween(startOfYear, endOfYear) >> new BigDecimal("50.00")
+        1 * expense.sumAmountByDateOfExpenseBetween(startOfYear, endOfYear) >> BigDecimal.ZERO
+        1 * payment.findFeeTypeReceiptBreakdownsBetween(startOfYear, endOfYear) >> [regFeeProj]
+        1 * payment.findPaymentMethodTotalsBetween(startOfYear, endOfYear) >> []
+        1 * payment.findMemberIDsByFeeTypeAndDateReceivedBetween(ReferenceConstants.FEE_TYPE.REGISTRATION_FEE, startOfYear, endOfYear) >> [1109]
+        1 * expense.findExpenseCategoryTotalsBetween(startOfYear, endOfYear) >> []
+        1 * member.findAllMembersActiveInYear(year) >> [charterMember, newQ1Member]
+        1 * member.findMembershipPeriodsForMembers([1001, 1109]) >> [:]
+        1 * systemSetting.getQuarterlyFeeAmount() >> new BigDecimal("60.00")
+        1 * systemSetting.getRegistrationFeeAmount() >> new BigDecimal("50.00")
+        0 * _
+
+        and: "Charter member is skipped while Q1 new member is included in registration fee compliance"
+        report.complianceSummary.registrationFeeSummary != null
+        report.complianceSummary.registrationFeeSummary.newMembersCount == 1L
+        report.complianceSummary.registrationFeeSummary.q1NewMembers == 1L
+        report.complianceSummary.registrationFeeSummary.q2NewMembers == 0L
+        report.complianceSummary.registrationFeeSummary.expectedRegistrationFees == new BigDecimal("50.00")
+        report.complianceSummary.registrationFeeSummary.actualRegistrationFeesCollected == new BigDecimal("50.00")
+        report.complianceSummary.registrationFeeSummary.collectionEfficiencyRate == 100.0
+        report.complianceSummary.registrationFeeSummary.totalOverdueRegistrationFees == BigDecimal.ZERO
     }
 }

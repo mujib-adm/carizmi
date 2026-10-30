@@ -10,10 +10,10 @@ import io.carizmi.domain.platform.service.SystemSetting;
 import io.carizmi.domain.membership.repository.MemberRepository;
 import io.carizmi.domain.membership.repository.spec.MemberSpecifications;
 import io.carizmi.domain.membership.model.MemberVO;
+import io.carizmi.domain.membership.model.MemberMembershipPeriodVO;
 import io.carizmi.domain.membership.data.dto.MemberDto;
 import io.carizmi.domain.membership.data.dto.request.MemberSearchRequestDto;
 import io.carizmi.domain.membership.data.dto.response.MemberLookupDto;
-import io.carizmi.shared.data.dto.MemberJoinDateProjection;
 import io.carizmi.domain.membership.data.dto.response.MemberSummaryDto;
 import io.carizmi.shared.data.dto.PaymentSummary;
 import io.carizmi.domain.membership.data.transformer.MemberDtoTransformer;
@@ -36,10 +36,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static io.carizmi.shared.message.ValidationMessages.RECORD_NOT_FOUND;
@@ -53,17 +56,20 @@ public final class MemberImpl extends MemberAbstractBL implements Member {
     private final MemberVOTransformer voTransformer;
     private final MemberDtoTransformer dtoTransformer;
     private final MemberValidator validator;
+    private final MemberMembershipPeriod memberMembershipPeriod;
 
     @Autowired
     public MemberImpl(final MemberRepository memberRepo, final Payment payment, final SystemSetting systemSetting,
                       final MemberVOTransformer voTransformer, MemberDtoTransformer dtoTransformer,
-                      final MemberValidator validator) {
+                      final MemberValidator validator,
+                      final MemberMembershipPeriod memberMembershipPeriod) {
         super(memberRepo);
         this.payment = payment;
         this.systemSetting = systemSetting;
         this.voTransformer = voTransformer;
         this.dtoTransformer = dtoTransformer;
         this.validator = validator;
+        this.memberMembershipPeriod = memberMembershipPeriod;
     }
 
     @Override
@@ -81,9 +87,16 @@ public final class MemberImpl extends MemberAbstractBL implements Member {
     }
 
     @Override
+    protected void performDeleteValidation(MemberVO vo) {
+        validator.validateForDelete(vo);
+    }
+
+    @Override
     @Transactional
     public Integer addMember(MemberDto requestDto) {
         MemberVO memberVO = voTransformer.transform(requestDto);
+        memberVO.setStatus(ReferenceConstants.MEMBER_STATUS.PENDING);
+        memberVO.setJoinDate(null);
         MemberVO savedMember = add(memberVO);
         return savedMember.getMemberID();
     }
@@ -94,8 +107,12 @@ public final class MemberImpl extends MemberAbstractBL implements Member {
         MemberVO existingMember = getRepo().findById(requestDto.getMemberID())
                 .orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
 
+        String previousStatus = existingMember.getStatus();
         MemberVO updatedVO = voTransformer.transformForUpdate(requestDto, existingMember);
         update(updatedVO);
+
+        LocalDate transitionDate = requestDto.getReactivationDate() != null ? requestDto.getReactivationDate() : requestDto.getJoinDate();
+        handleMembershipPeriodTransitions(updatedVO, previousStatus, transitionDate);
     }
 
     @Override
@@ -105,6 +122,56 @@ public final class MemberImpl extends MemberAbstractBL implements Member {
                 .orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
 
         delete(existingMember);
+    }
+
+    private void handleMembershipPeriodTransitions(MemberVO memberVO, String previousStatus, LocalDate specifiedDate) {
+        String currentStatus = memberVO.getStatus();
+        if (currentStatus == null || currentStatus.equals(previousStatus)) {
+            return;
+        }
+
+        Integer memberID = memberVO.getMemberID();
+        LocalDate actionDate = specifiedDate != null ? specifiedDate : LocalDate.now();
+
+        // 1. Initial Activation: PENDING -> ACTIVE
+        if (ReferenceConstants.MEMBER_STATUS.PENDING.equals(previousStatus)
+                && ReferenceConstants.MEMBER_STATUS.ACTIVE.equals(currentStatus)) {
+            LocalDate start = memberVO.getJoinDate() != null ? memberVO.getJoinDate() : actionDate;
+            memberMembershipPeriod.add(MemberMembershipPeriodVO.builder()
+                    .memberID(memberID)
+                    .startDate(start)
+                    .endDate(null)
+                    .build());
+        }
+        // 2. Deactivation: ACTIVE -> INACTIVE
+        else if (ReferenceConstants.MEMBER_STATUS.ACTIVE.equals(previousStatus)
+                && ReferenceConstants.MEMBER_STATUS.INACTIVE.equals(currentStatus)) {
+            Optional<MemberMembershipPeriodVO> openPeriod = memberMembershipPeriod
+                    .findFirstByMemberIDAndEndDateIsNullOrderByStartDateDesc(memberID);
+            LocalDate leave = actionDate;
+            if (openPeriod.isPresent()) {
+                MemberMembershipPeriodVO period = openPeriod.get();
+                period.setEndDate(leave);
+                memberMembershipPeriod.update(period);
+            } else {
+                LocalDate start = memberVO.getJoinDate() != null ? memberVO.getJoinDate() : leave;
+                memberMembershipPeriod.add(MemberMembershipPeriodVO.builder()
+                        .memberID(memberID)
+                        .startDate(start)
+                        .endDate(leave)
+                        .build());
+            }
+        }
+        // 3. Reactivation: INACTIVE -> ACTIVE
+        else if (ReferenceConstants.MEMBER_STATUS.INACTIVE.equals(previousStatus)
+                && ReferenceConstants.MEMBER_STATUS.ACTIVE.equals(currentStatus)) {
+            LocalDate reactivationStart = specifiedDate != null ? specifiedDate : LocalDate.now();
+            memberMembershipPeriod.add(MemberMembershipPeriodVO.builder()
+                    .memberID(memberID)
+                    .startDate(reactivationStart)
+                    .endDate(null)
+                    .build());
+        }
     }
 
     @Override
@@ -118,7 +185,7 @@ public final class MemberImpl extends MemberAbstractBL implements Member {
         if (StringUtils.isNotBlank(request.getPhone()))
             specList.add(MemberSpecifications.hasPhone(request.getPhone()));
         if (StringUtils.isNotBlank(request.getStatus()))
-            specList.add(MemberSpecifications.hasState(request.getStatus()));
+            specList.add(MemberSpecifications.hasStatus(request.getStatus()));
 
         Specification<MemberVO> spec = Specification.allOf(specList);
         Page<MemberVO> members = getRepo().findAll(spec, request.toPageable());
@@ -193,16 +260,28 @@ public final class MemberImpl extends MemberAbstractBL implements Member {
 
         BigDecimal overdue = BigDecimal.ZERO;
         LocalDate joinDate = QuarterUtils.resolveJoinDate(member.getJoinDate());
+        List<MemberMembershipPeriodVO> periods =
+                memberMembershipPeriod.findByMemberIDOrderByStartDateAsc(memberID);
 
-        // Iterate through all years and quarters since joinDate up to the quarter BEFORE the current one
         int joinYear = joinDate.getYear();
-        int joinQuarter = QuarterUtils.quarterOf(joinDate);
-
         for (int y = joinYear; y <= currentYear; y++) {
-            int startQ = (y == joinYear) ? joinQuarter : 1;
             int endQ = (y == currentYear) ? currentQuarter - 1 : 4;
+            for (int q = 1; q <= endQ; q++) {
+                LocalDate qStart = QuarterUtils.firstDayOfQuarter(y, q);
+                LocalDate qEnd = QuarterUtils.lastDayOfQuarter(y, q);
 
-            for (int q = startQ; q <= endQ; q++) {
+                boolean isActiveInQuarter;
+                if (!periods.isEmpty()) {
+                    isActiveInQuarter = periods.stream().anyMatch(p ->
+                            !p.getStartDate().isAfter(qEnd) && (p.getEndDate() == null || !p.getEndDate().isBefore(qStart)));
+                } else {
+                    isActiveInQuarter = !joinDate.isAfter(qEnd);
+                }
+
+                if (!isActiveInQuarter) {
+                    continue; // Skip inactive hiatus quarters
+                }
+
                 String key = y + "-" + q;
                 BigDecimal paid = paymentMap.getOrDefault(key, BigDecimal.ZERO);
                 BigDecimal due = quarterlyFeeAmt.subtract(paid);
@@ -239,7 +318,130 @@ public final class MemberImpl extends MemberAbstractBL implements Member {
 
     @Override
     @Transactional(readOnly = true)
-    public List<MemberJoinDateProjection> findActiveMemberJoinDates() {
-        return getRepo().findJoinDatesByStatus(ReferenceConstants.MEMBER_STATUS.ACTIVE);
+    public Page<MemberVO> findMembersActiveInYear(int year, @NonNull Pageable pageable) {
+        return getRepo().findAll(MemberSpecifications.wasActiveInYear(year), pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MemberVO> findAllMembersActiveInYear(int year) {
+        return getRepo().findAll(MemberSpecifications.wasActiveInYear(year));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MemberMembershipPeriodVO> findMembershipPeriods(@NonNull Integer memberID) {
+        return memberMembershipPeriod.findByMemberIDOrderByStartDateAsc(memberID);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<Integer, List<MemberMembershipPeriodVO>> findMembershipPeriodsForMembers(@NonNull Collection<Integer> memberIDs) {
+        if (memberIDs.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<MemberMembershipPeriodVO> all = memberMembershipPeriod.findByMemberIDInOrderByStartDateAsc(memberIDs);
+        return all.stream().collect(Collectors.groupingBy(MemberMembershipPeriodVO::getMemberID));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long countActiveMembersInDateRange(@NonNull LocalDate start, @NonNull LocalDate end) {
+        List<Integer> activeIds = memberMembershipPeriod.findActiveMemberIDsInDateRange(start, end);
+        if (!activeIds.isEmpty()) {
+            return activeIds.size();
+        }
+        return getRepo().findAll(MemberSpecifications.wasActiveInYear(start.getYear())).stream()
+                .filter(m -> {
+                    LocalDate join = QuarterUtils.resolveJoinDate(m.getJoinDate());
+                    return !join.isAfter(end);
+                })
+                .count();
+    }
+
+    @Override
+    @Transactional
+    public void activateMemberOnRegistrationFee(@NonNull Integer memberID, @NonNull LocalDate dateReceived) {
+        MemberVO existingMember = getRepo().findById(memberID)
+                .orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
+
+        LocalDate joinDate = QuarterUtils.firstDayOfQuarter(dateReceived.getYear(), QuarterUtils.quarterOf(dateReceived));
+
+        if (ReferenceConstants.MEMBER_STATUS.PENDING.equals(existingMember.getStatus())) {
+            existingMember.setStatus(ReferenceConstants.MEMBER_STATUS.ACTIVE);
+            existingMember.setJoinDate(joinDate);
+            update(existingMember);
+
+            memberMembershipPeriod.add(MemberMembershipPeriodVO.builder()
+                    .memberID(memberID)
+                    .startDate(joinDate)
+                    .endDate(null)
+                    .build());
+        }
+    }
+
+    @Override
+    @Transactional
+    public void updateMemberJoinDateOnRegistrationFee(@NonNull Integer memberID, @NonNull LocalDate dateReceived) {
+        MemberVO existingMember = getRepo().findById(memberID)
+                .orElseThrow(() -> new RecordNotFoundException(RECORD_NOT_FOUND.getMessageText()));
+
+        LocalDate newJoinDate = QuarterUtils.firstDayOfQuarter(dateReceived.getYear(), QuarterUtils.quarterOf(dateReceived));
+        existingMember.setJoinDate(newJoinDate);
+        update(existingMember);
+
+        List<MemberMembershipPeriodVO> periods = memberMembershipPeriod.findByMemberIDOrderByStartDateAsc(memberID);
+        if (!periods.isEmpty()) {
+            MemberMembershipPeriodVO firstPeriod = periods.get(0);
+            firstPeriod.setStartDate(newJoinDate);
+            memberMembershipPeriod.update(firstPeriod);
+        }
+    }
+
+    @Override
+    @Transactional
+    public int deactivateDelinquentMembers(int year) {
+        LocalDate yearStart = LocalDate.of(year, 1, 1);
+        LocalDate yearEnd = LocalDate.of(year, 12, 31);
+
+        List<MemberVO> activeMembers = getRepo().findAll(MemberSpecifications.hasStatus(ReferenceConstants.MEMBER_STATUS.ACTIVE));
+        if (activeMembers.isEmpty()) {
+            return 0;
+        }
+
+        List<Integer> activeMemberIds = activeMembers.stream().map(MemberVO::getMemberID).toList();
+        Map<Integer, List<MemberMembershipPeriodVO>> periodsByMember = findMembershipPeriodsForMembers(activeMemberIds);
+
+        Set<Integer> membersWithPayments = payment.findPaymentSummaries(ReferenceConstants.FEE_TYPE.MEMBERSHIP_FEE, year)
+                .stream()
+                .map(PaymentSummary::getMemberID)
+                .collect(Collectors.toSet());
+
+        int count = 0;
+        for (MemberVO memberVO : activeMembers) {
+            Integer memberID = memberVO.getMemberID();
+            if (membersWithPayments.contains(memberID)) {
+                continue;
+            }
+
+            List<MemberMembershipPeriodVO> periods = periodsByMember.getOrDefault(memberID, Collections.emptyList());
+            boolean activeFullYear = periods.stream().anyMatch(p ->
+                    !p.getStartDate().isAfter(yearStart) && (p.getEndDate() == null || p.getEndDate().isAfter(yearEnd)));
+
+            if (activeFullYear) {
+                logger.info("Deactivating delinquent member {} for unpaid year {}", memberID, year);
+                Optional<MemberMembershipPeriodVO> openPeriod = memberMembershipPeriod
+                        .findFirstByMemberIDAndEndDateIsNullOrderByStartDateDesc(memberID);
+                if (openPeriod.isPresent()) {
+                    MemberMembershipPeriodVO p = openPeriod.get();
+                    p.setEndDate(yearEnd);
+                    memberMembershipPeriod.update(p);
+                }
+                memberVO.setStatus(ReferenceConstants.MEMBER_STATUS.INACTIVE);
+                update(memberVO);
+                count++;
+            }
+        }
+        return count;
     }
 }

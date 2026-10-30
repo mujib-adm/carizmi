@@ -34,4 +34,15 @@ public interface DomainValidator<V extends ValueObject> {
     default void validateForUpdate(V vo) {
         validate(vo);
     }
+
+    /**
+     * Validates the given VO for delete operations.
+     * Default implementation is a no-op.
+     * Override to add delete-specific checks (e.g., immutability guards, reference/historical integrity checks).
+     *
+     * @param vo the value object to validate for delete
+     */
+    default void validateForDelete(V vo) {
+        // No-op by default
+    }
 }

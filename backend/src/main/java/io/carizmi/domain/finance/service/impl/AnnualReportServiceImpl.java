@@ -17,27 +17,37 @@ import io.carizmi.domain.finance.service.Payment;
 import io.carizmi.domain.membership.service.Member;
 import io.carizmi.domain.platform.constants.BaselineConstants;
 import io.carizmi.domain.platform.service.BaselineService;
+import io.carizmi.domain.finance.model.AnnualReportSnapshotVO;
+import io.carizmi.domain.finance.service.AnnualReportSnapshot;
+import io.carizmi.domain.membership.model.MemberMembershipPeriodVO;
+import io.carizmi.domain.membership.model.MemberVO;
 import io.carizmi.domain.platform.service.SystemSetting;
 import io.carizmi.shared.constants.ReferenceConstants;
-import io.carizmi.shared.data.dto.MemberJoinDateProjection;
 import io.carizmi.shared.util.QuarterUtils;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
-public class AnnualReportServiceImpl implements AnnualReportService {
+public final class AnnualReportServiceImpl implements AnnualReportService {
 
     private static final Logger logger = LoggerFactory.getLogger(AnnualReportServiceImpl.class);
 
@@ -46,15 +56,108 @@ public class AnnualReportServiceImpl implements AnnualReportService {
     private final Expense expense;
     private final Member member;
     private final SystemSetting systemSetting;
+    private final AnnualReportSnapshot annualReportSnapshot;
+    private final ObjectMapper objectMapper;
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public AnnualFinancialReportDto getAnnualReport(Integer inputYear) {
         int reportYear = (inputYear != null) ? inputYear : LocalDate.now().getYear();
+
+        // 1. Check if frozen snapshot exists in CQRS read model
+        Optional<AnnualReportSnapshotVO> snapshotOpt = annualReportSnapshot.findByFiscalYear(reportYear);
+        if (snapshotOpt.isPresent()) {
+            logger.info("Serving frozen Annual Financial Report snapshot for closed year: {}", reportYear);
+            try {
+                return objectMapper.readValue(snapshotOpt.get().getReportData(), AnnualFinancialReportDto.class);
+            } catch (Exception e) {
+                logger.error("Failed to deserialize report snapshot for year {}: {}", reportYear, e.getMessage(), e);
+                return AnnualFinancialReportDto.builder().build();
+            }
+        }
+
+        // 2. Check if the year is closed (YEARLY_BASELINE_{reportYear + 1} exists)
+        String closingKey = BaselineConstants.getYearlyBaselineKey(reportYear + 1);
+        boolean isClosedYear = systemSetting.findBySettingKey(closingKey).isPresent();
+
+        // 3. If closed year but snapshot missing, ensure delinquent members are deactivated and freeze snapshot
+        if (isClosedYear) {
+            logger.info("Fiscal year {} is closed but snapshot not found. Ensuring delinquent members are deactivated and freezing snapshot.", reportYear);
+            member.deactivateDelinquentMembers(reportYear);
+            return createAndPersistSnapshot(reportYear, null);
+        }
+
+        // 4. Live projection for open year
+        return computeAnnualReport(reportYear, false);
+    }
+
+    @Override
+    @Transactional
+    public AnnualFinancialReportDto generateAndFreezeSnapshot(int reportYear) {
+        Optional<AnnualReportSnapshotVO> existingOpt = annualReportSnapshot.findByFiscalYear(reportYear);
+        if (existingOpt.isPresent()) {
+            logger.info("Frozen Annual Financial Report snapshot already exists for year {}. Returning existing snapshot.", reportYear);
+            try {
+                return objectMapper.readValue(existingOpt.get().getReportData(), AnnualFinancialReportDto.class);
+            } catch (Exception e) {
+                logger.warn("Existing snapshot for year {} could not be deserialized; regenerating snapshot: {}", reportYear, e.getMessage());
+            }
+        }
+        return createAndPersistSnapshot(reportYear, existingOpt.orElse(null));
+    }
+
+    private AnnualFinancialReportDto createAndPersistSnapshot(int reportYear, AnnualReportSnapshotVO existingSnapshot) {
+        AnnualFinancialReportDto reportDto = computeAnnualReport(reportYear, true);
+        reportDto.setIsClosed(true);
+        reportDto.setSnapshotStatus("OFFICIAL_CLOSED_SNAPSHOT");
+
+        try {
+            String json = objectMapper.writeValueAsString(reportDto);
+            BigDecimal beginningCashBalance = reportDto.getBeginningCashBalance();
+            BigDecimal totalReceipts = reportDto.getTotalReceipts();
+            BigDecimal totalDisbursements = reportDto.getTotalDisbursements();
+            BigDecimal endingCashBalance = reportDto.getEndingCashBalance();
+            long activeMembersCount = reportDto.getComplianceSummary() != null
+                    ? reportDto.getComplianceSummary().getActiveMembersCount() : 0L;
+
+            if (existingSnapshot != null) {
+                existingSnapshot.setReportData(json);
+                existingSnapshot.setBeginningCashBalance(beginningCashBalance);
+                existingSnapshot.setTotalReceipts(totalReceipts);
+                existingSnapshot.setTotalDisbursements(totalDisbursements);
+                existingSnapshot.setEndingCashBalance(endingCashBalance);
+                existingSnapshot.setActiveMembersCount(activeMembersCount);
+                existingSnapshot.setClosedAt(LocalDateTime.now());
+                existingSnapshot.setClosedBy("SYSTEM_SCHEDULER");
+                annualReportSnapshot.update(existingSnapshot);
+            } else {
+                AnnualReportSnapshotVO snapshotVO = AnnualReportSnapshotVO.builder()
+                        .fiscalYear(reportYear)
+                        .reportData(json)
+                        .beginningCashBalance(beginningCashBalance)
+                        .totalReceipts(totalReceipts)
+                        .totalDisbursements(totalDisbursements)
+                        .endingCashBalance(endingCashBalance)
+                        .activeMembersCount(activeMembersCount)
+                        .closedAt(LocalDateTime.now())
+                        .closedBy("SYSTEM_SCHEDULER")
+                        .build();
+                annualReportSnapshot.add(snapshotVO);
+            }
+            logger.info("Successfully froze and persisted Annual Financial Report snapshot for year {}", reportYear);
+        } catch (Exception e) {
+            logger.error("Failed to serialize or save report snapshot for year {}: {}", reportYear, e.getMessage(), e);
+            throw new IllegalStateException("Failed to freeze annual report snapshot for year " + reportYear, e);
+        }
+
+        return reportDto;
+    }
+
+    private AnnualFinancialReportDto computeAnnualReport(int reportYear, boolean isClosedYear) {
         LocalDate startOfYear = LocalDate.of(reportYear, 1, 1);
         LocalDate endOfYear = LocalDate.of(reportYear, 12, 31);
 
-        logger.info("Generating Annual Financial Report for year: {}", reportYear);
+        logger.info("Computing Annual Financial Report for year: {}", reportYear);
 
         // 1. Cash Balance Summary (Reconciliation)
         BigDecimal beginningCashBalance = baselineService.getBaselineForYear(reportYear);
@@ -173,22 +276,50 @@ public class AnnualReportServiceImpl implements AnnualReportService {
         }
 
         // 5. Membership Health & Compliance Indicators
-        long activeMembersCount = member.countActiveMembers();
+        List<MemberVO> activeMembersInReportYear = member.findAllMembersActiveInYear(reportYear);
+        if (activeMembersInReportYear == null) {
+            activeMembersInReportYear = Collections.emptyList();
+        }
+        long activeMembersCount = activeMembersInReportYear.size();
         BigDecimal quarterlyFeeRate = systemSetting.getQuarterlyFeeAmount();
         if (quarterlyFeeRate == null) {
             quarterlyFeeRate = BigDecimal.ZERO;
         }
 
-        // 5a. Membership Fee: Quarter Eligibility & Proration
+        // 5a. Membership Fee: Quarter Eligibility & Proration across episodes
+        List<Integer> memberIds = activeMembersInReportYear.stream()
+                .map(MemberVO::getMemberID)
+                .filter(Objects::nonNull)
+                .toList();
+        Map<Integer, List<MemberMembershipPeriodVO>> periodsByMember;
+        try {
+            periodsByMember = memberIds.isEmpty() ? Collections.emptyMap() : member.findMembershipPeriodsForMembers(memberIds);
+        } catch (Exception e) {
+            periodsByMember = Collections.emptyMap();
+        }
+
         long[] eligibleMemberCounts = new long[4];
-        List<MemberJoinDateProjection> joinDates = member.findActiveMemberJoinDates();
-        if (joinDates != null) {
-            for (MemberJoinDateProjection proj : joinDates) {
-                LocalDate joinDate = QuarterUtils.resolveJoinDate(proj.getJoinDate());
-                for (int q = 1; q <= 4; q++) {
-                    if (!joinDate.isAfter(QuarterUtils.lastDayOfQuarter(reportYear, q))) {
-                        eligibleMemberCounts[q - 1]++;
-                    }
+        for (MemberVO m : activeMembersInReportYear) {
+            LocalDate joinDate = QuarterUtils.resolveJoinDate(m.getJoinDate());
+            int joinYear = joinDate.getYear();
+            int joinQuarter = QuarterUtils.quarterOf(joinDate);
+            List<MemberMembershipPeriodVO> periods =
+                    m.getMemberID() != null ? periodsByMember.getOrDefault(m.getMemberID(), Collections.emptyList()) : Collections.emptyList();
+
+            for (int q = 1; q <= 4; q++) {
+                LocalDate qStart = QuarterUtils.firstDayOfQuarter(reportYear, q);
+                LocalDate qEnd = QuarterUtils.lastDayOfQuarter(reportYear, q);
+
+                boolean isActive;
+                if (!periods.isEmpty()) {
+                    isActive = periods.stream().anyMatch(p ->
+                            !p.getStartDate().isAfter(qEnd) && (p.getEndDate() == null || !p.getEndDate().isBefore(qStart)));
+                } else {
+                    isActive = (reportYear > joinYear || (reportYear == joinYear && q >= joinQuarter));
+                }
+
+                if (isActive) {
+                    eligibleMemberCounts[q - 1]++;
                 }
             }
         }
@@ -240,19 +371,29 @@ public class AnnualReportServiceImpl implements AnnualReportService {
             registrationFeeRate = BigDecimal.ZERO;
         }
 
+        Set<Integer> membersWithRegistrationFee = Collections.emptySet();
+        try {
+            List<Integer> regMemberIds = payment.findMemberIDsByFeeTypeAndDateReceivedBetween(
+                    ReferenceConstants.FEE_TYPE.REGISTRATION_FEE, startOfYear, endOfYear);
+            if (regMemberIds != null) {
+                membersWithRegistrationFee = new HashSet<>(regMemberIds);
+            }
+        } catch (Exception e) {
+            logger.warn("Could not query registration fee member IDs: {}", e.getMessage());
+        }
+
         long[] newMembersByQuarter = new long[4];
-        if (joinDates != null) {
-            for (MemberJoinDateProjection proj : joinDates) {
-                LocalDate joinDate = proj.getJoinDate();
-                if (joinDate != null && joinDate.getYear() == reportYear) {
-                    // CRITICAL rule: 2026-01-01 is default join date for charter/legacy members from 2025 and prior
-                    if (reportYear == 2026 && joinDate.isEqual(LocalDate.of(2026, 1, 1))) {
-                        continue;
-                    }
-                    int q = QuarterUtils.quarterOf(joinDate);
-                    if (q >= 1 && q <= 4) {
-                        newMembersByQuarter[q - 1]++;
-                    }
+        for (MemberVO m : activeMembersInReportYear) {
+            LocalDate joinDate = m.getJoinDate();
+            if (joinDate != null && joinDate.getYear() == reportYear) {
+                // Charter / legacy members migrated with default Jan 1 join date and no registration fee
+                // in the report year are excluded from one-time registration fee obligations.
+                if (joinDate.isEqual(startOfYear) && !membersWithRegistrationFee.contains(m.getMemberID())) {
+                    continue;
+                }
+                int q = QuarterUtils.quarterOf(joinDate);
+                if (q >= 1 && q <= 4) {
+                    newMembersByQuarter[q - 1]++;
                 }
             }
         }
@@ -336,6 +477,8 @@ public class AnnualReportServiceImpl implements AnnualReportService {
                 .receiptsByPaymentMethod(receiptsByPaymentMethod)
                 .disbursementsByCategory(disbursementsByCategory)
                 .complianceSummary(complianceSummary)
+                .isClosed(isClosedYear)
+                .snapshotStatus(isClosedYear ? "OFFICIAL_CLOSED_SNAPSHOT" : "LIVE_PROJECTION")
                 .build();
     }
 }
