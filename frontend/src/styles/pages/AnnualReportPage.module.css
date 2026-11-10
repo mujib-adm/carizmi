@@ -36,11 +36,13 @@
 }
 
 .printButton:not(:disabled) {
-  background-color: var(--primary-color, #1e5631) !important;
+  background: var(--vibrant-gradient, #1e5631) !important;
+  border: none !important;
 }
 
 .generateButton:not(:disabled) {
-  background-color: var(--primary-color, #1e5631) !important;
+  background: var(--vibrant-gradient, #1e5631) !important;
+  border: none !important;
 }
 
 .unclosedYearBanner {
@@ -57,6 +59,12 @@
   margin: 0 auto 20px auto;
 }
 
+:global([data-theme="dark"]) .unclosedYearBanner {
+  background-color: rgba(251, 191, 36, 0.08);
+  border-color: rgba(251, 191, 36, 0.25);
+  border-left-color: #fbbf24;
+}
+
 .unclosedYearBannerContent {
   display: flex;
   align-items: flex-start;
@@ -70,6 +78,10 @@
   flex-shrink: 0;
 }
 
+:global([data-theme="dark"]) .unclosedYearIcon {
+  color: #fbbf24;
+}
+
 .unclosedYearTitle {
   font-size: 0.95rem;
   font-weight: 700;
@@ -77,10 +89,18 @@
   margin-bottom: 2px;
 }
 
+:global([data-theme="dark"]) .unclosedYearTitle {
+  color: #fde68a;
+}
+
 .unclosedYearDescription {
   font-size: 0.84rem;
   color: #78350f;
   line-height: 1.45;
+}
+
+:global([data-theme="dark"]) .unclosedYearDescription {
+  color: #fcd34d;
 }
 
 .closeYearButton:not(:disabled) {
@@ -102,15 +122,17 @@
 
 .loadingText {
   margin-top: 16px;
-  color: #6b7280;
+  color: var(--text-secondary, #6b7280);
 }
 
 /* Initial Prompt / Empty State */
 .promptContainer {
-  background: #ffffff;
-  border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  background: var(--glass-bg, #ffffff);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: var(--premium-rounding, 12px);
+  border: 1px solid var(--glass-border, rgba(0, 0, 0, 0.08));
+  box-shadow: var(--glass-shadow, 0 4px 20px rgba(0, 0, 0, 0.03));
   padding: 64px 32px;
   max-width: 640px;
   margin: 40px auto;
@@ -118,13 +140,14 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .promptIconCircle {
   width: 72px;
   height: 72px;
   border-radius: 50%;
-  background: rgba(30, 86, 49, 0.08);
+  background: var(--otherColor1, rgba(30, 86, 49, 0.08));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -133,33 +156,40 @@
 
 .promptIcon {
   font-size: 32px;
-  color: var(--primary-color, #1e5631);
+  color: var(--priColor, #1e5631);
 }
 
 .promptTitle {
   font-size: 1.28rem;
   font-weight: 700;
-  color: #111827;
+  color: var(--textColor, #111827);
   margin-bottom: 8px;
 }
 
 .promptSubtitle {
   font-size: 0.92rem;
-  color: #6b7280;
+  color: var(--text-secondary, #6b7280);
   line-height: 1.55;
   max-width: 480px;
   margin-bottom: 24px;
 }
 
 .promptButton {
-  background-color: var(--primary-color, #1e5631) !important;
+  background: var(--vibrant-gradient, #1e5631) !important;
+  border: none !important;
   height: 40px;
   padding: 0 24px;
   font-weight: 600;
 }
 
-/* Printable Report Paper / Sheet */
-.reportSheet {
+/* Printable Report Paper / Sheet — Fixed light paper document */
+.reportSheet,
+:global([data-theme="dark"]) .reportSheet {
+  --priColor: #1e5631;
+  --priColorLight: #40916c;
+  --secColor: #aedf88;
+  --thirdColor: #5c9013;
+  color-scheme: light;
   background: #ffffff;
   border-radius: 8px;
   border: 1px solid rgba(0, 0, 0, 0.08);
@@ -174,7 +204,7 @@
 /* Letterhead */
 .letterhead {
   position: relative;
-  border-bottom: 2px solid var(--primary-color, #1e5631);
+  border-bottom: 2px solid var(--priColor, #1e5631);
   padding: 4px 0 14px 0;
   margin-bottom: 60px;
   min-height: 144px;
@@ -316,7 +346,7 @@
 
 .reconCardHighlight {
   background: rgba(30, 86, 49, 0.06);
-  border: 1.5px solid var(--primary-color, #1e5631);
+  border: 1.5px solid var(--priColor, #1e5631);
   border-radius: 8px;
   padding: 14px 10px;
   text-align: center;
@@ -327,7 +357,7 @@
 
 .reconCardHighlight .reconLabel,
 .reconCardHighlight .reconValue {
-  color: var(--primary-color, #1e5631) !important;
+  color: var(--priColor, #1e5631) !important;
 }
 
 .reconLabel {
@@ -404,11 +434,11 @@
 .tableContainer :global(.ant-table-thead > tr > th),
 .section :global(.ant-table-thead > tr > th) {
   background-color: rgba(30, 86, 49, 0.06) !important;
-  color: var(--primary-color, #1e5631) !important;
+  color: var(--priColor, #1e5631) !important;
   font-weight: 700 !important;
   font-size: 0.82rem !important;
-  border-top: 1.5px solid var(--primary-color, #1e5631) !important;
-  border-bottom: 1.5px solid var(--primary-color, #1e5631) !important;
+  border-top: 1.5px solid var(--priColor, #1e5631) !important;
+  border-bottom: 1.5px solid var(--priColor, #1e5631) !important;
   padding: 8px 10px !important;
   letter-spacing: 0.02em;
 }
@@ -444,7 +474,7 @@
 /* Table Typography & Cell Stacks */
 .positiveAmount {
   font-weight: 700;
-  color: var(--primary-color, #1e5631);
+  color: var(--priColor, #1e5631);
 }
 
 .negativeAmount {
@@ -459,7 +489,7 @@
 
 .collectedAmount {
   font-weight: 700;
-  color: var(--primary-color, #1e5631);
+  color: var(--priColor, #1e5631);
 }
 
 .complianceTag {
@@ -506,7 +536,7 @@
 /* Summary Row Text Styles */
 .totalPrimary {
   font-weight: 800;
-  color: var(--primary-color, #1e5631);
+  color: var(--priColor, #1e5631);
 }
 
 .totalDanger {
@@ -522,7 +552,7 @@
 /* Progress and percentage bars */
 .percentBadge {
   font-weight: 700;
-  color: var(--primary-color, #1e5631);
+  color: var(--priColor, #1e5631);
 }
 
 /* Efficiency percentage badges */
@@ -643,11 +673,13 @@
   @page {
     size: letter portrait;
     margin: 8.5mm 15mm 16mm 15mm;
+    background: #ffffff;
 
     @bottom-right {
       content: "Page " counter(page) " of " counter(pages);
       font-size: 8pt;
       color: #4b5563;
+      background: transparent;
       font-weight: 500;
       font-family: inherit;
     }
@@ -662,10 +694,21 @@
   :global(.ant-layout-header),
   :global(.page-header),
   :global(.copyright),
+  :global(.app-wrapper::after),
   .noPrint,
   .promptContainer,
   .loadingContainer {
     display: none !important;
+    content: none !important;
+  }
+
+  :global(:root),
+  :global(html),
+  :global(html[data-theme="dark"]),
+  :global(.dashboard-layout),
+  :global(.content) {
+    color-scheme: light !important;
+    background: #ffffff none !important;
   }
 
   :global(body),
@@ -691,7 +734,7 @@
     padding: 2px 0 10px 0 !important;
     margin-bottom: 52px !important;
     min-height: 84px !important;
-    border-bottom: 2px solid var(--primary-color, #1e5631) !important;
+    border-bottom: 2px solid var(--priColor, #1e5631) !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -881,11 +924,11 @@
   .tableContainer :global(.ant-table-thead > tr > th),
   .section :global(.ant-table-thead > tr > th) {
     background-color: rgba(30, 86, 49, 0.06) !important;
-    color: var(--primary-color, #1e5631) !important;
+    color: var(--priColor, #1e5631) !important;
     font-weight: 700 !important;
     font-size: 11px !important;
-    border-top: 1.5px solid var(--primary-color, #1e5631) !important;
-    border-bottom: 1.5px solid var(--primary-color, #1e5631) !important;
+    border-top: 1.5px solid var(--priColor, #1e5631) !important;
+    border-bottom: 1.5px solid var(--priColor, #1e5631) !important;
     padding: 5px 6px !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;

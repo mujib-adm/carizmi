@@ -11,16 +11,12 @@
 
 <br>
 
-> [!IMPORTANT]
-> #### Framework Upgrade: Documentation Update in Progress
+**Carizmi** is an open-source community and financial management platform built for nonprofit organizations. It equips community-driven organizations with free, enterprise-grade tooling for membership administration, dues tracking, and financial reporting—while serving as a reference-grade engineering initiative in event-driven architecture, CQRS, and cloud-native platform design.
+
+> [!NOTE]
+> #### AI-Ready & Agentic Engineering
 >
-> The application framework has been upgraded from **Java 21 to Java 25** and from **Spring Boot 3.x to Spring Boot 4.x**. Documentation updates are currently in progress and will be revised to reflect the framework migration, associated configuration changes, and any related implementation updates.
-
-<br>
-
-Production-grade open-source community management platform built with Java 21, Spring Boot 3, CQRS architecture, event-driven workflows, and cloud-native infrastructure.
-
-Carizmi was created to provide nonprofit organizations with free access to enterprise-grade operational tooling while serving as a long-term open-source initiative focused on scalable backend engineering, distributed systems architecture, and maintainable platform design.
+> Carizmi is structured for both human contributors and AI coding agents, featuring scoped architectural context ([`AGENTS.md`](AGENTS.md)), reusable task skills ([`.agents/skills/`](.agents/skills/)), [Architecture Decision Records](docs/adr/README.md), and automated compile-time + ArchUnit guardrails that enforce domain boundaries automatically.
 
 The platform emphasizes:
 
@@ -60,7 +56,7 @@ Carizmi is built on an event-driven, CQRS-based architecture designed for reliab
 - **Event-driven asynchronous workflows** using messaging patterns.
 - **Transactional Outbox implementation** for reliable event propagation.
 - **Bounded-context-oriented modular architecture**.
-- **Architectural enforcement mechanisms** using ArchUnit and Java 21 sealed classes.
+- **Architectural enforcement mechanisms** using ArchUnit and Java 25 sealed classes.
 - **Automated OpenAPI-driven** API with type-safe TypeScript client generation.
 
 ### Cloud-Native Platform Engineering
@@ -99,6 +95,7 @@ Carizmi is built on an event-driven, CQRS-based architecture designed for reliab
 | Document | Description |
 |----------|-------------|
 | **[Backend Architecture](docs/ARCHITECTURE.md)** | Overview of the core Java/Spring framework, including domain validation, event lifecycles, and structural enforcement patterns. |
+| **[Architecture Decision Records (ADRs)](docs/adr/README.md)** | Point-in-time decision records explaining sealed domain ownership & JDK dynamic proxies, hybrid CQRS/Outbox, Liquibase/Flyway, and Spring Boot 4 / Jackson 3. |
 | **[Architectural Scale Upgrade](docs/ARCHITECTURAL_SCALE_UPGRADE.md)** | **[Engineering Highlight]** Comprehensive breakdown of the platform's evolution into a resilient Event-Driven Architecture using CQRS and Outbox patterns. |
 
 ### Frontend Engineering
@@ -124,19 +121,21 @@ Carizmi is built on an event-driven, CQRS-based architecture designed for reliab
 
 ## Tech Stack
 
+*(See [`pom.xml`](pom.xml), [`backend/pom.xml`](backend/pom.xml), and [`frontend/package.json`](frontend/package.json) for exact versions.)*
+
 | Layer | Technologies |
 |-------|-------------|
-| **Backend** | Java 21, Spring Boot 3, Stateless JWT |
-| **Frontend** | React 18, TypeScript, Vite, Ant Design, Nginx |
-| **Database** | MySQL 8.0 |
+| **Backend** | Java 25, Spring Boot 4, Spring Framework 7, Jackson 3, Stateless JWT |
+| **Frontend** | React, TypeScript, Vite, Ant Design, Nginx |
+| **Database** | MySQL, Flyway (runtime migrations), Liquibase (DDL diff tooling) |
 | **Cache** | Redis |
-| **Infrastructure** | Docker, Docker Compose, GitHub Actions (CI/CD) |
+| **Infrastructure** | Docker, Docker Compose, GitHub Actions (CI/CD), Google Cloud Run |
 | **API Automation** | Springdoc OpenAPI, Orval, Axios |
 
 ## Getting Started
 
 ### Prerequisites
-- **[Java 21](https://www.oracle.com/java/technologies/downloads/#java21)** (or any compatible OpenJDK distribution)
+- **[Java 25](https://openjdk.org/projects/jdk/25/)** (Temurin 25 or any compatible OpenJDK 25 distribution)
 - **[Docker & Docker Compose](https://www.docker.com/products/docker-desktop/)** (Docker Desktop recommended for macOS/Windows)
 - **Node.js 24+** (Auto-installed and managed via the frontend Maven plugin—no local installation required)
 
