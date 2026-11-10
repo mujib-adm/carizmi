@@ -9,7 +9,7 @@ vulnerabilities and work to address confirmed issues promptly.
 
 | Version | Supported          |
 |---------|--------------------|
-| 1.0.x   | ✅ Security updates |
+| 2.0.x   | ✅ Security updates |
 
 We currently maintain a single release branch (`main`). Security patches are applied
 to the latest version only.
@@ -128,7 +128,7 @@ The following areas are covered by this security policy:
 2. **Pin dependency versions** — Use exact versions for new Maven dependencies. Frontend npm dependencies are locked via `package-lock.json`.
 3. **Validate all user input** — Use the framework's built-in validation pipeline (`performDomainValidation`). Never trust client-side validation alone.
 4. **Use parameterized queries** — Spring Data JPA and `@Query` annotations handle this automatically. Never concatenate user input into SQL strings.
-5. **Follow the authorization model** — Protect new endpoints with `@PreAuthorize` annotations. The framework enforces role-based access at the method level.
+5. **Follow the authorization model** — Protect new endpoints with Carizmi's security meta-annotations (`@IsAdmin`, `@IsAdminOrManager`, `@IsAuthenticated` in `io.carizmi.infrastructure.security.annotation`, which compose `@PreAuthorize`). The framework enforces role-based access at the controller method or class level.
 
 ### Dependency Guidelines
 

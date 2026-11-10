@@ -34,25 +34,26 @@ graph LR
 
 ## Technology Stack
 
+Exact dependency and plugin versions are managed in [`pom.xml`](../pom.xml), [`backend/pom.xml`](../backend/pom.xml), [`frontend/pom.xml`](../frontend/pom.xml), and [`frontend/package.json`](../frontend/package.json).
+
 ### Backend (Contract Source)
 
-| Library | Version | Purpose |
+| Library / Plugin | Defined In | Purpose |
 |---------|---------|---------|
-| Spring Boot | 3.5.x (see root `pom.xml`) | Application framework |
-| [Springdoc OpenAPI](https://springdoc.org/) | 2.8.13 | Runtime OpenAPI spec generation from Spring MVC controllers |
-| [Swagger Annotations](https://github.com/swagger-api/swagger-core) | 2.2.36 (Jakarta) | `@Schema`, `@Operation`, `@Tag` annotations for spec customization |
-| [Exec Maven Plugin](https://www.mojohaus.org/exec-maven-plugin/) | 3.5.0 | Runs `OpenApiLocalGenerator` during Maven build |
-| [Testcontainers](https://testcontainers.com/) | (managed by Spring Boot BOM) | Provides ephemeral MySQL for spec generation without a local database |
+| Spring Boot | Root [`pom.xml`](../pom.xml) | Application framework |
+| [Springdoc OpenAPI](https://springdoc.org/) | [`backend/pom.xml`](../backend/pom.xml) | Runtime OpenAPI spec generation from Spring MVC controllers |
+| [Swagger Annotations](https://github.com/swagger-api/swagger-core) | [`backend/pom.xml`](../backend/pom.xml) | `@Schema`, `@Operation`, `@Tag` annotations for spec customization |
+| [Exec Maven Plugin](https://www.mojohaus.org/exec-maven-plugin/) | [`backend/pom.xml`](../backend/pom.xml) | Runs `OpenApiLocalGenerator` during Maven `integration-test` phase |
+| [Testcontainers](https://testcontainers.com/) | [`backend/pom.xml`](../backend/pom.xml) | Provides ephemeral MySQL for spec generation without a local database |
 
 ### Frontend (Artifact Consumer)
 
-| Library | Version | Purpose |
+| Library / Plugin | Defined In | Purpose |
 |---------|---------|---------|
-| [Orval](https://orval.dev/) | ^8.5.3 | Generates TypeScript API clients and types from OpenAPI spec |
-| [Axios](https://axios-http.com/) | ^1.13.2 | HTTP client used by generated API functions |
-| [Frontend Maven Plugin](https://github.com/eirslett/frontend-maven-plugin) | (in parent BOM) | Runs `npm ci`, `npm run generate:api`, and `npm run build` within Maven |
-| Node.js | v24.11.1 | JavaScript runtime (installed by frontend-maven-plugin) |
-| npm | 11.6.2 | Package manager (installed by frontend-maven-plugin) |
+| [Orval](https://orval.dev/) | [`frontend/package.json`](../frontend/package.json) | Generates TypeScript API clients and types from OpenAPI spec |
+| [Axios](https://axios-http.com/) | [`frontend/package.json`](../frontend/package.json) | HTTP client used by generated API functions |
+| [Frontend Maven Plugin](https://github.com/eirslett/frontend-maven-plugin) | [`frontend/pom.xml`](../frontend/pom.xml) | Runs `npm ci`, `npm run generate:api`, and `npm run build` within Maven |
+| Node.js & npm | Root [`pom.xml`](../pom.xml) (`<node.version>`, `<npm.version>`) | JavaScript runtime and package manager installed by `frontend-maven-plugin` |
 
 ---
 
@@ -374,6 +375,7 @@ export type SortOrder = typeof SortOrder[keyof typeof SortOrder];
 |-----------|------|------------|
 | `SortOrder` | `shared/data/dto/SortOrder.java` | `@Schema(enumAsRef = true)` |
 | `QuarterStatus` | `shared/constants/QuarterStatus.java` | `@Schema(enumAsRef = true)` |
+| `QuarterCellStatus` | `domain/finance/constants/QuarterCellStatus.java` | `@Schema(enumAsRef = true)` |
 
 ---
 

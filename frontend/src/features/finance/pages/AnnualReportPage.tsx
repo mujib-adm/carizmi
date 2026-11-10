@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   FileTextOutlined,
   PrinterOutlined,
@@ -11,7 +11,19 @@ import {
   LockOutlined,
   WarningOutlined,
 } from '@ant-design/icons';
-import { Button, Popconfirm, Progress, Select, Space, Spin, Table, Tag, Typography } from 'antd';
+import {
+  Button,
+  ConfigProvider,
+  Popconfirm,
+  Progress,
+  Select,
+  Space,
+  Spin,
+  Table,
+  Tag,
+  Typography,
+  theme as antTheme,
+} from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { reportsApi } from '../../../api/generated/reports/reports';
 import type {
@@ -30,6 +42,26 @@ import officialLogo from '../../../assets/images/official_logo.jpeg';
 import styles from '../../../styles/pages/AnnualReportPage.module.css';
 
 const { Title } = Typography;
+
+/**
+ * Fixed light theme for the printable report document sheet (.reportSheet).
+ * Ensures the official financial statement maintains an identical, print-ready
+ * paper appearance across Light Mode UI, Dark Mode UI, and exported PDFs.
+ */
+const reportDocumentTheme = {
+  algorithm: antTheme.defaultAlgorithm,
+  token: {
+    colorPrimary: '#1E5631',
+    colorSuccess: '#5C9013',
+    colorWarning: '#AEDF88',
+    colorError: '#c62828',
+    colorBgBase: '#ffffff',
+    colorBgContainer: '#ffffff',
+    colorText: '#1f2937',
+    fontFamily: 'Poppins, sans-serif',
+    borderRadius: 8,
+  },
+};
 
 const formatCurrency = (val?: number | null): string => {
   return `$${(val ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -104,8 +136,55 @@ export default function AnnualReportPage() {
     fetchReport(selectedYear);
   };
 
+  useEffect(() => {
+    let previousTheme: string | null = null;
+
+    const handleBeforePrint = () => {
+      const currentAttr = document.documentElement.getAttribute('data-theme');
+      if (currentAttr === 'dark') {
+        previousTheme = currentAttr;
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+      document.documentElement.style.colorScheme = 'light';
+    };
+
+    const handleAfterPrint = () => {
+      if (previousTheme) {
+        document.documentElement.setAttribute('data-theme', previousTheme);
+        previousTheme = null;
+      }
+      document.documentElement.style.removeProperty('color-scheme');
+    };
+
+    window.addEventListener('beforeprint', handleBeforePrint);
+    window.addEventListener('afterprint', handleAfterPrint);
+    return () => {
+      window.removeEventListener('beforeprint', handleBeforePrint);
+      window.removeEventListener('afterprint', handleAfterPrint);
+    };
+  }, []);
+
   const handlePrint = () => {
-    window.print();
+    const htmlEl = document.documentElement;
+    const activeTheme = htmlEl.getAttribute('data-theme');
+    if (activeTheme === 'dark') {
+      htmlEl.setAttribute('data-theme', 'light');
+    }
+    htmlEl.style.colorScheme = 'light';
+
+    const restoreTheme = () => {
+      if (activeTheme === 'dark') {
+        htmlEl.setAttribute('data-theme', 'dark');
+      }
+      htmlEl.style.removeProperty('color-scheme');
+      window.removeEventListener('afterprint', restoreTheme);
+    };
+    window.addEventListener('afterprint', restoreTheme);
+
+    // Allow the DOM to flush the light root color-scheme before print preview snapshots @page margins
+    requestAnimationFrame(() => {
+      window.print();
+    });
   };
 
   const handleCloseFiscalYear = () => {
@@ -210,7 +289,7 @@ export default function AnnualReportPage() {
         <Progress
           percent={record.percentage ?? 0}
           size="small"
-          strokeColor="var(--primary-color, #1e5631)"
+          strokeColor="var(--priColor, #1e5631)"
           showInfo={false}
         />
       ),
@@ -332,7 +411,7 @@ export default function AnnualReportPage() {
           <Progress
             percent={Math.min(val, 100)}
             size="small"
-            strokeColor={val >= 80 ? 'var(--primary-color, #1e5631)' : '#f59e0b'}
+            strokeColor={val >= 80 ? 'var(--priColor, #1e5631)' : '#f59e0b'}
             showInfo={false}
             className={styles.efficiencyProgressBar}
           />
@@ -516,6 +595,7 @@ export default function AnnualReportPage() {
           </div>
         </div>
       ) : report ? (
+        <ConfigProvider theme={reportDocumentTheme}>
         <div className={styles.reportSheet}>
           {/* Letterhead */}
           <div className={styles.letterhead}>
@@ -737,7 +817,7 @@ export default function AnnualReportPage() {
                             strokeColor={
                               (report.complianceSummary?.combinedSummary
                                 ?.overallCollectionEfficiencyRate ?? 0) >= 80
-                                ? 'var(--primary-color, #1e5631)'
+                                ? 'var(--priColor, #1e5631)'
                                 : '#f59e0b'
                             }
                             showInfo={false}
@@ -826,6 +906,7 @@ export default function AnnualReportPage() {
             </div>
           </div>
         </div>
+        </ConfigProvider>
       ) : (
         <div className={styles.promptContainer}>
           <div className={styles.promptIconCircle}>

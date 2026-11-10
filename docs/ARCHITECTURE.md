@@ -306,15 +306,76 @@ React Page / Hook
 
 ## 4. Domain Ownership Enforcement
 
-Every Value Object must have **exactly one** Business Logic implementation. This contract is enforced at three levels, in order of when they execute:
+Every Value Object in Carizmi must have **exactly one** Business Logic implementation and a designated repository owner. This section defines the structural ownership model, its archetypes, and the multi-layer enforcement pipeline that guarantees zero logic fragmentation.
 
-| Layer          | When             | Mechanism                                          |
-|----------------|------------------|----------------------------------------------------|
-| **Compile-Time** | `javac`          | `DomainLogicProcessor` (annotation processor)        |
-| **Startup**      | `afterPropertiesSet()` | Runtime registry in `AbstractBusinessLogic`   |
-| **Test-Time**    | `mvn test`       | `DomainLogicOwnershipRulesSpec` (ArchUnit)         |
+### Domain Ownership Model & Archetypes
 
-### 1. Compile-Time — Annotation Processing (`DomainLogicProcessor`)
+Carizmi strictly enforces a 1:1:1:1 relationship between an entity and its lifecycle managers. Rather than maintaining a manual catalog of classes, all domains follow one of three standardized architectural archetypes verified on every build by ArchUnit:
+
+#### Archetype 1: Core Domain Aggregates (ABL-Backed)
+Every write-side business domain follows this exact structural topology:
+
+```
+[ {Domain}VO ]  <-- ValueObject (@Id Integer)
+       │
+[ {Domain} ]  <-- Public Service Interface (injected by external consumers)
+       │
+[ sealed {Domain}AbstractBL ]  <-- @DomainLogicFor({Domain}VO.class)
+       ▲
+       │ permits
+[ final {Domain}Impl ]  <-- @RepositoryOwnerFor({Domain}Repository.class)
+       │
+[ {Domain}Repository ]  <-- JpaRepository<{Domain}VO, Integer> (Package-Private)
+```
+
+* **Canonical Exemplar (`Payment`)**:
+  * Entity: `PaymentVO`
+  * Public Interface: `Payment`
+  * Sealed Logic: `PaymentAbstractBL` (`@DomainLogicFor(PaymentVO.class)`)
+  * Final Service: `PaymentImpl` (`@RepositoryOwnerFor(PaymentRepository.class)`)
+  * Repository: `PaymentRepository` (accessible **only** to `PaymentImpl`)
+* **Key Invariant**: Repositories are package-private or restricted by ArchUnit. Consumers inject the interface (`Payment`), never the repository or the concrete implementation (`PaymentImpl`).
+
+#### Archetype 2: Read-Model & Infrastructure Stores (Non-ABL)
+Entities that do not require full `AbstractBusinessLogic` CRUD validation lifecycles (e.g., periodic snapshots, transactional outboxes) bypass ABL but **must** still enforce repository ownership:
+* **Contract**: Annotated with `@RepositoryOwnerFor` on the concrete service implementation.
+* **Exemplars**:
+  * `DashboardSnapshotVO` ↔ `DashboardSnapshotRepository` (owned by `DashboardSnapshotImpl`)
+  * `OutboxEventVO` ↔ `OutboxEventRepository` (owned by `OutboxEventImpl`)
+
+#### Archetype 3: Cross-Domain Orchestration Services (`..service.impl.*ServiceImpl`)
+Services that coordinate multi-domain workflows without owning a specific entity:
+* **Naming**: Suffix with `*ServiceImpl` (e.g., `AnnualReportServiceImpl`, `QuarterlyFeeChecklistServiceImpl`, `BaselineServiceImpl`).
+* **Contract**: Must **never** inject a `JpaRepository` directly; they coordinate strictly by injecting other domains' public interfaces (`Member`, `Payment`, `Expense`).
+
+### Interface-Based Dependency Injection (JDK Dynamic Proxies)
+
+All `*Impl` classes are declared `final` and all consumers inject via the **service interface** — never the concrete class:
+
+```java
+// ✅ Correct — Inject by interface
+@Autowired private Member member;
+@Autowired private Payment payment;
+
+// ❌ Will fail at startup — BeanNotOfRequiredTypeException
+@Autowired private MemberImpl member;
+@Autowired private PaymentImpl payment;
+```
+
+This is enforced by `spring.aop.proxy-target-class: false`, which uses JDK interface-based proxies instead of CGLIB subclass proxies. JDK proxies implement the service interface and delegate to the `final` bean — no subclassing required.
+
+### Multi-Gate Enforcement Pipeline
+
+The 1:1:1:1 ownership topology is enforced across four distinct lifecycle gates, in order of when they execute:
+
+| Gate | Phase | Layer | Mechanism |
+|:---|:---|:---|:---|
+| **Gate 1** | Compile-Time | `javac` | `DomainLogicProcessor` (prevents duplicate `@DomainLogicFor`) |
+| **Gate 2** | Compile-Time | `javac` | Java 17+ `sealed` ... `permits` (closes extension) |
+| **Gate 3** | Startup | `afterPropertiesSet()` | `AbstractBusinessLogic` runtime registry |
+| **Gate 4** | Test-Time | `mvn test` | ArchUnit (`DomainLogicOwnershipRulesSpec`, `RepositoryOwnershipRulesSpec`) |
+
+#### Gate 1: Compile-Time Annotation Processing (`DomainLogicProcessor`)
 During compilation, the processor scans all `@DomainLogicFor` annotations and fails the build if two classes claim the same VO:
 
 ```
@@ -322,7 +383,7 @@ ERROR: Duplicate Business Logic detected for VO [MemberVO].
        Both [MemberImpl] and [AnotherMemberImpl] are annotated with @DomainLogicFor.
 ```
 
-### 2. Compile-Time — Sealed Class Hierarchy
+#### Gate 2: Compile-Time Sealed Class Hierarchy
 Each VO has a dedicated sealed abstract class that only permits its single implementation:
 
 ```java
@@ -339,7 +400,7 @@ public final class MemberImpl extends MemberAbstractBL implements Member {
 }
 ```
 
-### 3. Startup — Runtime Enforcement (`AbstractBusinessLogic.afterPropertiesSet()`)
+#### Gate 3: Startup Runtime Enforcement (`AbstractBusinessLogic.afterPropertiesSet()`)
 
 On Spring startup, each BL instance is validated against two critical invariants:
 
@@ -348,7 +409,7 @@ On Spring startup, each BL instance is validated against two critical invariants
 | **VO → BL Uniqueness** | Two BL beans claiming the same VO type | `IllegalStateException` — duplicate detected |
 | **Annotation ↔ Generic Cross-Validation** | `@DomainLogicFor(FooVO)` but generic `<V>` is `BarVO` (copy-paste error) | `IllegalStateException` — mismatch detected |
 
-### 4. Test-Time — Architecture Rules Enforcement (ArchUnit)
+#### Gate 4: Test-Time Architecture Enforcement (ArchUnit)
 
 Two ArchUnit specs run during `mvn test` to enforce architectural invariants at the structural level:
 
@@ -372,50 +433,11 @@ Two ArchUnit specs run during `mvn test` to enforce architectural invariants at 
 | Outbound Access Guard | `*Impl`/`*AbstractBL` classes may only access their own repository |
 | Naming Convention | All `JpaRepository` subinterfaces end with `*Repository` |
 
-### Current Domain Mappings
-
-| Value Object | Sealed Abstract BL | Implementation | Repository Owner | Publishes Events |
-|---|---|---|---|---|
-| `MemberVO` | `MemberAbstractBL` | `MemberImpl` | `MemberRepository` | ✅ |
-| `MemberMembershipPeriodVO` | `MemberMembershipPeriodAbstractBL` | `MemberMembershipPeriodImpl` | `MemberMembershipPeriodRepository` | ❌ |
-| `PaymentVO` | `PaymentAbstractBL` | `PaymentImpl` | `PaymentRepository` | ✅ |
-| `ExpenseVO` | `ExpenseAbstractBL` | `ExpenseImpl` | `ExpenseRepository` | ✅ |
-| `UserVO` | `UserAbstractBL` | `UserImpl` | `UserRepository` | ❌ |
-| `SystemSettingsVO` | `SystemSettingAbstractBL` | `SystemSettingImpl` | `SystemSettingRepository` | ❌ |
-| `ReferenceVO` | `ReferenceAbstractBL` | `ReferenceImpl` | `ReferenceRepository` | ❌ |
-
-#### Infrastructure Service Mappings (non-ABL, `@RepositoryOwnerFor` enforced)
-
-| Value Object | Implementation | Repository Owner |
-|---|---|---|
-| `DashboardSnapshotVO` | `DashboardSnapshotImpl` | `DashboardSnapshotRepository` |
-| `OutboxEventVO` | `OutboxEventImpl` | `OutboxEventRepository` |
-
-### Interface-Based Dependency Injection
-
-All `*Impl` classes are declared `final` and all consumers inject via the **service interface** — never the concrete class:
-
-```java
-// ✅ Correct — inject by interface
-@Autowired private Member member;
-@Autowired private Payment payment;
-
-// ❌ Will fail at startup — BeanNotOfRequiredTypeException
-@Autowired private MemberImpl member;
-@Autowired private PaymentImpl payment;
+#### Verifying Architectural Compliance
+To dynamically verify that all existing and newly created domains comply with these ownership rules:
+```bash
+./mvnw test -pl backend -Dtest=DomainLogicOwnershipRulesSpec,RepositoryOwnershipRulesSpec
 ```
-
-This is enforced by `spring.aop.proxy-target-class: false`, which uses JDK interface-based proxies instead of CGLIB subclass proxies. JDK proxies implement the service interface and delegate to the `final` bean — no subclassing required.
-
-| Service Interface | Final Implementation |
-|---|---|
-| `Member` | `MemberImpl` |
-| `MemberMembershipPeriod` | `MemberMembershipPeriodImpl` |
-| `Payment` | `PaymentImpl` |
-| `Expense` | `ExpenseImpl` |
-| `User` | `UserImpl` |
-| `SystemSetting` | `SystemSettingImpl` |
-| `Reference` | `ReferenceImpl` |
 
 ---
 
